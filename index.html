@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Разлей по цветам</title>
+<meta name="theme-color" content="#1b0f33">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Разлей">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>
+  :root{
+    --w: 52px;
+    --u: 44px;
+    --gap: 14px;
+    --cap: 5;                    /* слоёв в пробирке, синхронно с JS CAP */
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0;overscroll-behavior:none}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,sans-serif;
+    color:#fff;
+    background:#241533;
+    background:
+      radial-gradient(70% 42% at 50% 46%, rgba(150,105,190,.22) 0%, rgba(150,105,190,0) 70%),
+      radial-gradient(125% 95% at 50% 8%, #4b2f66 0%, #3a2350 42%, #241533 100%);
+    user-select:none;-webkit-user-select:none;
+    touch-action:manipulation;
+  }
+  #app{
+    height:100dvh;display:flex;flex-direction:column;
+    padding:calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 10px);
+  }
+
+  /* ---------- шапка ---------- */
+  header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:0 0 auto}
+  .lvl{font-size:17px;font-weight:700;letter-spacing:.2px;opacity:.95}
+  .lvl small{display:block;font-size:11px;font-weight:500;opacity:.5;letter-spacing:.4px;margin-top:2px}
+  .icon-btn{
+    width:40px;height:40px;border:0;border-radius:13px;
+    background:rgba(255,255,255,.10);color:#fff;font-size:18px;line-height:1;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:transform .12s, background .2s;
+  }
+  .icon-btn:active{transform:scale(.9)}
+
+  /* ---------- поле ---------- */
+  main{
+    flex:1 1 auto;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:calc(var(--gap) + 14px);
+    min-height:0;
+  }
+  .row{display:flex;align-items:flex-end;justify-content:center;gap:var(--gap)}
+  /* зазор между тройками пробирок */
+  .spacer{flex:0 0 auto;width:calc(var(--gap) * 1.15)}
+
+  .tube{
+    --neck: calc(var(--u) * .30);
+    --wall: 3px;
+    position:relative;flex:0 0 auto;
+    width:var(--w);
+    height:calc(var(--u) * var(--cap) + var(--neck) + var(--wall));
+    border-radius:10px 10px calc(var(--w) * .5) calc(var(--w) * .5);
+    background:
+      linear-gradient(100deg,
+        rgba(255,255,255,.10) 0 6%,
+        rgba(255,255,255,.02) 16% 80%,
+        rgba(255,255,255,.07) 92% 100%),
+      rgba(255,255,255,.045);
+    /* стенка + внутренние рефлексы стекла */
+    box-shadow:
+      inset 0 0 0 var(--wall) rgba(255,255,255,.54),
+      inset 7px 0 9px -7px rgba(255,255,255,.50),
+      inset -7px 0 11px -7px rgba(255,255,255,.32),
+      inset 0 -10px 14px -10px rgba(255,255,255,.28);
+    filter:drop-shadow(0 8px 12px rgba(0,0,0,.32));
+    transition:transform .28s cubic-bezier(.34,1.45,.5,1);
+    cursor:pointer;
+  }
+  /* ободок горлышка */
+  .tube::before{
+    content:'';position:absolute;z-index:3;
+    left:calc(var(--wall) * -1);right:calc(var(--wall) * -1);
+    top:calc(var(--neck) * .62);height:var(--wall);
+    border-radius:2px;background:rgba(255,255,255,.34);
+  }
+  .tube.sel{transform:translateY(-18px)}
+  .tube.flying{transition:transform .26s cubic-bezier(.3,.85,.35,1);z-index:60}
+  .tube.flying.back{transition:transform .32s cubic-bezier(.32,1.2,.5,1)}
+  .tube.done{animation:pop .45s ease}
+  @keyframes pop{
+    0%{transform:translateY(0) scale(1)}
+    35%{transform:translateY(-8px) scale(1.06,.94)}
+    70%{transform:translateY(0) scale(.97,1.04)}
+    100%{transform:translateY(0) scale(1)}
+  }
+  .mouth{position:absolute;top:0;left:50%;width:0;height:0}
+  .liquid{
+    position:absolute;overflow:hidden;
+    left:var(--wall);right:var(--wall);bottom:var(--wall);
+    height:calc(var(--u) * var(--cap));
+    display:flex;flex-direction:column-reverse;
+    border-radius:4px 4px calc((var(--w) - var(--wall) * 2) * .5) calc((var(--w) - var(--wall) * 2) * .5);
+  }
+  .seg{
+    position:relative;
+    width:100%;height:var(--u);flex:0 0 auto;
+    transition:height .13s linear;
+    box-shadow:
+      inset 0 -7px 9px -7px rgba(0,0,0,.28),
+      inset 0 7px 9px -7px rgba(255,255,255,.20);
+  }
+  /* скрытый слой: цвет неизвестен, пока он не станет верхним */
+  .seg.hid::after{
+    content:'?';
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:calc(var(--u) * .44);font-weight:800;color:rgba(255,255,255,.40);
+    text-shadow:0 1px 2px rgba(0,0,0,.5);
+  }
+  /* вспышка в момент раскрытия */
+  .seg.reveal{animation:reveal .5s ease-out}
+  @keyframes reveal{
+    0%{filter:brightness(2.6) saturate(1.4)}
+    100%{filter:none}
+  }
+  /* во время перелива высоту крутит rAF — переход мешает */
+  .liquid.pouring .seg{transition:none}
+  /* верхний слой — светлая «поверхность» жидкости */
+  .liquid > .seg.top{
+    box-shadow:
+      inset 0 3px 0 rgba(255,255,255,.26),
+      inset 0 -7px 9px -7px rgba(0,0,0,.28);
+  }
+  /* колыхание поверхности, когда струя дошла */
+  .seg.wob{animation:wob .40s cubic-bezier(.3,1.3,.5,1);transform-origin:50% 100%}
+  @keyframes wob{
+    0%{transform:scaleY(1.16)}
+    40%{transform:scaleY(.93)}
+    70%{transform:scaleY(1.04)}
+    100%{transform:scaleY(1)}
+  }
+  /* блики на стекле поверх жидкости */
+  .shine{
+    position:absolute;z-index:2;pointer-events:none;border-radius:99px;
+    left:13%;width:8%;
+    top:calc(var(--neck) + var(--u) * .40);bottom:calc(var(--w) * .46);
+    background:linear-gradient(180deg,
+      rgba(255,255,255,.46) 0%, rgba(255,255,255,.22) 55%, rgba(255,255,255,.06) 100%);
+    filter:blur(.7px);
+  }
+  .shine.sm{
+    left:auto;right:12%;width:4.5%;
+    top:calc(var(--neck) + var(--u) * 1.15);bottom:calc(var(--w) * .62);
+    background:linear-gradient(180deg, rgba(255,255,255,.24), rgba(255,255,255,.05));
+  }
+
+  /* ---------- брызги/капли (струя рисуется в SVG-оверлее) ---------- */
+  .drop{
+    position:fixed;width:6px;height:6px;border-radius:50%;z-index:69;
+    pointer-events:none;animation:drop .40s cubic-bezier(.35,.05,.75,1) forwards;
+  }
+  @keyframes drop{
+    0%{transform:translate(0,0) scale(1);opacity:.95}
+    40%{transform:translate(calc(var(--dx) * .55), var(--dy)) scale(.85);opacity:.9}
+    100%{transform:translate(var(--dx), 13px) scale(.28);opacity:0}
+  }
+  .ripple{
+    position:fixed;border-radius:50%;z-index:69;pointer-events:none;
+    border:2px solid rgba(255,255,255,.5);
+    animation:ripple .42s ease-out forwards;
+  }
+  @keyframes ripple{
+    0%{transform:scale(.35);opacity:.65}
+    100%{transform:scale(1.25);opacity:0}
+  }
+  .drip{
+    position:fixed;width:7px;height:9px;z-index:69;pointer-events:none;
+    border-radius:50% 50% 56% 56%;
+    animation:drip .40s cubic-bezier(.4,0,.9,1) forwards;
+  }
+  @keyframes drip{
+    0%{transform:translateY(0) scaleY(.8);opacity:0}
+    18%{opacity:1}
+    100%{transform:translateY(var(--fall)) scaleY(1.4);opacity:.1}
+  }
+
+  /* ---------- низ ---------- */
+  footer{flex:0 0 auto;display:flex;gap:10px;justify-content:center;padding-top:6px}
+  .btn{
+    flex:1 1 0;max-width:150px;min-height:52px;border:0;border-radius:16px;
+    background:rgba(255,255,255,.12);color:#fff;font-size:13px;font-weight:600;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    cursor:pointer;transition:transform .12s, opacity .2s;
+  }
+  .btn b{font-size:19px;font-weight:400;line-height:1}
+  .btn:active{transform:scale(.94)}
+  .btn:disabled{opacity:.32;pointer-events:none}
+
+  /* ---------- оверлей победы ---------- */
+  .overlay{
+    position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+    background:rgba(12,6,26,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    opacity:0;pointer-events:none;transition:opacity .25s;
+  }
+  .overlay.show{opacity:1;pointer-events:auto}
+  .card{
+    width:min(320px,84vw);padding:28px 22px 22px;border-radius:26px;text-align:center;
+    background:linear-gradient(165deg,#5c2f8f,#341a5c);
+    box-shadow:0 24px 60px rgba(0,0,0,.5);
+    transform:translateY(14px) scale(.94);transition:transform .3s cubic-bezier(.2,1.3,.4,1);
+  }
+  .overlay.show .card{transform:none}
+  .card .big{font-size:44px;line-height:1;margin-bottom:12px}
+  .card h2{margin:0 0 6px;font-size:22px}
+  .card p{margin:0 0 20px;opacity:.65;font-size:14px}
+  .cta{
+    width:100%;min-height:54px;border:0;border-radius:17px;cursor:pointer;
+    background:linear-gradient(180deg,#ffd23f,#ffa41b);color:#3a1d00;
+    font-size:17px;font-weight:800;transition:transform .12s;
+  }
+  .cta:active{transform:scale(.96)}
+  .ghost{
+    margin-top:10px;width:100%;min-height:42px;border:0;background:transparent;
+    color:rgba(255,255,255,.55);font-size:14px;cursor:pointer;
+  }
+  .hint{
+    position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 88px);transform:translateX(-50%);
+    background:rgba(0,0,0,.55);padding:9px 16px;border-radius:20px;font-size:13px;
+    opacity:0;transition:opacity .25s;pointer-events:none;z-index:80;white-space:nowrap;
+  }
+  .hint.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <button class="icon-btn" id="btnSound" title="Звук">🔊</button>
+    <div class="lvl">Уровень <span id="lvlNum">1</span><small id="movesTxt">ходов: 0</small></div>
+    <button class="icon-btn" id="btnHelp" title="Как играть">?</button>
+  </header>
+
+  <main id="board"></main>
+
+  <footer>
+    <button class="btn" id="btnUndo"><b>↩</b>Отменить</button>
+    <button class="btn" id="btnAdd"><b>＋</b>Пробирка</button>
+    <button class="btn" id="btnRestart"><b>⟳</b>Заново</button>
+  </footer>
+</div>
+
+<div class="hint" id="hint"></div>
+
+<div class="overlay" id="ovWin">
+  <div class="card">
+    <div class="big">🎉</div>
+    <h2 id="winTitle">Уровень пройден!</h2>
+    <p id="winSub">Отличная работа</p>
+    <button class="cta" id="btnNext">Следующий уровень</button>
+  </div>
+</div>
+
+<div class="overlay" id="ovHelp">
+  <div class="card">
+    <div class="big">🧪</div>
+    <h2>Как играть</h2>
+    <p>Нажми на пробирку, чтобы взять верхний слой жидкости, потом на другую — чтобы перелить.<br><br>
+       Переливать можно только на такой же цвет или в пустую пробирку.<br><br>
+       Слои с «?» скрыты — цвет откроется, когда слой станет верхним.<br><br>
+       Цель — собрать каждый цвет в отдельной пробирке.</p>
+    <button class="cta" id="btnCloseHelp">Понятно</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ============ константы ============ */
+const CAP = 5;                       // слоёв в пробирке (дублируется в CSS как --cap)
+// палитра снята с референса: малиновый, оранжевый, жёлтый, трава, лазурь, синий…
+const COLORS = ['#ed2e52','#ff8a1e','#ffc61a','#43ce2b','#29a8f0','#3b4fd9',
+                '#9b3fe8','#17c7b4','#ff5fa8','#8b5a2b','#c9d2dc','#5e7a8c'];
+const HIDDEN_FILL = '#160f27';   // цвет закрытого слоя
+const HIDDEN_FROM = 10;          // с какого уровня появляются скрытые слои
+const SAVE_KEY = 'watersort.v1';
+
+/* ============ утилиты ============ */
+const $ = s => document.querySelector(s);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+/* ============ правила игры ============
+   Пробирки бывают разной вместимости: полноразмерные на CAP слоёв и маленькие
+   «скляночки» на пару слоёв — они работают как временная полка. caps[i] — вместимость. */
+const topColor  = t => t.length ? t[t.length - 1] : -1;
+const fullSame  = (t, cap) => t.length === cap && t.every(c => c === t[0]);
+const isDone    = (t, cap) => fullSame(t, cap);
+// «Собрана» — только полноразмерная: из маленькой всегда можно вылить обратно,
+// иначе цвет в ней запирался бы и уровень становился нерешаемым.
+const isSolved  = (t, cap) => cap === CAP && fullSame(t, cap);
+const isWin     = (tubes, caps) => tubes.every((t, i) => t.length === 0 || isDone(t, caps[i]));
+
+function canPour(tubes, caps, a, b){
+  if (a === b) return false;
+  const from = tubes[a], to = tubes[b];
+  if (!from.length || to.length >= caps[b]) return false;
+  if (isSolved(from, caps[a])) return false;
+  if (!to.length) return from.every(c => c === from[0]) ? false : true; // не гонять монолит в пустоту
+  return topColor(to) === topColor(from);
+}
+
+function pourCount(tubes, caps, a, b){
+  const from = tubes[a], c = topColor(from);
+  let k = 0;
+  for (let i = from.length - 1; i >= 0 && from[i] === c; i--) k++;
+  return Math.min(k, caps[b] - tubes[b].length);
+}
+
+function applyMove(tubes, caps, a, b){
+  const nx = tubes.map(t => t.slice());
+  const n = pourCount(nx, caps, a, b);
+  for (let i = 0; i < n; i++) nx[b].push(nx[a].pop());
+  return nx;
+}
+
+/* ============ солвер (проверка решаемости) ============ */
+// вместимость входит в ключ: пробирки с одним содержимым, но разной ёмкости неравноценны
+function canon(tubes, caps){
+  return tubes.map((t, i) => caps[i] + ':' + t.join(',')).sort().join('|');
+}
+
+function solvable(start, caps){
+  const seen = new Set();
+  const stack = [start.map(t => t.slice())];
+  let iter = 0;
+  while (stack.length){
+    if (++iter > 150000) return false;
+    const cur = stack.pop();
+    if (isWin(cur, caps)) return true;
+    const key = canon(cur, caps);
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const good = [], meh = [];
+    for (let a = 0; a < cur.length; a++){
+      for (let b = 0; b < cur.length; b++){
+        if (!canPour(cur, caps, a, b)) continue;
+        (cur[b].length ? good : meh).push([a, b]);   // слияние цветов важнее слива в пустое
+      }
+    }
+    for (const [a, b] of meh)  stack.push(applyMove(cur, caps, a, b));
+    for (const [a, b] of good) stack.push(applyMove(cur, caps, a, b));
+  }
+  return false;
+}
+
+/* ============ генератор уровней ============ */
+function colorsForLevel(l){
+  const thresholds = [2, 5, 9, 14, 20, 27, 35, 44, 54];
+  let c = 3;
+  for (const t of thresholds) if (l > t) c++;
+  return Math.min(c, 12);
+}
+
+/* ---- скрытые слои ----
+   Нижние слои закрыты знаком «?»; слой раскрывается, когда становится верхним.
+   Уровень при этом остаётся решаемым (солвер видит всё) — незнание компенсируется
+   отменой хода и запасной пробиркой, как принято в жанре. */
+// hidden[i][k] === true → слой k пробирки i закрыт. Флаг на каждый слой (а не «сколько
+// снизу»), поэтому «?» могут стоять вразброс, а не сплошной колодой у дна.
+function hiddenForLevel(level, tubes){
+  const hidden = tubes.map(t => t.map(() => false));
+  // максимум 2 скрытых слоя из CAP: больше — игра превращается в угадайку
+  const depth = level < HIDDEN_FROM ? 0 : level < 20 ? 1 : 2;
+  if (!depth) return hidden;
+  const share = level < 20 ? 0.6 : 0.85;         // доля пробирок со скрытыми слоями
+  const rnd = mulberry32((Math.imul(level, 40503) ^ 0x9e3779b9) >>> 0);
+  for (let i = 0; i < tubes.length; i++){
+    const len = tubes[i].length;
+    if (len < 2 || rnd() >= share) continue;
+    // верхний слой не прячем — игрок должен видеть, что переливает
+    const idx = [];
+    for (let k = 0; k < len - 1; k++) idx.push(k);
+    for (let k = idx.length - 1; k > 0; k--){
+      const j = Math.floor(rnd() * (k + 1));
+      [idx[k], idx[j]] = [idx[j], idx[k]];
+    }
+    const cnt = Math.min(depth, idx.length);
+    for (let k = 0; k < cnt; k++) hidden[i][idx[k]] = true;
+  }
+  return hidden;
+}
+
+// цвет для отрисовки слоя: скрытый — тёмный
+function segColor(tube, idx){
+  return state.hidden[tube] && state.hidden[tube][idx]
+    ? HIDDEN_FILL : COLORS[state.tubes[tube][idx] % COLORS.length];
+}
+
+// после хода: слой, ставший верхним, раскрывается. Возвращает индексы пробирок.
+function revealTops(){
+  const opened = [];
+  for (let i = 0; i < state.tubes.length; i++){
+    const h = state.hidden[i];
+    if (!h || !h.length) continue;
+    let changed = false;
+    if (isDone(state.tubes[i], state.caps[i])){
+      // собранную открываем целиком — иначе не видно, что она готова
+      for (let k = 0; k < h.length; k++) if (h[k]){ h[k] = false; changed = true; }
+    } else {
+      const top = state.tubes[i].length - 1;
+      if (top >= 0 && h[top]){ h[top] = false; changed = true; }
+    }
+    if (changed) opened.push(i);
+  }
+  return opened;
+}
+
+// Порядок пробирок перемешиваем, иначе пустые и маленькие выстраиваются хвостом
+// в конце поля. На решаемость перестановка не влияет.
+function shuffleTubes(tubes, caps, rnd){
+  const order = tubes.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--){
+    const j = Math.floor(rnd() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return { tubes: order.map(i => tubes[i]), caps: order.map(i => caps[i]) };
+}
+
+// маленькие скляночки-полки: появляются с ростом уровня
+const SMALL_CAP  = 2;
+const SMALL_FROM = 15;
+const smallCount = l => l < SMALL_FROM ? 0 : l < 30 ? 1 : 2;
+
+function generateLevel(level){
+  const nc = colorsForLevel(level);
+  const base = (Math.imul(level, 2654435761) >>> 0);
+  const small = smallCount(level);
+  const caps = [];
+  for (let i = 0; i < nc + 2; i++) caps.push(CAP);
+  for (let i = 0; i < small; i++) caps.push(SMALL_CAP);
+
+  for (let attempt = 0; attempt < 400; attempt++){
+    const rnd = mulberry32((base + attempt * 7919) >>> 0);
+    const pool = [];
+    for (let c = 0; c < nc; c++) for (let k = 0; k < CAP; k++) pool.push(c);
+    for (let i = pool.length - 1; i > 0; i--){
+      const j = Math.floor(rnd() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    const tubes = [];
+    for (let i = 0; i < nc; i++) tubes.push(pool.slice(i * CAP, (i + 1) * CAP));
+    tubes.push([], []);                       // две пустые пробирки
+    for (let i = 0; i < small; i++) tubes.push([]);   // маленькие — стартуют пустыми
+
+    if (tubes.some((t, i) => isDone(t, caps[i]))) continue;  // готовый цвет на старте
+    if (solvable(tubes, caps)) return shuffleTubes(tubes, caps, rnd);
+  }
+  // страховка (на практике не срабатывает): заведомо решаемая раскладка —
+  // собранное поле с обменянными верхними слоями двух пробирок
+  const tubes = [];
+  for (let c = 0; c < nc; c++) tubes.push(new Array(CAP).fill(c));
+  tubes[0][CAP - 1] = 1;
+  tubes[1][CAP - 1] = 0;
+  tubes.push([], []);
+  for (let i = 0; i < small; i++) tubes.push([]);
+  return { tubes, caps };
+}
+
+/* ============ звук ============ */
+let actx = null, soundOn = true;
+function audio(){
+  if (!actx){
+    const C = window.AudioContext || window.webkitAudioContext;
+    if (!C) return null;
+    actx = new C();
+  }
+  if (actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function tone(freq, dur, vol, when, type){
+  if (!soundOn) return;
+  const ac = audio(); if (!ac) return;
+  const t0 = ac.currentTime + (when || 0);
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type || 'sine';
+  o.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(vol, t0 + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(ac.destination);
+  o.start(t0); o.stop(t0 + dur + 0.05);
+}
+// шум воды: полосовой фильтр по белому шуму + подъём тона, как у наполняющейся ёмкости
+function sndFlow(dur){
+  if (!soundOn) return;
+  const ac = audio(); if (!ac) return;
+  const len = Math.max(1, Math.ceil(ac.sampleRate * dur));
+  const buf = ac.createBuffer(1, len, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+
+  const src = ac.createBufferSource(); src.buffer = buf;
+  const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.9;
+  const g  = ac.createGain();
+  const t0 = ac.currentTime;
+
+  bp.frequency.setValueAtTime(650, t0);
+  bp.frequency.linearRampToValueAtTime(1600, t0 + dur);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(0.13, t0 + 0.06);
+  g.gain.setValueAtTime(0.13, t0 + Math.max(0.08, dur - 0.09));
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur + 0.03);
+
+  src.connect(bp); bp.connect(g); g.connect(ac.destination);
+  src.start(t0); src.stop(t0 + dur + 0.05);
+}
+const sndPlop     = () => tone(240, 0.10, 0.06, 0, 'sine');
+const sndComplete = () => { tone(660, .16, .09, 0); tone(880, .22, .09, .09); };
+const sndWin      = () => [523, 659, 784, 1046].forEach((f, i) => tone(f, .3, .1, i * .1));
+const sndTap      = () => tone(420, .07, .05, 0, 'sine');
+const sndNope     = () => tone(150, .12, .06, 0, 'square');
+
+/* ============ состояние ============ */
+const state = {
+  level: 1,
+  tubes: [],
+  caps: [],                       // вместимость каждой пробирки (CAP или SMALL_CAP)
+  hidden: [],                     // какие слои закрыты знаком «?»
+  moves: 0,
+  history: [],
+  selected: null,
+  addUsed: false,
+  busy: false
+};
+// снимок для отмены хода: цвета и скрытие вместе, иначе отмена «подсматривала» бы
+const snapshot = () => JSON.stringify({ t: state.tubes, h: state.hidden, c: state.caps });
+let tubeEls = [];
+let UNIT = 44;                    // высота одного слоя в px (совпадает с CSS --u)
+
+const board = $('#board');
+
+function save(){
+  try{
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ level: state.level, sound: soundOn }));
+  }catch(e){}
+}
+function load(){
+  try{
+    const d = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
+    if (d.level) state.level = d.level;
+    if (d.sound === false) soundOn = false;
+  }catch(e){}
+}
+
+/* ============ отрисовка ============ */
+// В фоновой вкладке clientWidth/innerWidth могут быть нулями — подстраховываемся,
+// иначе поле схлопнется в минимальный размер и таким и останется.
+const vpW = () => window.innerWidth  || document.documentElement.clientWidth  || 390;
+const vpH = () => window.innerHeight || document.documentElement.clientHeight || 780;
+
+function layout(rows, cols){
+  const bw = board.clientWidth  || (vpW() - 24);
+  const bh = board.clientHeight || (vpH() - 210);
+  const gap = cols > 5 ? 9 : 13;
+
+  // чем меньше пробирок — тем крупнее они на экране
+  const maxW = cols <= 4 ? 86 : cols === 5 ? 72 : 60;
+  const maxU = rows === 1 ? 78 : rows === 2 ? 62 : rows === 3 ? 52 : 42;
+
+  // в ряду ещё зазоры между тройками — они тоже съедают ширину
+  const spacers = Math.floor((cols - 1) / 3);
+  let w = (bw - gap * (cols + 1) - spacers * gap * 2.15) / cols;
+  w = clamp(w, 28, maxW);
+  // высота пробирки = 4u + горлышко (0.30u) + стенка; плюс запас на подъём и отступы
+  // высота пробирки = CAP·u + горлышко (0.30u) + стенка
+  let u = (bh - (rows - 1) * (gap + 14) - 26 - rows * 3) / rows / (CAP + 0.3);
+  u = clamp(Math.min(u, w * 0.95), 18, maxU);
+
+  UNIT = +u.toFixed(1);
+  document.documentElement.style.setProperty('--cap', CAP);
+  document.documentElement.style.setProperty('--w', w.toFixed(1) + 'px');
+  document.documentElement.style.setProperty('--u', u.toFixed(1) + 'px');
+  document.documentElement.style.setProperty('--gap', gap + 'px');
+}
+
+function makeTube(i){
+  const el = document.createElement('div');
+  el.className = 'tube' + (state.caps[i] < CAP ? ' small' : '');
+  el.style.setProperty('--cap', state.caps[i]);   // высота пробирки = --u × --cap
+  el.dataset.i = i;
+  el.innerHTML = '<div class="mouth"></div><div class="liquid"></div>' +
+                 '<div class="shine"></div><div class="shine sm"></div>';
+  tubeEls[i] = el;
+  paintTube(i);
+  return el;
+}
+
+function paintTube(i){
+  const liq = tubeEls[i].querySelector('.liquid');
+  liq.classList.remove('pouring');
+  liq.innerHTML = '';
+  for (let k = 0; k < state.tubes[i].length; k++){
+    const s = document.createElement('div');
+    s.className = 'seg' + (state.hidden[i] && state.hidden[i][k] ? ' hid' : '');
+    s.style.background = segColor(i, k);
+    liq.appendChild(s);
+  }
+  if (liq.lastElementChild) liq.lastElementChild.classList.add('top');
+}
+
+function buildBoard(){
+  board.innerHTML = '';
+  tubeEls = [];
+  const n = state.tubes.length;
+  const perRow = n <= 5 ? n : n <= 8 ? 4 : n <= 12 ? 5 : 6;
+  const rows = Math.ceil(n / perRow);
+  const cols = Math.ceil(n / rows);
+  layout(rows, cols);
+
+  let idx = 0;
+  for (let r = 0; r < rows; r++){
+    const row = document.createElement('div');
+    row.className = 'row';
+    const count = Math.min(cols, n - idx);
+    for (let k = 0; k < count; k++, idx++){
+      // пробирки идут группами по три — так поле читается, когда их много
+      if (k && k % 3 === 0){
+        const sp = document.createElement('div');
+        sp.className = 'spacer';
+        row.appendChild(sp);
+      }
+      row.appendChild(makeTube(idx));
+    }
+    board.appendChild(row);
+  }
+  // после реального замера пересчитываем размеры; rAF в скрытой вкладке не сработает,
+  // поэтому дублируем таймером
+  requestAnimationFrame(() => layout(rows, cols));
+  setTimeout(() => layout(rows, cols), 60);
+}
+
+function refreshHud(){
+  $('#lvlNum').textContent = state.level;
+  $('#movesTxt').textContent = 'ходов: ' + state.moves;
+  $('#btnUndo').disabled = state.history.length === 0 || state.busy;
+  $('#btnAdd').disabled  = state.addUsed || state.busy;
+}
+
+function showHint(text){
+  const h = $('#hint');
+  h.textContent = text;
+  h.classList.add('show');
+  clearTimeout(showHint._t);
+  showHint._t = setTimeout(() => h.classList.remove('show'), 1400);
+}
+
+/* ============ уровень ============ */
+function startLevel(l){
+  state.level = l;
+  const gen = generateLevel(l);
+  state.tubes = gen.tubes;
+  state.caps = gen.caps;
+  state.hidden = hiddenForLevel(l, state.tubes);
+  state.moves = 0;
+  state.history = [];
+  state.selected = null;
+  state.addUsed = false;
+  state.busy = false;
+  buildBoard();
+  refreshHud();
+  save();
+}
+
+/* ============ анимация переливания ============ */
+// Тайминги, мс (LIFT — подъём/наклон — задаётся внутри animatePour)
+const T_FALL = 95;               // струя летит от горлышка до поверхности
+const T_UNIT = 150;              // на каждый переливаемый слой
+
+const smooth = p => p * p * (3 - 2 * p);
+const easeOut = p => 1 - (1 - p) * (1 - p);
+
+/* ---- геометрия SVG-перелива ----
+   Жидкость источника рисуется в SVG-оверлее: полость пробирки поворачивается
+   (clipPath), а слои — ГОРИЗОНТАЛЬНЫЕ полосы в мировых координатах. Поэтому
+   поверхность всегда горизонтальна, а не крутится вместе со стеклом. */
+const TUBE_WALL = 3;          // = CSS --wall
+const lerp = (a, b, p) => a + (b - a) * p;
+
+// многоугольник внутренней полости в client-координатах ПОКОЯ (прямоугольник
+// Wi × 4u со скруглённым полукруглым дном радиуса Wi/2)
+function cavityPolygon(fRect, cap){
+  const Wi = fRect.width - 2 * TUBE_WALL, r = Wi / 2;
+  const left = fRect.left + TUBE_WALL, right = fRect.right - TUBE_WALL;
+  const bottom = fRect.bottom - TUBE_WALL, top = bottom - cap * UNIT;
+  const cx = (left + right) / 2, arcCy = bottom - r;
+  const p = [[left, top], [right, top], [right, arcCy]];
+  const SEG = 14;
+  for (let i = 1; i < SEG; i++){
+    const a = Math.PI * (i / SEG);
+    p.push([cx + r * Math.cos(a), arcCy + r * Math.sin(a)]);  // полукруг вниз
+  }
+  p.push([left, arcCy]);
+  return { poly: p, left, right, top, bottom };
+}
+
+// перенос точки покоя в мир: world = center' + R(deg)·(p − center)
+function mapper(ocx, ocy, dx, dy, deg){
+  const r = deg * Math.PI / 180, c = Math.cos(r), s = Math.sin(r);
+  return ([x, y]) => {
+    const px = x - ocx, py = y - ocy;
+    return [ocx + dx + px * c - py * s, ocy + dy + px * s + py * c];
+  };
+}
+// площадь части полигона НИЖЕ мировой горизонтали y=ys (жидкость тянет вниз, y растёт вниз)
+function areaBelow(poly, ys){
+  const out = [], n = poly.length;
+  for (let i = 0; i < n; i++){
+    const a = poly[i], b = poly[(i + 1) % n];
+    const ain = a[1] >= ys, bin = b[1] >= ys;
+    if (ain) out.push(a);
+    if (ain !== bin){
+      const t = (ys - a[1]) / (b[1] - a[1]);
+      out.push([a[0] + t * (b[0] - a[0]), ys]);
+    }
+  }
+  let s = 0;
+  for (let i = 0; i < out.length; i++){
+    const a = out[i], b = out[(i + 1) % out.length];
+    s += a[0] * b[1] - b[0] * a[1];
+  }
+  return Math.abs(s) / 2;
+}
+// уровень поверхности (мировой y), при котором ниже него площадь = V
+function surfaceForArea(poly, V, minY, maxY){
+  if (V <= 0) return maxY;
+  let lo = minY, hi = maxY;
+  for (let i = 0; i < 22; i++){
+    const mid = (lo + hi) / 2;
+    if (areaBelow(poly, mid) > V) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+function polyPath(poly){
+  let d = 'M' + poly[0][0].toFixed(1) + ',' + poly[0][1].toFixed(1);
+  for (let i = 1; i < poly.length; i++) d += 'L' + poly[i][0].toFixed(1) + ',' + poly[i][1].toFixed(1);
+  return d + 'Z';
+}
+// лента струи: квадратичная безье со слегка провисающей осью и сужением книзу
+function ribbonPath(P0, P1, wTop, wBot){
+  const C = [P0[0] * 0.32 + P1[0] * 0.68, P0[1] * 0.14 + P1[1] * 0.86];
+  const K = 12, L = [], R = [];
+  for (let i = 0; i <= K; i++){
+    const s = i / K, mt = 1 - s;
+    const x = mt * mt * P0[0] + 2 * mt * s * C[0] + s * s * P1[0];
+    const y = mt * mt * P0[1] + 2 * mt * s * C[1] + s * s * P1[1];
+    let tx = 2 * mt * (C[0] - P0[0]) + 2 * s * (P1[0] - C[0]);
+    let ty = 2 * mt * (C[1] - P0[1]) + 2 * s * (P1[1] - C[1]);
+    const len = Math.hypot(tx, ty) || 1;
+    const nx = -ty / len, ny = tx / len, w = (wTop + (wBot - wTop) * s) / 2;
+    L.push([x + nx * w, y + ny * w]);
+    R.push([x - nx * w, y - ny * w]);
+  }
+  let d = 'M' + L[0][0].toFixed(1) + ',' + L[0][1].toFixed(1);
+  for (let i = 1; i <= K; i++) d += 'L' + L[i][0].toFixed(1) + ',' + L[i][1].toFixed(1);
+  for (let i = K; i >= 0; i--) d += 'L' + R[i][0].toFixed(1) + ',' + R[i][1].toFixed(1);
+  return d + 'Z';
+}
+
+// SVG-оверлей (жидкость источника + струя) создаётся один раз
+let PFX = null;
+function pourSVG(){
+  if (PFX) return PFX;
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('id', 'pourfx');
+  svg.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:58;pointer-events:none;display:none';
+  const defs = document.createElementNS(NS, 'defs');
+  const clip = document.createElementNS(NS, 'clipPath');
+  clip.setAttribute('id', 'pfxClip');
+  const clipPath = document.createElementNS(NS, 'path');
+  clip.appendChild(clipPath); defs.appendChild(clip);
+  const bands = document.createElementNS(NS, 'g');
+  bands.setAttribute('clip-path', 'url(#pfxClip)');
+  const rects = [];
+  for (let i = 0; i <= CAP; i++){ const r = document.createElementNS(NS, 'rect'); bands.appendChild(r); rects.push(r); }
+  const shine = document.createElementNS(NS, 'rect');    // блик поверхности
+  shine.setAttribute('fill', 'rgba(255,255,255,.28)'); bands.appendChild(shine);
+  const stream = document.createElementNS(NS, 'path');
+  const lip = document.createElementNS(NS, 'ellipse');   // «губа» у носика
+  svg.append(defs, bands, stream, lip);
+  document.body.appendChild(svg);
+  PFX = { NS, svg, clipPath, rects, shine, stream, lip };
+  return PFX;
+}
+
+function animatePour(a, b){
+  return new Promise(resolve => {
+    const fromEl = tubeEls[a], toEl = tubeEls[b];
+    const n = pourCount(state.tubes, state.caps, a, b);
+    const colorIdx = topColor(state.tubes[a]);
+    const color = COLORS[colorIdx % COLORS.length];
+    const startA = state.tubes[a].length;
+    const startB = state.tubes[b].length;
+    // среди переливаемых слоёв может оказаться скрытый того же цвета — раскрываем сразу,
+    // иначе он поехал бы тёмным, пока льётся цветная струя
+    if (state.hidden[a]) for (let s = startA - n; s < startA; s++) state.hidden[a][s] = false;
+
+    const fRect = fromEl.getBoundingClientRect();
+    const tRect = toEl.getBoundingClientRect();
+    const H = fRect.height, W = fRect.width;
+    const ocx = fRect.left + W / 2, ocy = fRect.top + H / 2;
+    const streamW = clamp(W * 0.44, 16, 34);      // толщина струи у носика (шире = «из колбы»)
+
+    // горлышко должно встать строго над центром пробирки-приёмника
+    const Mx = tRect.left + tRect.width / 2;
+    let My = tRect.top - Math.max(13, H * 0.09);
+
+    // положение пробирки при угле ang (со знаком стороны side): горлышко в (Mx,My)
+    let side = Mx >= ocx ? 1 : -1;
+    const geomAt = ang => {
+      const r = ang * side * Math.PI / 180;
+      return { dx: (Mx - (H / 2) * Math.sin(r)) - ocx,
+               dy: (My + (H / 2) * Math.cos(r)) - ocy, deg: ang * side };
+    };
+
+    // Пробирка наклоняется ГОРЛЫШКОМ ВНИЗ (~116–132°): жидкость скапливается у носика
+    // и льётся через него. Проверяем, что повёрнутая пробирка целиком в кадре.
+    const fits = ang => {
+      const r = ang * side * Math.PI / 180;
+      const half = (Math.abs(Math.sin(r)) * H + Math.abs(Math.cos(r)) * W) / 2;
+      const cx = Mx - (H / 2) * Math.sin(r);
+      return (cx - half) >= 6 && (cx + half) <= vpW() - 6;
+    };
+    if (!fits(120)) side = -side;                 // другая сторона поместится лучше
+    let fitMax = 114;
+    for (let ang = 138; ang >= 108; ang -= 2){ if (fits(ang)){ fitMax = ang; break; } }
+
+    // геометрия полости и кумулятивные объёмы слоёв (из покоя → стык бесшовный)
+    const capA = state.caps[a];
+    const cav = cavityPolygon(fRect, capA);
+    const Cv = [0];
+    for (let i = 1; i <= capA; i++) Cv[i] = areaBelow(cav.poly, cav.bottom - i * UNIT);
+
+    const Vfull = Cv[startA], Vend = Cv[startA - n];
+    const totalPour = Vfull - Vend;
+    // Горлышко вниз → жидкость скапливается у носика, а верхний цвет (тот, что льётся)
+    // оказывается у носика. Строим слои источника от НОСИКА вверх (обратный порядок
+    // хранения); lo/hi — накопленный объём от носика.
+    const pool = [];
+    let acc = 0;
+    for (let j = 0; j < startA; j++){
+      const s = startA - 1 - j;                   // сверху вниз по хранению
+      const vol = Cv[s + 1] - Cv[s];
+      pool.push({ color: segColor(a, s), lo: acc, hi: acc + vol });
+      acc += vol;
+    }
+    const angEnd = clamp(fitMax, 116, 132);
+    const angStart = angEnd - 12;
+
+    const toLiq = toEl.querySelector('.liquid');
+    toLiq.classList.add('pouring');
+    const dstSegs = Array.from(toLiq.children);
+    for (let i = 0; i < n; i++){
+      const s = document.createElement('div');
+      s.className = 'seg'; s.style.background = color; s.style.height = '0px';
+      toLiq.appendChild(s); dstSegs.push(s);
+    }
+    dstSegs.slice(0, startB).forEach(s => { s.style.height = UNIT + 'px'; });
+    const baseY = toLiq.getBoundingClientRect().bottom;
+    const innerW = W - 6;
+    const setFill = (segs, amount) => {
+      let top = -1;
+      for (let i = 0; i < segs.length; i++){
+        const f = clamp(amount - i, 0, 1);
+        segs[i].style.height = (f * UNIT).toFixed(2) + 'px';
+        if (f > 0.02) top = i;
+      }
+      for (let i = 0; i < segs.length; i++) segs[i].classList.toggle('top', i === top);
+    };
+
+    // чтобы наклонённая пробирка не вылезла за верх экрана — опускаем всю сцену
+    { const ge = geomAt(angEnd), me = mapper(ocx, ocy, ge.dx, ge.dy, ge.deg);
+      let mY = 1e9; for (const p of cav.poly){ const q = me(p); if (q[1] < mY) mY = q[1]; }
+      const TOP = 44; if (mY < TOP) My += TOP - mY; }
+
+    const fx = pourSVG();
+    const fromLiq = fromEl.querySelector('.liquid');
+
+    // общий рисователь жидкости источника для произвольного положения пробирки;
+    // возвращает точку носика (нижний угол устья)
+    const drawSource = (dx, dy, deg, Dv) => {
+      const m = mapper(ocx, ocy, dx, dy, deg);
+      const wp = cav.poly.map(m);
+      let minY = 1e9, maxY = -1e9, minX = 1e9, maxX = -1e9;
+      for (const p of wp){ if (p[1] < minY) minY = p[1]; if (p[1] > maxY) maxY = p[1];
+                           if (p[0] < minX) minX = p[0]; if (p[0] > maxX) maxX = p[0]; }
+      fx.clipPath.setAttribute('d', polyPath(wp));
+      const bandX = (minX - 8).toFixed(1), bandW = (maxX - minX + 16).toFixed(1);
+      let ri = 0;
+      for (let j = 0; j < pool.length; j++){
+        const lo = Math.max(0, pool[j].lo - Dv), hi = Math.max(0, pool[j].hi - Dv);
+        const rect = fx.rects[ri++];
+        if (hi - lo < 0.5){ rect.setAttribute('height', '0'); continue; }
+        const yLo = surfaceForArea(wp, lo, minY, maxY);   // ниже, у носика
+        const yHi = surfaceForArea(wp, hi, minY, maxY);   // выше, к дну
+        rect.setAttribute('x', bandX); rect.setAttribute('width', bandW);
+        rect.setAttribute('y', yHi.toFixed(1)); rect.setAttribute('height', (yLo - yHi).toFixed(1));
+        rect.setAttribute('fill', pool[j].color);
+      }
+      for (; ri < fx.rects.length; ri++) fx.rects[ri].setAttribute('height', '0');
+      const Vsrc = Vfull - Dv;
+      const surf = Vsrc > 1 ? surfaceForArea(wp, Vsrc, minY, maxY) : null;
+      if (surf !== null){
+        fx.shine.setAttribute('x', bandX); fx.shine.setAttribute('width', bandW);
+        fx.shine.setAttribute('y', surf.toFixed(1)); fx.shine.setAttribute('height', '3');
+      } else fx.shine.setAttribute('height', '0');
+      const c1 = m([cav.left, cav.top]), c2 = m([cav.right, cav.top]);
+      return c1[1] >= c2[1] ? c1 : c2;
+    };
+
+    const setTf = (dx, dy, deg) => {
+      fromEl.style.transform = 'translate(' + dx.toFixed(1) + 'px,' + dy.toFixed(1) +
+        'px) rotate(' + deg.toFixed(2) + 'deg)';
+    };
+
+    // старт: жидкость источника переходит с DOM на SVG без «хлопка»
+    fromEl.classList.remove('sel');
+    fromEl.classList.add('flying');
+    fromEl.style.transition = 'none';
+    fromLiq.style.visibility = 'hidden';
+    fx.svg.style.display = 'block';
+    fx.lip.setAttribute('rx', '0');               // без «кружка» у носика
+
+    const gS = geomAt(angStart);
+    const LIFT = 240, FLOW = T_UNIT * n + 70, POUR = T_FALL + FLOW;
+    const t0 = performance.now();
+    let lastDrop = -1e9, lastRipple = -1e9, spawn = 0, flowStarted = false;
+
+    const frame = now => {
+      const t = now - t0;
+
+      // ---- фаза 1: подъём из слота с одновременным наклоном (всё в rAF, синхронно с SVG) ----
+      if (t < LIFT){
+        const p = smooth(clamp(t / LIFT, 0, 1));
+        const dx = lerp(0, gS.dx, p), dy = lerp(-18, gS.dy, p), deg = lerp(0, gS.deg, p);
+        setTf(dx, dy, deg);
+        drawSource(dx, dy, deg, 0);
+        requestAnimationFrame(frame); return;
+      }
+      if (!flowStarted){ flowStarted = true; sndFlow(POUR / 1000); }
+
+      // ---- фаза 2: слив ----
+      const pt = t - LIFT;
+      const flowP = clamp((pt - T_FALL) / FLOW, 0, 1);
+      const ang = lerp(angStart, angEnd, easeOut(flowP));
+      const g = geomAt(ang);
+      setTf(g.dx, g.dy, g.deg);
+
+      const Dv = totalPour * smooth(flowP);
+      const v = n * smooth(flowP);
+      const lipPt = drawSource(g.dx, g.dy, g.deg, Dv);
+      setFill(dstSegs, startB + v);
+
+      // ---- струя: широкая лента из самого горлышка ----
+      const surfaceY = baseY - (startB + v) * UNIT;
+      let botY;
+      if (pt < T_FALL){ const p = pt / T_FALL; botY = lipPt[1] + (surfaceY - lipPt[1]) * p * p; }
+      else botY = surfaceY;
+      const P0 = [lipPt[0], lipPt[1]];
+      const P1 = [Mx + Math.sin(pt / 38) * 1.4, botY];
+      const env = Math.max(0.45, Math.sin(Math.PI * clamp(pt / POUR, 0, 1)) ** 0.4);
+      fx.stream.setAttribute('d', ribbonPath(P0, P1, streamW * env, streamW * 0.6 * env));
+      fx.stream.setAttribute('fill', color);
+
+      if (pt > T_FALL && flowP < 1){
+        if (pt - lastDrop > 62){ lastDrop = pt; dropletsAt(P1[0], surfaceY, color, spawn++); }
+        if (pt - lastRipple > 130){ lastRipple = pt; rippleAt(P1[0], surfaceY, innerW); }
+      }
+
+      if (pt < POUR){ requestAnimationFrame(frame); return; }
+
+      // ---- финал ----
+      fx.svg.style.display = 'none';
+      state.tubes[a].length = startA - n;
+      if (state.hidden[a]) state.hidden[a].length = startA - n;
+      for (let i = 0; i < n; i++){
+        state.tubes[b].push(colorIdx);
+        if (state.hidden[b]) state.hidden[b].push(false);   // долитое всегда видно
+      }
+      const opened = revealTops();               // слой, ставший верхним, открывается
+      fromLiq.style.visibility = '';
+      normalizeLiquid(toLiq);
+      paintTube(a);
+      for (const i of opened) if (i !== a) paintTube(i);
+      dripAt(P1[0], lipPt[1], surfaceY - lipPt[1], color);
+      sndPlop();
+      const surfSeg = toLiq.lastElementChild;
+      if (surfSeg){ surfSeg.classList.remove('wob'); void surfSeg.offsetWidth; surfSeg.classList.add('wob'); }
+
+      // ---- фаза 3: пробирка возвращается ----
+      fromEl.style.transition = '';
+      fromEl.classList.add('back');
+      void fromEl.offsetWidth;
+      fromEl.style.transform = '';
+      setTimeout(() => { fromEl.classList.remove('flying', 'back'); resolve(opened); }, 330);
+    };
+    requestAnimationFrame(frame);
+  });
+}
+
+// после перелива: высоты снова из CSS, «поверхность» — на верхнем слое
+function normalizeLiquid(liq){
+  liq.classList.remove('pouring');
+  const kids = Array.from(liq.children);
+  kids.forEach((s, i) => {
+    s.style.height = '';
+    s.classList.toggle('top', i === kids.length - 1);
+  });
+}
+
+function dropletsAt(x, y, color, i){
+  for (let k = 0; k < 2; k++){
+    const d = document.createElement('div');
+    d.className = 'drop';
+    d.style.backgroundColor = color;
+    d.style.left = (x - 3) + 'px';
+    d.style.top  = (y - 3) + 'px';
+    d.style.setProperty('--dx', ((k ? 1 : -1) * (6 + (i * 7) % 10)) + 'px');
+    d.style.setProperty('--dy', (-8 - (i * 5) % 7) + 'px');
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 420);
+  }
+}
+
+function rippleAt(x, y, w){
+  const r = document.createElement('div');
+  r.className = 'ripple';
+  r.style.width = w + 'px';
+  r.style.height = Math.max(5, w * 0.24) + 'px';
+  r.style.left = (x - w / 2) + 'px';
+  r.style.top  = (y - Math.max(5, w * 0.24) / 2) + 'px';
+  document.body.appendChild(r);
+  setTimeout(() => r.remove(), 440);
+}
+
+function dripAt(x, y, fall, color){
+  const d = document.createElement('div');
+  d.className = 'drip';
+  d.style.backgroundColor = color;
+  d.style.left = (x - 3.5) + 'px';
+  d.style.top  = y + 'px';
+  d.style.setProperty('--fall', Math.max(12, fall) + 'px');
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 420);
+}
+
+/* ============ ход ============ */
+async function doMove(a, b){
+  state.busy = true;
+  state.history.push(snapshot());
+  if (state.history.length > 250) state.history.shift();
+
+  const wasDone = isDone(state.tubes[b], state.caps[b]);
+  const opened = await animatePour(a, b);
+
+  if (opened && opened.length){                 // раскрылся скрытый слой
+    sndTap();
+    for (const i of opened){
+      const seg = tubeEls[i].querySelector('.liquid').lastElementChild;
+      if (seg){ seg.classList.remove('reveal'); void seg.offsetWidth; seg.classList.add('reveal'); }
+    }
+  }
+
+  state.moves++;
+  state.selected = null;
+  state.busy = false;
+  refreshHud();
+
+  if (!wasDone && isDone(state.tubes[b], state.caps[b])){
+    tubeEls[b].classList.remove('done');
+    void tubeEls[b].offsetWidth;
+    tubeEls[b].classList.add('done');
+    sndComplete();
+  }
+
+  if (isWin(state.tubes, state.caps)) await levelComplete();
+}
+
+async function levelComplete(){
+  state.busy = true;
+  sndWin();
+  await sleep(420);
+  $('#winTitle').textContent = 'Уровень ' + state.level + ' пройден!';
+  $('#winSub').textContent = 'Ходов: ' + state.moves;
+  $('#ovWin').classList.add('show');
+}
+
+/* ============ ввод ============ */
+board.addEventListener('click', e => {
+  if (state.busy) return;
+  const el = e.target.closest('.tube');
+  if (!el) {
+    if (state.selected !== null){ tubeEls[state.selected].classList.remove('sel'); state.selected = null; }
+    return;
+  }
+  const i = +el.dataset.i;
+
+  if (state.selected === null){
+    if (!state.tubes[i].length){ sndNope(); return; }
+    if (isSolved(state.tubes[i], state.caps[i])){ sndNope(); showHint('Эта пробирка уже готова'); return; }
+    state.selected = i;
+    el.classList.add('sel');
+    sndTap();
+    return;
+  }
+
+  if (state.selected === i){
+    el.classList.remove('sel');
+    state.selected = null;
+    return;
+  }
+
+  if (canPour(state.tubes, state.caps, state.selected, i)){
+    doMove(state.selected, i);
+  } else {
+    tubeEls[state.selected].classList.remove('sel');
+    sndNope();
+    if (state.tubes[i].length && !isSolved(state.tubes[i], state.caps[i])){
+      state.selected = i;
+      el.classList.add('sel');
+    } else {
+      state.selected = null;
+      if (state.tubes[i].length >= CAP) showHint('Пробирка заполнена');
+      else showHint('Сюда нельзя — нужен такой же цвет');
+    }
+  }
+});
+
+/* ============ кнопки ============ */
+$('#btnUndo').addEventListener('click', () => {
+  if (state.busy || !state.history.length) return;
+  if (state.selected !== null) tubeEls[state.selected].classList.remove('sel');
+  state.selected = null;
+  const prev = JSON.parse(state.history.pop());
+  const sameCount = prev.t.length === state.tubes.length;
+  state.tubes = prev.t;
+  state.hidden = prev.h;
+  if (prev.c) state.caps = prev.c;
+  state.moves = Math.max(0, state.moves - 1);
+  if (sameCount) state.tubes.forEach((_, i) => paintTube(i));
+  else buildBoard();
+  sndTap();
+  refreshHud();
+});
+
+$('#btnAdd').addEventListener('click', () => {
+  if (state.busy || state.addUsed) return;
+  state.addUsed = true;
+  if (state.selected !== null) tubeEls[state.selected].classList.remove('sel');
+  state.selected = null;
+  state.history.push(snapshot());
+  state.tubes.push([]);
+  state.hidden.push([]);
+  state.caps.push(CAP);
+  buildBoard();
+  refreshHud();
+  sndTap();
+  showHint('Добавлена пустая пробирка');
+});
+
+$('#btnRestart').addEventListener('click', () => {
+  if (state.busy) return;
+  startLevel(state.level);
+  sndTap();
+});
+
+$('#btnNext').addEventListener('click', () => {
+  $('#ovWin').classList.remove('show');
+  startLevel(state.level + 1);
+});
+
+$('#btnSound').addEventListener('click', () => {
+  soundOn = !soundOn;
+  $('#btnSound').textContent = soundOn ? '🔊' : '🔇';
+  if (soundOn) sndTap();
+  save();
+});
+
+$('#btnHelp').addEventListener('click', () => $('#ovHelp').classList.add('show'));
+$('#btnCloseHelp').addEventListener('click', () => $('#ovHelp').classList.remove('show'));
+
+let resizeT;
+const relayout = () => {
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => { if (!state.busy) buildBoard(); }, 150);
+};
+window.addEventListener('resize', relayout);
+// вкладку могли открыть в фоне — там размеры ещё нулевые
+document.addEventListener('visibilitychange', () => { if (!document.hidden) relayout(); });
+
+/* ============ старт ============ */
+load();
+$('#btnSound').textContent = soundOn ? '🔊' : '🔇';
+startLevel(state.level);
+if (state.level === 1) setTimeout(() => showHint('Нажми на пробирку, потом на другую'), 700);
+
+/* PWA: офлайн-режим (работает только по http/https) */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+</script>
+</body>
+</html>

@@ -20,7 +20,11 @@
     --cap: 5;                    /* слоёв в пробирке, синхронно с JS CAP */
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{height:100%;margin:0;overscroll-behavior:none}
+  html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
+  /* канву красит фон КОРНЯ. Пока фон висел только на body, всё, до чего body
+     не дотянулся (системная полоса под home indicator), оставалось белым.
+     Цвет — крайний стоп нижнего градиента, поэтому стыка не видно. */
+  html{background:#241533}
   body{
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,sans-serif;
     color:#fff;
@@ -34,6 +38,16 @@
   #app{
     height:100dvh;display:flex;flex-direction:column;
     padding:calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 10px);
+  }
+  /* iOS с домашнего экрана: black-translucent поднимает документ под статус-бар,
+     но 100% по-прежнему меряется БЕЗ верхнего инсета — снизу остаётся незакрашенная
+     полоса ровно в его высоту. Возвращаем инсет корню, и полоса уходит под фон.
+     Растим только html: body с height:100% тянется за его итоговой высотой сам,
+     а вот min-height на обоих сложил бы инсет дважды — body вылез бы из html.
+     #app не трогаем: лишняя высота утащила бы кнопки под нижнюю кромку,
+     а недостача просто поднимает их — риск несимметричный. */
+  @media (display-mode: standalone){
+    html{min-height:calc(100% + env(safe-area-inset-top))}
   }
 
   /* ---------- шапка ---------- */

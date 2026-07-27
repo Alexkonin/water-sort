@@ -303,8 +303,8 @@
     <div class="lvlGrid">
       <button data-lvl="1"><b>Лёгкий</b><small>3 цвета</small></button>
       <button data-lvl="12"><b>Средний</b><small>6 цветов, «?»</small></button>
-      <button data-lvl="25"><b>Сложный</b><small>8 цветов, скляночка</small></button>
-      <button data-lvl="45"><b>Очень сложный</b><small>11 цветов, 2 скляночки</small></button>
+      <button data-lvl="35"><b>Сложный</b><small>16 колб, скляночка</small></button>
+      <button data-lvl="73"><b>Очень сложный</b><small>23 колбы, дубли цветов</small></button>
     </div>
     <div class="lvlPick">
       <input id="lvlInput" type="number" min="1" max="999" inputmode="numeric" placeholder="номер">
@@ -422,7 +422,19 @@ function colorsForLevel(l){
   const thresholds = [2, 5, 9, 14, 20, 27, 35, 44, 54];
   let c = 3;
   for (const t of thresholds) if (l > t) c++;
-  return Math.min(c, 12);
+  return Math.min(c, COLORS.length);
+}
+
+/* ---- дубли цветов ----
+   Поле растёт не за счёт новых цветов (больше десятка их не развести на глаз), а за
+   счёт того, что один цвет занимает две колбы: тогда его нужно собрать в две полные.
+   Правило победы это уже допускает — «в каждой колбе один цвет», а не «цвет в одной колбе». */
+const DUP_FROM = 20;              // с какого уровня появляются дубли
+const MAX_COLOR_TUBES = 20;       // потолок цветных колб, чтобы поле влезало в экран
+function dupTubes(level, nc){
+  if (level < DUP_FROM) return 0;
+  const room = Math.min(nc, MAX_COLOR_TUBES - nc);   // не больше двух колб на цвет
+  return clamp(Math.floor((level - DUP_FROM) / 8) + 1, 0, Math.max(0, room));
 }
 
 /* ---- скрытые слои ----
@@ -499,20 +511,28 @@ function generateLevel(level){
   const nc = colorsForLevel(level);
   const base = (Math.imul(level, 2654435761) >>> 0);
   const small = smallCount(level);
+  const colorTubes = nc + dupTubes(level, nc);      // цветных колб (с учётом дублей)
   const caps = [];
-  for (let i = 0; i < nc + 2; i++) caps.push(CAP);
+  for (let i = 0; i < colorTubes + 2; i++) caps.push(CAP);
   for (let i = 0; i < small; i++) caps.push(SMALL_CAP);
 
   for (let attempt = 0; attempt < 400; attempt++){
     const rnd = mulberry32((base + attempt * 7919) >>> 0);
+    // раздаём колбы цветам: каждому одна, лишние — случайным, но не больше двух на цвет
+    const perColor = new Array(nc).fill(1);
+    for (let left = colorTubes - nc; left > 0; ){
+      const c = Math.floor(rnd() * nc);
+      if (perColor[c] < 2){ perColor[c]++; left--; }
+    }
     const pool = [];
-    for (let c = 0; c < nc; c++) for (let k = 0; k < CAP; k++) pool.push(c);
+    for (let c = 0; c < nc; c++)
+      for (let k = 0; k < perColor[c] * CAP; k++) pool.push(c);
     for (let i = pool.length - 1; i > 0; i--){
       const j = Math.floor(rnd() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
     const tubes = [];
-    for (let i = 0; i < nc; i++) tubes.push(pool.slice(i * CAP, (i + 1) * CAP));
+    for (let i = 0; i < colorTubes; i++) tubes.push(pool.slice(i * CAP, (i + 1) * CAP));
     tubes.push([], []);                       // две пустые пробирки
     for (let i = 0; i < small; i++) tubes.push([]);   // маленькие — стартуют пустыми
 
@@ -522,9 +542,9 @@ function generateLevel(level){
   // страховка (на практике не срабатывает): заведомо решаемая раскладка —
   // собранное поле с обменянными верхними слоями двух пробирок
   const tubes = [];
-  for (let c = 0; c < nc; c++) tubes.push(new Array(CAP).fill(c));
-  tubes[0][CAP - 1] = 1;
-  tubes[1][CAP - 1] = 0;
+  for (let i = 0; i < colorTubes; i++) tubes.push(new Array(CAP).fill(i % nc));
+  tubes[0][CAP - 1] = tubes[1][0];              // меняем верхушки, иначе всё собрано сразу
+  tubes[1][CAP - 1] = tubes[0][0];
   tubes.push([], []);
   for (let i = 0; i < small; i++) tubes.push([]);
   return { tubes, caps };
@@ -594,7 +614,9 @@ const state = {
   history: [],
   selected: null,
   addUsed: false,
-  busy: false
+  busyTubes: new Set(),           // пробирки, занятые текущими переливами
+  anim: 0,                        // сколько переливов сейчас в полёте
+  locked: false                   // показан оверлей победы — ввод заморожен
 };
 // снимок для отмены хода: цвета и скрытие вместе, иначе отмена «подсматривала» бы
 const snapshot = () => JSON.stringify({ t: state.tubes, h: state.hidden, c: state.caps });
@@ -706,9 +728,9 @@ function buildBoard(){
 function refreshHud(){
   $('#lvlNum').textContent = state.level;
   $('#movesTxt').textContent = 'ходов: ' + state.moves;
-  $('#btnUndo').disabled = state.history.length === 0 || state.busy;
-  $('#btnAdd').disabled  = state.addUsed || state.busy;
-  $('#btnSkip').disabled = state.busy;
+  $('#btnUndo').disabled = state.history.length === 0 || state.anim > 0;
+  $('#btnAdd').disabled  = state.addUsed || state.anim > 0;
+  $('#btnSkip').disabled = state.anim > 0;
 }
 
 function showHint(text){
@@ -730,7 +752,9 @@ function startLevel(l){
   state.history = [];
   state.selected = null;
   state.addUsed = false;
-  state.busy = false;
+  state.busyTubes.clear();
+  state.anim = 0;
+  state.locked = false;
   buildBoard();
   refreshHud();
   save();
@@ -831,21 +855,33 @@ function ribbonPath(P0, P1, wTop, wBot){
   return d + 'Z';
 }
 
-// SVG-оверлей (жидкость источника + струя) создаётся один раз
-let PFX = null;
-function pourSVG(){
-  if (PFX) return PFX;
+// Пул SVG-оверлеев: переливы идут параллельно, поэтому каждому нужен свой слой
+// (и свой clipPath-id, иначе они переопределят друг друга).
+const PFX_POOL = [];
+function acquireSVG(){
+  let fx = PFX_POOL.find(f => !f.taken);
+  if (fx){ fx.taken = true; fx.svg.style.display = 'block'; return fx; }
+  fx = buildSVG(PFX_POOL.length);
+  PFX_POOL.push(fx);
+  fx.taken = true;
+  fx.svg.style.display = 'block';
+  return fx;
+}
+function releaseSVG(fx){ fx.taken = false; fx.svg.style.display = 'none'; }
+
+function buildSVG(idx){
   const NS = 'http://www.w3.org/2000/svg';
+  const clipId = 'pfxClip' + idx;
   const svg = document.createElementNS(NS, 'svg');
-  svg.setAttribute('id', 'pourfx');
+  svg.setAttribute('id', 'pourfx' + idx);
   svg.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:58;pointer-events:none;display:none';
   const defs = document.createElementNS(NS, 'defs');
   const clip = document.createElementNS(NS, 'clipPath');
-  clip.setAttribute('id', 'pfxClip');
+  clip.setAttribute('id', clipId);
   const clipPath = document.createElementNS(NS, 'path');
   clip.appendChild(clipPath); defs.appendChild(clip);
   const bands = document.createElementNS(NS, 'g');
-  bands.setAttribute('clip-path', 'url(#pfxClip)');
+  bands.setAttribute('clip-path', 'url(#' + clipId + ')');
   const rects = [];
   for (let i = 0; i <= CAP; i++){ const r = document.createElementNS(NS, 'rect'); bands.appendChild(r); rects.push(r); }
   const shine = document.createElementNS(NS, 'rect');    // блик поверхности
@@ -854,21 +890,16 @@ function pourSVG(){
   const lip = document.createElementNS(NS, 'ellipse');   // «губа» у носика
   svg.append(defs, bands, stream, lip);
   document.body.appendChild(svg);
-  PFX = { NS, svg, clipPath, rects, shine, stream, lip };
-  return PFX;
+  return { NS, svg, clipPath, rects, shine, stream, lip, taken: false };
 }
 
-function animatePour(a, b){
+// Рисует перелив. Модель к этому моменту УЖЕ обновлена (см. doMove), поэтому состояние
+// источника до хода приходит в plan — иначе параллельные переливы читали бы чужие данные.
+function animatePour(plan){
+  const { a, b, n, colorIdx, srcColors, startA, startB } = plan;
   return new Promise(resolve => {
     const fromEl = tubeEls[a], toEl = tubeEls[b];
-    const n = pourCount(state.tubes, state.caps, a, b);
-    const colorIdx = topColor(state.tubes[a]);
     const color = COLORS[colorIdx % COLORS.length];
-    const startA = state.tubes[a].length;
-    const startB = state.tubes[b].length;
-    // среди переливаемых слоёв может оказаться скрытый того же цвета — раскрываем сразу,
-    // иначе он поехал бы тёмным, пока льётся цветная струя
-    if (state.hidden[a]) for (let s = startA - n; s < startA; s++) state.hidden[a][s] = false;
 
     const fRect = fromEl.getBoundingClientRect();
     const tRect = toEl.getBoundingClientRect();
@@ -916,7 +947,7 @@ function animatePour(a, b){
     for (let j = 0; j < startA; j++){
       const s = startA - 1 - j;                   // сверху вниз по хранению
       const vol = Cv[s + 1] - Cv[s];
-      pool.push({ color: segColor(a, s), lo: acc, hi: acc + vol });
+      pool.push({ color: srcColors[s], lo: acc, hi: acc + vol });
       acc += vol;
     }
     const angEnd = clamp(fitMax, 116, 132);
@@ -948,7 +979,7 @@ function animatePour(a, b){
       let mY = 1e9; for (const p of cav.poly){ const q = me(p); if (q[1] < mY) mY = q[1]; }
       const TOP = 44; if (mY < TOP) My += TOP - mY; }
 
-    const fx = pourSVG();
+    const fx = acquireSVG();
     const fromLiq = fromEl.querySelector('.liquid');
 
     // общий рисователь жидкости источника для произвольного положения пробирки;
@@ -1044,19 +1075,12 @@ function animatePour(a, b){
 
       if (pt < POUR){ requestAnimationFrame(frame); return; }
 
-      // ---- финал ----
-      fx.svg.style.display = 'none';
-      state.tubes[a].length = startA - n;
-      if (state.hidden[a]) state.hidden[a].length = startA - n;
-      for (let i = 0; i < n; i++){
-        state.tubes[b].push(colorIdx);
-        if (state.hidden[b]) state.hidden[b].push(false);   // долитое всегда видно
-      }
-      const opened = revealTops();               // слой, ставший верхним, открывается
+      // ---- финал: модель уже актуальна, просто приводим DOM к ней ----
+      releaseSVG(fx);
       fromLiq.style.visibility = '';
       normalizeLiquid(toLiq);
       paintTube(a);
-      for (const i of opened) if (i !== a) paintTube(i);
+      paintTube(b);
       dripAt(P1[0], lipPt[1], surfaceY - lipPt[1], color);
       sndPlop();
       const surfSeg = toLiq.lastElementChild;
@@ -1067,7 +1091,7 @@ function animatePour(a, b){
       fromEl.classList.add('back');
       void fromEl.offsetWidth;
       fromEl.style.transform = '';
-      setTimeout(() => { fromEl.classList.remove('flying', 'back'); resolve(opened); }, 330);
+      setTimeout(() => { fromEl.classList.remove('flying', 'back'); resolve(); }, 330);
     };
     requestAnimationFrame(frame);
   });
@@ -1119,40 +1143,71 @@ function dripAt(x, y, fall, color){
   setTimeout(() => d.remove(), 420);
 }
 
-/* ============ ход ============ */
-async function doMove(a, b){
-  state.busy = true;
+/* ============ ход ============
+   Модель меняется СРАЗУ, анимация — только показ. Так можно затевать следующий перелив,
+   не дожидаясь конца предыдущего: занятыми считаются лишь две задействованные пробирки. */
+function doMove(a, b){
+  if (state.locked) return;
+  if (state.busyTubes.has(a) || state.busyTubes.has(b)) return;
+  if (!canPour(state.tubes, state.caps, a, b)) return;
+
+  const n = pourCount(state.tubes, state.caps, a, b);
+  const colorIdx = topColor(state.tubes[a]);
+  const startA = state.tubes[a].length;
+  const startB = state.tubes[b].length;
+  const wasDone = isDone(state.tubes[b], state.caps[b]);
+
   state.history.push(snapshot());
   if (state.history.length > 250) state.history.shift();
 
-  const wasDone = isDone(state.tubes[b], state.caps[b]);
-  const opened = await animatePour(a, b);
+  // среди переливаемых может оказаться скрытый слой того же цвета — раскрываем сразу,
+  // иначе он поехал бы тёмным, пока льётся цветная струя
+  if (state.hidden[a]) for (let s = startA - n; s < startA; s++) state.hidden[a][s] = false;
+  const srcColors = state.tubes[a].map((_, s) => segColor(a, s));   // снимок ДО хода
 
-  if (opened && opened.length){                 // раскрылся скрытый слой
-    sndTap();
-    for (const i of opened){
-      const seg = tubeEls[i].querySelector('.liquid').lastElementChild;
-      if (seg){ seg.classList.remove('reveal'); void seg.offsetWidth; seg.classList.add('reveal'); }
-    }
+  // применяем ход к модели
+  state.tubes[a].length = startA - n;
+  if (state.hidden[a]) state.hidden[a].length = startA - n;
+  for (let i = 0; i < n; i++){
+    state.tubes[b].push(colorIdx);
+    if (state.hidden[b]) state.hidden[b].push(false);      // долитое всегда видно
   }
+  const opened = revealTops();
 
   state.moves++;
   state.selected = null;
-  state.busy = false;
+  state.busyTubes.add(a); state.busyTubes.add(b);
+  state.anim++;
   refreshHud();
 
-  if (!wasDone && isDone(state.tubes[b], state.caps[b])){
-    tubeEls[b].classList.remove('done');
-    void tubeEls[b].offsetWidth;
-    tubeEls[b].classList.add('done');
-    sndComplete();
-  }
+  const justDone = !wasDone && isDone(state.tubes[b], state.caps[b]);
+  const won = isWin(state.tubes, state.caps);
 
-  if (isWin(state.tubes, state.caps)) await levelComplete();
+  animatePour({ a, b, n, colorIdx, srcColors, startA, startB }).then(() => {
+    state.busyTubes.delete(a); state.busyTubes.delete(b);
+    state.anim--;
+
+    if (opened.length){                          // раскрылся скрытый слой
+      sndTap();
+      for (const i of opened){
+        const seg = tubeEls[i].querySelector('.liquid').lastElementChild;
+        if (seg){ seg.classList.remove('reveal'); void seg.offsetWidth; seg.classList.add('reveal'); }
+      }
+    }
+    if (justDone){
+      tubeEls[b].classList.remove('done');
+      void tubeEls[b].offsetWidth;
+      tubeEls[b].classList.add('done');
+      sndComplete();
+    }
+    refreshHud();
+    // победу показываем, когда осядут все переливы
+    if (won && state.anim === 0) levelComplete();
+  });
 }
 
 async function levelComplete(){
-  state.busy = true;
+  state.locked = true;
   sndWin();
   await sleep(420);
   $('#winTitle').textContent = 'Уровень ' + state.level + ' пройден!';
@@ -1162,13 +1217,15 @@ async function levelComplete(){
 
 /* ============ ввод ============ */
 board.addEventListener('click', e => {
-  if (state.busy) return;
+  if (state.locked) return;                    // поле заморожено только оверлеем победы
   const el = e.target.closest('.tube');
   if (!el) {
     if (state.selected !== null){ tubeEls[state.selected].classList.remove('sel'); state.selected = null; }
     return;
   }
   const i = +el.dataset.i;
+  // занята только та пара пробирок, что участвует в текущем переливе; остальные свободны
+  if (state.busyTubes.has(i)){ sndNope(); return; }
 
   if (state.selected === null){
     if (!state.tubes[i].length){ sndNope(); return; }
@@ -1185,8 +1242,19 @@ board.addEventListener('click', e => {
     return;
   }
 
+  // выбранная могла уехать в перелив, пока игрок думал
+  if (state.busyTubes.has(state.selected)){
+    tubeEls[state.selected].classList.remove('sel');
+    state.selected = i;
+    el.classList.add('sel');
+    sndTap();
+    return;
+  }
+
   if (canPour(state.tubes, state.caps, state.selected, i)){
-    doMove(state.selected, i);
+    const from = state.selected;
+    tubeEls[from].classList.remove('sel');
+    doMove(from, i);
   } else {
     tubeEls[state.selected].classList.remove('sel');
     sndNope();
@@ -1195,7 +1263,7 @@ board.addEventListener('click', e => {
       el.classList.add('sel');
     } else {
       state.selected = null;
-      if (state.tubes[i].length >= CAP) showHint('Пробирка заполнена');
+      if (state.tubes[i].length >= state.caps[i]) showHint('Пробирка заполнена');
       else showHint('Сюда нельзя — нужен такой же цвет');
     }
   }
@@ -1203,7 +1271,7 @@ board.addEventListener('click', e => {
 
 /* ============ кнопки ============ */
 $('#btnUndo').addEventListener('click', () => {
-  if (state.busy || !state.history.length) return;
+  if (state.anim > 0 || state.locked || !state.history.length) return;
   if (state.selected !== null) tubeEls[state.selected].classList.remove('sel');
   state.selected = null;
   const prev = JSON.parse(state.history.pop());
@@ -1219,7 +1287,7 @@ $('#btnUndo').addEventListener('click', () => {
 });
 
 $('#btnAdd').addEventListener('click', () => {
-  if (state.busy || state.addUsed) return;
+  if (state.anim > 0 || state.locked || state.addUsed) return;
   state.addUsed = true;
   if (state.selected !== null) tubeEls[state.selected].classList.remove('sel');
   state.selected = null;
@@ -1234,7 +1302,7 @@ $('#btnAdd').addEventListener('click', () => {
 });
 
 $('#btnRestart').addEventListener('click', () => {
-  if (state.busy) return;
+  if (state.anim > 0 || state.locked) return;
   startLevel(state.level);
   sndTap();
 });
@@ -1256,13 +1324,13 @@ $('#btnCloseHelp').addEventListener('click', () => $('#ovHelp').classList.remove
 
 /* ---- пропуск уровня и выбор сложности ---- */
 $('#btnSkip').addEventListener('click', () => {
-  if (state.busy) return;
+  if (state.anim > 0 || state.locked) return;
   sndTap();
   startLevel(state.level + 1);
 });
 
 function openLevelPicker(){
-  if (state.busy) return;
+  if (state.anim > 0 || state.locked) return;
   $('#lvlInput').value = state.level;
   // подсвечиваем пресет, в диапазон которого попадает текущий уровень
   const presets = [...document.querySelectorAll('.lvlGrid button')];
@@ -1300,7 +1368,7 @@ $('#lvlInput').addEventListener('keydown', e => { if (e.key === 'Enter') goToTyp
 let resizeT;
 const relayout = () => {
   clearTimeout(resizeT);
-  resizeT = setTimeout(() => { if (!state.busy) buildBoard(); }, 150);
+  resizeT = setTimeout(() => { if (state.anim === 0) buildBoard(); }, 150);
 };
 window.addEventListener('resize', relayout);
 // вкладку могли открыть в фоне — там размеры ещё нулевые

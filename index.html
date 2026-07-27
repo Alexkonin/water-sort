@@ -84,7 +84,7 @@
       inset -7px 0 11px -7px rgba(255,255,255,.32),
       inset 0 -10px 14px -10px rgba(255,255,255,.28);
     filter:drop-shadow(0 8px 12px rgba(0,0,0,.32));
-    transition:transform .28s cubic-bezier(.34,1.45,.5,1);
+    transition:transform .16s cubic-bezier(.34,1.45,.5,1);
     cursor:pointer;
   }
   /* ободок горлышка */
@@ -95,8 +95,16 @@
     border-radius:2px;background:rgba(255,255,255,.34);
   }
   .tube.sel{transform:translateY(-18px)}
-  .tube.flying{transition:transform .26s cubic-bezier(.3,.85,.35,1);z-index:60}
-  .tube.flying.back{transition:transform .32s cubic-bezier(.32,1.2,.5,1)}
+  /* will-change только на время полёта: содержимое пробирки в это время статично,
+     поэтому она растеризуется один раз, а кадры становятся чистой GPU-трансформацией.
+     Вешать это на все пробирки нельзя — каждый слой ест видеопамять. */
+  /* pointer-events:none обязателен: наклонённая на ~120° колба перекрывает прямоугольником
+     2-4 соседние, и тап по свободной колбе попадал в летящую — ход просто не срабатывал */
+  .tube.flying{
+    transition:transform .26s cubic-bezier(.3,.85,.35,1);
+    z-index:60;will-change:transform;pointer-events:none;
+  }
+  .tube.flying.back{transition:transform .2s cubic-bezier(.32,1.2,.5,1)}
   .tube.done{animation:pop .45s ease}
   @keyframes pop{
     0%{transform:translateY(0) scale(1)}
@@ -574,16 +582,27 @@ function tone(freq, dur, vol, when, type){
   o.connect(g); g.connect(ac.destination);
   o.start(t0); o.stop(t0 + dur + 0.05);
 }
+// Буфер шума генерится ОДИН раз и зацикливается: раньше на каждый перелив в главном
+// потоке заполнялись десятки тысяч семплов — ровно в тот кадр, когда пошла струя.
+let NOISE_BUF = null;
+function noiseBuffer(ac){
+  if (NOISE_BUF && NOISE_BUF.sampleRate === ac.sampleRate) return NOISE_BUF;
+  const len = Math.ceil(ac.sampleRate * 2);
+  const buf = ac.createBuffer(1, len, ac.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  NOISE_BUF = buf;
+  return buf;
+}
+
 // шум воды: полосовой фильтр по белому шуму + подъём тона, как у наполняющейся ёмкости
 function sndFlow(dur){
   if (!soundOn) return;
   const ac = audio(); if (!ac) return;
-  const len = Math.max(1, Math.ceil(ac.sampleRate * dur));
-  const buf = ac.createBuffer(1, len, ac.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
 
-  const src = ac.createBufferSource(); src.buffer = buf;
+  const src = ac.createBufferSource();
+  src.buffer = noiseBuffer(ac);
+  src.loop = true;                       // длительность задаётся stop(), не длиной буфера
   const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.9;
   const g  = ac.createGain();
   const t0 = ac.currentTime;
@@ -616,6 +635,7 @@ const state = {
   addUsed: false,
   busyTubes: new Set(),           // пробирки, занятые текущими переливами
   anim: 0,                        // сколько переливов сейчас в полёте
+  gen: 0,                         // поколение поля: смена уровня обрывает летящие анимации
   locked: false                   // показан оверлей победы — ввод заморожен
 };
 // снимок для отмены хода: цвета и скрытие вместе, иначе отмена «подсматривала» бы
@@ -754,6 +774,7 @@ function startLevel(l){
   state.addUsed = false;
   state.busyTubes.clear();
   state.anim = 0;
+  state.gen++;                    // всё, что ещё летит, при следующем кадре свернётся
   state.locked = false;
   buildBoard();
   refreshHud();
@@ -762,8 +783,8 @@ function startLevel(l){
 
 /* ============ анимация переливания ============ */
 // Тайминги, мс (LIFT — подъём/наклон — задаётся внутри animatePour)
-const T_FALL = 95;               // струя летит от горлышка до поверхности
-const T_UNIT = 150;              // на каждый переливаемый слой
+const T_FALL = 60;               // струя летит от горлышка до поверхности
+const T_UNIT = 70;               // на каждый переливаемый слой
 
 const smooth = p => p * p * (3 - 2 * p);
 const easeOut = p => 1 - (1 - p) * (1 - p);
@@ -874,7 +895,10 @@ function buildSVG(idx){
   const clipId = 'pfxClip' + idx;
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('id', 'pourfx' + idx);
-  svg.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:58;pointer-events:none;display:none';
+  // will-change поднимает оверлей в свой слой: иначе перерисовка струи каждый кадр
+  // инвалидирует тайлы страницы под ним — а там все пробирки с тенями и бликами
+  svg.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:58;' +
+                      'pointer-events:none;display:none;will-change:transform';
   const defs = document.createElementNS(NS, 'defs');
   const clip = document.createElementNS(NS, 'clipPath');
   clip.setAttribute('id', clipId);
@@ -897,6 +921,7 @@ function buildSVG(idx){
 // источника до хода приходит в plan — иначе параллельные переливы читали бы чужие данные.
 function animatePour(plan){
   const { a, b, n, colorIdx, srcColors, startA, startB } = plan;
+  const gen = state.gen;
   return new Promise(resolve => {
     const fromEl = tubeEls[a], toEl = tubeEls[b];
     const color = COLORS[colorIdx % COLORS.length];
@@ -1028,11 +1053,19 @@ function animatePour(plan){
     fx.lip.setAttribute('rx', '0');               // без «кружка» у носика
 
     const gS = geomAt(angStart);
-    const LIFT = 240, FLOW = T_UNIT * n + 70, POUR = T_FALL + FLOW;
+    const LIFT = 150, FLOW = T_UNIT * n + 70, POUR = T_FALL + FLOW;
     const t0 = performance.now();
     let lastDrop = -1e9, lastRipple = -1e9, spawn = 0, flowStarted = false;
 
     const frame = now => {
+      // уровень сменили посреди перелива — сворачиваемся, поле уже перерисовано заново
+      if (gen !== state.gen){
+        releaseSVG(fx);
+        fromLiq.style.visibility = '';
+        fromEl.style.transition = ''; fromEl.style.transform = '';
+        fromEl.classList.remove('flying', 'back');
+        resolve(); return;
+      }
       const t = now - t0;
 
       // ---- фаза 1: подъём из слота с одновременным наклоном (всё в rAF, синхронно с SVG) ----
@@ -1091,7 +1124,7 @@ function animatePour(plan){
       fromEl.classList.add('back');
       void fromEl.offsetWidth;
       fromEl.style.transform = '';
-      setTimeout(() => { fromEl.classList.remove('flying', 'back'); resolve(); }, 330);
+      setTimeout(() => { fromEl.classList.remove('flying', 'back'); resolve(); }, 200);
     };
     requestAnimationFrame(frame);
   });
@@ -1183,9 +1216,11 @@ function doMove(a, b){
   const justDone = !wasDone && isDone(state.tubes[b], state.caps[b]);
   const won = isWin(state.tubes, state.caps);
 
+  const gen = state.gen;
   animatePour({ a, b, n, colorIdx, srcColors, startA, startB }).then(() => {
+    if (gen !== state.gen) return;             // поле уже другое — трогать нечего
     state.busyTubes.delete(a); state.busyTubes.delete(b);
-    state.anim--;
+    state.anim = Math.max(0, state.anim - 1);
 
     if (opened.length){                          // раскрылся скрытый слой
       sndTap();

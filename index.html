@@ -77,12 +77,14 @@
         rgba(255,255,255,.02) 16% 80%,
         rgba(255,255,255,.07) 92% 100%),
       rgba(255,255,255,.045);
-    /* стенка + внутренние рефлексы стекла */
+    /* стенка + внутренние рефлексы стекла; боковые тени сильнее — они «скругляют» цилиндр */
     box-shadow:
       inset 0 0 0 var(--wall) rgba(255,255,255,.54),
-      inset 7px 0 9px -7px rgba(255,255,255,.50),
-      inset -7px 0 11px -7px rgba(255,255,255,.32),
-      inset 0 -10px 14px -10px rgba(255,255,255,.28),
+      inset 9px 0 12px -8px rgba(255,255,255,.55),
+      inset -9px 0 13px -8px rgba(255,255,255,.36),
+      inset 12px 0 16px -14px rgba(0,0,0,.45),
+      inset -12px 0 16px -14px rgba(0,0,0,.40),
+      inset 0 -12px 16px -10px rgba(255,255,255,.30),
       /* было filter:drop-shadow — он пересчитывался покадрово на всех колбах;
          box-shadow повторяет форму по border-radius и почти неотличим */
       0 8px 12px rgba(0,0,0,.32);
@@ -127,9 +129,18 @@
     position:relative;
     width:100%;height:var(--u);flex:0 0 auto;
     transition:height .13s linear;
+    /* цилиндрическая подсветка: тёмные бока, светлая полоса ближе к левому краю —
+       именно она читается как объём жидкости в круглой колбе */
+    background-image:linear-gradient(90deg,
+      rgba(0,0,0,.26) 0%,
+      rgba(0,0,0,.05) 14%,
+      rgba(255,255,255,.20) 33%,
+      rgba(255,255,255,.05) 52%,
+      rgba(0,0,0,.08) 74%,
+      rgba(0,0,0,.24) 100%);
     box-shadow:
-      inset 0 -7px 9px -7px rgba(0,0,0,.28),
-      inset 0 7px 9px -7px rgba(255,255,255,.20);
+      inset 0 -7px 9px -7px rgba(0,0,0,.30),
+      inset 0 7px 9px -7px rgba(255,255,255,.16);
   }
   /* скрытый слой: цвет неизвестен, пока он не станет верхним */
   .seg.hid::after{
@@ -146,12 +157,23 @@
   }
   /* во время перелива высоту крутит rAF — переход мешает */
   .liquid.pouring .seg{transition:none}
-  /* верхний слой — светлая «поверхность» жидкости */
+  /* верхний слой: поверхность жидкости — эллипс, а не плоская линия.
+     Круглая колба смотрится сверху овалом, это главный признак объёма. */
   .liquid > .seg.top{
     box-shadow:
-      inset 0 3px 0 rgba(255,255,255,.26),
+      inset 0 6px 7px -6px rgba(0,0,0,.30),
       inset 0 -7px 9px -7px rgba(0,0,0,.28);
   }
+  .liquid > .seg.top::before{
+    content:'';position:absolute;z-index:1;
+    left:4%;right:4%;top:calc(var(--u) * -.07);
+    height:calc(var(--u) * .16);
+    border-radius:50%;
+    background:rgba(255,255,255,.30);
+    box-shadow:0 1px 2px rgba(255,255,255,.22);
+  }
+  /* у скрытого слоя поверхность не подсвечиваем — он должен читаться глухим */
+  .liquid > .seg.top.hid::before{display:none}
   /* колыхание поверхности, когда струя дошла */
   .seg.wob{animation:wob .40s cubic-bezier(.3,1.3,.5,1);transform-origin:50% 100%}
   @keyframes wob{
@@ -711,7 +733,7 @@ function paintTube(i){
   for (let k = 0; k < state.tubes[i].length; k++){
     const s = document.createElement('div');
     s.className = 'seg' + (state.hidden[i] && state.hidden[i][k] ? ' hid' : '');
-    s.style.background = segColor(i, k);
+    s.style.backgroundColor = segColor(i, k);
     liq.appendChild(s);
   }
   if (liq.lastElementChild) liq.lastElementChild.classList.add('top');
@@ -786,8 +808,8 @@ function startLevel(l){
 
 /* ============ анимация переливания ============ */
 // Тайминги, мс (LIFT — подъём/наклон — задаётся внутри animatePour)
-const T_FALL = 60;               // струя летит от горлышка до поверхности
-const T_UNIT = 70;               // на каждый переливаемый слой
+const T_FALL = 75;               // струя летит от горлышка до поверхности
+const T_UNIT = 105;              // на каждый переливаемый слой
 
 const smooth = p => p * p * (3 - 2 * p);
 const easeOut = p => 1 - (1 - p) * (1 - p);
@@ -907,16 +929,34 @@ function buildSVG(idx){
   clip.setAttribute('id', clipId);
   const clipPath = document.createElementNS(NS, 'path');
   clip.appendChild(clipPath); defs.appendChild(clip);
+
+  // тот же цилиндрический градиент, что у DOM-слоёв: без него жидкость в наклонённой
+  // колбе выглядела бы плоской, а в стоящих — объёмной
+  const gradId = 'pfxVol' + idx;
+  const grad = document.createElementNS(NS, 'linearGradient');
+  grad.setAttribute('id', gradId);
+  grad.setAttribute('gradientUnits', 'userSpaceOnUse');  // вектор задаём поперёк колбы
+  [['0%','#000','.26'],['14%','#000','.05'],['33%','#fff','.20'],
+   ['52%','#fff','.05'],['74%','#000','.08'],['100%','#000','.24']].forEach(([o,c,a]) => {
+    const st = document.createElementNS(NS, 'stop');
+    st.setAttribute('offset', o); st.setAttribute('stop-color', c); st.setAttribute('stop-opacity', a);
+    grad.appendChild(st);
+  });
+  defs.appendChild(grad);
+
   const bands = document.createElementNS(NS, 'g');
   bands.setAttribute('clip-path', 'url(#' + clipId + ')');
   const rects = [];
   for (let i = 0; i <= CAP; i++){ const r = document.createElementNS(NS, 'rect'); bands.appendChild(r); rects.push(r); }
+  const volume = document.createElementNS(NS, 'rect');   // объём поверх слоёв
+  volume.setAttribute('fill', 'url(#' + gradId + ')');
+  bands.appendChild(volume);
   const shine = document.createElementNS(NS, 'rect');    // блик поверхности
   shine.setAttribute('fill', 'rgba(255,255,255,.28)'); bands.appendChild(shine);
   const stream = document.createElementNS(NS, 'path');
   svg.append(defs, bands, stream);
   document.body.appendChild(svg);
-  return { NS, svg, clipPath, rects, shine, stream, taken: false };
+  return { NS, svg, clipPath, rects, shine, stream, grad, volume, taken: false };
 }
 
 // Рисует перелив. Модель к этому моменту УЖЕ обновлена (см. doMove), поэтому состояние
@@ -992,7 +1032,7 @@ function animatePour(plan){
     const dstSegs = Array.from(toLiq.children);
     for (let i = 0; i < n; i++){
       const s = document.createElement('div');
-      s.className = 'seg'; s.style.background = color; s.style.height = '0px';
+      s.className = 'seg'; s.style.backgroundColor = color; s.style.height = '0px';
       toLiq.appendChild(s); dstSegs.push(s);
     }
     dstSegs.slice(0, startB).forEach(s => { s.style.height = UNIT + 'px'; });
@@ -1044,6 +1084,22 @@ function animatePour(plan){
         fx.shine.setAttribute('x', bandX); fx.shine.setAttribute('width', bandW);
         fx.shine.setAttribute('y', surf.toFixed(1)); fx.shine.setAttribute('height', '3');
       } else fx.shine.setAttribute('height', '0');
+
+      // градиент объёма ведём поперёк колбы: вектор берём из её же поворота,
+      // иначе жидкость подсветится «по экрану», а не по цилиндру
+      const rad = deg * Math.PI / 180;
+      const halfW = (fRect.width - 2 * TUBE_WALL) / 2;
+      const gx = Math.cos(rad) * halfW, gy = Math.sin(rad) * halfW;
+      const midX = (minX + maxX) / 2, midY = (minY + maxY) / 2;
+      fx.grad.setAttribute('x1', (midX - gx).toFixed(1));
+      fx.grad.setAttribute('y1', (midY - gy).toFixed(1));
+      fx.grad.setAttribute('x2', (midX + gx).toFixed(1));
+      fx.grad.setAttribute('y2', (midY + gy).toFixed(1));
+      fx.volume.setAttribute('x', bandX);
+      fx.volume.setAttribute('width', bandW);
+      fx.volume.setAttribute('y', (minY - 4).toFixed(1));
+      fx.volume.setAttribute('height', (maxY - minY + 8).toFixed(1));
+
       const c1 = m([cav.left, cav.top]), c2 = m([cav.right, cav.top]);
       return c1[1] >= c2[1] ? c1 : c2;
     };
@@ -1061,7 +1117,7 @@ function animatePour(plan){
     fx.svg.style.display = 'block';
 
     const gS = geomAt(angStart);
-    const LIFT = 150, FLOW = T_UNIT * n + 70, POUR = T_FALL + FLOW;
+    const LIFT = 165, FLOW = T_UNIT * n + 90, POUR = T_FALL + FLOW;
     const t0 = performance.now();
     let lastDrop = -1e9, lastRipple = -1e9, spawn = 0, flowStarted = false;
 

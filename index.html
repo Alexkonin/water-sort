@@ -38,7 +38,13 @@
 
   /* ---------- шапка ---------- */
   header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:0 0 auto}
-  .lvl{font-size:17px;font-weight:700;letter-spacing:.2px;opacity:.95}
+  .lvl{
+    font-size:17px;font-weight:700;letter-spacing:.2px;opacity:.95;
+    cursor:pointer;padding:4px 10px;border-radius:12px;text-align:center;
+    transition:background .2s, transform .12s;
+  }
+  .lvl:active{transform:scale(.95);background:rgba(255,255,255,.10)}
+  .lvl .caret{font-size:12px;opacity:.55;vertical-align:middle}
   .lvl small{display:block;font-size:11px;font-weight:500;opacity:.5;letter-spacing:.4px;margin-top:2px}
   .icon-btn{
     width:40px;height:40px;border:0;border-radius:13px;
@@ -189,14 +195,15 @@
   }
 
   /* ---------- низ ---------- */
-  footer{flex:0 0 auto;display:flex;gap:10px;justify-content:center;padding-top:6px}
+  footer{flex:0 0 auto;display:flex;gap:8px;justify-content:center;padding-top:6px}
   .btn{
-    flex:1 1 0;max-width:150px;min-height:52px;border:0;border-radius:16px;
-    background:rgba(255,255,255,.12);color:#fff;font-size:13px;font-weight:600;
+    flex:1 1 0;max-width:120px;min-height:52px;border:0;border-radius:16px;
+    background:rgba(255,255,255,.12);color:#fff;font-size:12px;font-weight:600;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
     cursor:pointer;transition:transform .12s, opacity .2s;
+    padding:0 2px;white-space:nowrap;
   }
-  .btn b{font-size:19px;font-weight:400;line-height:1}
+  .btn b{font-size:18px;font-weight:400;line-height:1}
   .btn:active{transform:scale(.94)}
   .btn:disabled{opacity:.32;pointer-events:none}
 
@@ -227,6 +234,30 @@
     margin-top:10px;width:100%;min-height:42px;border:0;background:transparent;
     color:rgba(255,255,255,.55);font-size:14px;cursor:pointer;
   }
+  /* ---------- выбор уровня ---------- */
+  .lvlGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
+  .lvlGrid button{
+    border:0;border-radius:15px;cursor:pointer;padding:12px 8px;
+    background:rgba(255,255,255,.12);color:#fff;text-align:center;
+    display:flex;flex-direction:column;gap:4px;transition:transform .12s, background .2s;
+  }
+  .lvlGrid button:active{transform:scale(.95)}
+  .lvlGrid button.cur{background:linear-gradient(180deg,#ffd23f,#ffa41b);color:#3a1d00}
+  .lvlGrid b{font-size:14px;font-weight:800}
+  .lvlGrid small{font-size:11px;opacity:.65}
+  .lvlPick{display:flex;gap:8px}
+  .lvlPick input{
+    flex:1 1 0;min-width:0;min-height:48px;border:0;border-radius:15px;padding:0 14px;
+    background:rgba(0,0,0,.28);color:#fff;font-size:16px;font-weight:700;text-align:center;
+  }
+  .lvlPick input::placeholder{color:rgba(255,255,255,.35);font-weight:500}
+  .lvlPick button{
+    flex:0 0 auto;min-height:48px;padding:0 20px;border:0;border-radius:15px;cursor:pointer;
+    background:rgba(255,255,255,.16);color:#fff;font-size:15px;font-weight:700;
+    transition:transform .12s;
+  }
+  .lvlPick button:active{transform:scale(.95)}
+
   .hint{
     position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 88px);transform:translateX(-50%);
     background:rgba(0,0,0,.55);padding:9px 16px;border-radius:20px;font-size:13px;
@@ -239,7 +270,7 @@
 <div id="app">
   <header>
     <button class="icon-btn" id="btnSound" title="Звук">🔊</button>
-    <div class="lvl">Уровень <span id="lvlNum">1</span><small id="movesTxt">ходов: 0</small></div>
+    <div class="lvl" id="lvlBtn" role="button" tabindex="0" title="Выбрать уровень">Уровень <span id="lvlNum">1</span> <span class="caret">▾</span><small id="movesTxt">ходов: 0</small></div>
     <button class="icon-btn" id="btnHelp" title="Как играть">?</button>
   </header>
 
@@ -249,6 +280,7 @@
     <button class="btn" id="btnUndo"><b>↩</b>Отменить</button>
     <button class="btn" id="btnAdd"><b>＋</b>Пробирка</button>
     <button class="btn" id="btnRestart"><b>⟳</b>Заново</button>
+    <button class="btn" id="btnSkip"><b>→</b>Дальше</button>
   </footer>
 </div>
 
@@ -260,6 +292,25 @@
     <h2 id="winTitle">Уровень пройден!</h2>
     <p id="winSub">Отличная работа</p>
     <button class="cta" id="btnNext">Следующий уровень</button>
+  </div>
+</div>
+
+<div class="overlay" id="ovLevel">
+  <div class="card">
+    <div class="big">🎚️</div>
+    <h2>Выбор уровня</h2>
+    <p>Чем выше номер, тем сложнее: больше цветов, скрытые слои и маленькие скляночки.</p>
+    <div class="lvlGrid">
+      <button data-lvl="1"><b>Лёгкий</b><small>3 цвета</small></button>
+      <button data-lvl="12"><b>Средний</b><small>6 цветов, «?»</small></button>
+      <button data-lvl="25"><b>Сложный</b><small>8 цветов, скляночка</small></button>
+      <button data-lvl="45"><b>Очень сложный</b><small>11 цветов, 2 скляночки</small></button>
+    </div>
+    <div class="lvlPick">
+      <input id="lvlInput" type="number" min="1" max="999" inputmode="numeric" placeholder="номер">
+      <button id="btnGoLvl">Перейти</button>
+    </div>
+    <button class="ghost" id="btnCloseLevel">Закрыть</button>
   </div>
 </div>
 
@@ -657,6 +708,7 @@ function refreshHud(){
   $('#movesTxt').textContent = 'ходов: ' + state.moves;
   $('#btnUndo').disabled = state.history.length === 0 || state.busy;
   $('#btnAdd').disabled  = state.addUsed || state.busy;
+  $('#btnSkip').disabled = state.busy;
 }
 
 function showHint(text){
@@ -1201,6 +1253,49 @@ $('#btnSound').addEventListener('click', () => {
 
 $('#btnHelp').addEventListener('click', () => $('#ovHelp').classList.add('show'));
 $('#btnCloseHelp').addEventListener('click', () => $('#ovHelp').classList.remove('show'));
+
+/* ---- пропуск уровня и выбор сложности ---- */
+$('#btnSkip').addEventListener('click', () => {
+  if (state.busy) return;
+  sndTap();
+  startLevel(state.level + 1);
+});
+
+function openLevelPicker(){
+  if (state.busy) return;
+  $('#lvlInput').value = state.level;
+  // подсвечиваем пресет, в диапазон которого попадает текущий уровень
+  const presets = [...document.querySelectorAll('.lvlGrid button')];
+  const marks = presets.map(b => +b.dataset.lvl);
+  let cur = 0;
+  for (let i = 0; i < marks.length; i++) if (state.level >= marks[i]) cur = i;
+  presets.forEach((b, i) => b.classList.toggle('cur', i === cur));
+  $('#ovLevel').classList.add('show');
+  sndTap();
+}
+const closeLevelPicker = () => $('#ovLevel').classList.remove('show');
+
+$('#lvlBtn').addEventListener('click', openLevelPicker);
+$('#lvlBtn').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openLevelPicker(); }
+});
+$('#btnCloseLevel').addEventListener('click', closeLevelPicker);
+$('#ovLevel').addEventListener('click', e => { if (e.target.id === 'ovLevel') closeLevelPicker(); });
+
+document.querySelector('.lvlGrid').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  closeLevelPicker();
+  startLevel(+b.dataset.lvl);
+});
+
+function goToTypedLevel(){
+  const l = clamp(Math.round(+$('#lvlInput').value || 1), 1, 999);
+  closeLevelPicker();
+  startLevel(l);
+}
+$('#btnGoLvl').addEventListener('click', goToTypedLevel);
+$('#lvlInput').addEventListener('keydown', e => { if (e.key === 'Enter') goToTypedLevel(); });
 
 let resizeT;
 const relayout = () => {

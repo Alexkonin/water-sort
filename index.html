@@ -82,8 +82,11 @@
       inset 0 0 0 var(--wall) rgba(255,255,255,.54),
       inset 7px 0 9px -7px rgba(255,255,255,.50),
       inset -7px 0 11px -7px rgba(255,255,255,.32),
-      inset 0 -10px 14px -10px rgba(255,255,255,.28);
-    filter:drop-shadow(0 8px 12px rgba(0,0,0,.32));
+      inset 0 -10px 14px -10px rgba(255,255,255,.28),
+      /* было filter:drop-shadow — он пересчитывался покадрово на всех колбах;
+         box-shadow повторяет форму по border-radius и почти неотличим */
+      0 8px 12px rgba(0,0,0,.32);
+    isolation:isolate;          /* filter создавал стекинг-контекст, возвращаем его */
     transition:transform .16s cubic-bezier(.34,1.45,.5,1);
     cursor:pointer;
   }
@@ -911,10 +914,9 @@ function buildSVG(idx){
   const shine = document.createElementNS(NS, 'rect');    // блик поверхности
   shine.setAttribute('fill', 'rgba(255,255,255,.28)'); bands.appendChild(shine);
   const stream = document.createElementNS(NS, 'path');
-  const lip = document.createElementNS(NS, 'ellipse');   // «губа» у носика
-  svg.append(defs, bands, stream, lip);
+  svg.append(defs, bands, stream);
   document.body.appendChild(svg);
-  return { NS, svg, clipPath, rects, shine, stream, lip, taken: false };
+  return { NS, svg, clipPath, rects, shine, stream, taken: false };
 }
 
 // Рисует перелив. Модель к этому моменту УЖЕ обновлена (см. doMove), поэтому состояние
@@ -925,6 +927,13 @@ function animatePour(plan){
   return new Promise(resolve => {
     const fromEl = tubeEls[a], toEl = tubeEls[b];
     const color = COLORS[colorIdx % COLORS.length];
+
+    // Колба после выделения едет вверх по CSS-переходу (.sel = translateY(-18px)).
+    // Если читать её геометрию в этот момент — поймаем промежуточные координаты, и
+    // жидкость прыгнет на 6-10px при переходе DOM→SVG. Сначала возвращаем в покой.
+    fromEl.classList.remove('sel');
+    fromEl.style.transition = 'none';
+    fromEl.style.transform = 'none';
 
     const fRect = fromEl.getBoundingClientRect();
     const tRect = toEl.getBoundingClientRect();
@@ -1050,7 +1059,6 @@ function animatePour(plan){
     fromEl.style.transition = 'none';
     fromLiq.style.visibility = 'hidden';
     fx.svg.style.display = 'block';
-    fx.lip.setAttribute('rx', '0');               // без «кружка» у носика
 
     const gS = geomAt(angStart);
     const LIFT = 150, FLOW = T_UNIT * n + 70, POUR = T_FALL + FLOW;
@@ -1111,7 +1119,6 @@ function animatePour(plan){
       // ---- финал: модель уже актуальна, просто приводим DOM к ней ----
       releaseSVG(fx);
       fromLiq.style.visibility = '';
-      normalizeLiquid(toLiq);
       paintTube(a);
       paintTube(b);
       dripAt(P1[0], lipPt[1], surfaceY - lipPt[1], color);

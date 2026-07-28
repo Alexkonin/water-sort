@@ -524,7 +524,11 @@ function canPour(tubes, caps, a, b, closed){
   const from = tubes[a], to = tubes[b];
   if (!from.length || to.length >= caps[b]) return false;
   if (isSolved(from, caps[a])) return false;
-  if (!to.length) return from.every(c => c === from[0]) ? false : true; // не гонять монолит в пустоту
+  // Монолит в пустую ТОЙ ЖЕ вместимости — чистая перестановка, состояние не меняется.
+  // А в пустую другой вместимости это осмысленный ход: так освобождают большую колбу
+  // под скляночку и наоборот — ради этого скляночки и нужны. Один слой в большой колбе
+  // тоже монолит, и без этой оговорки его некуда было деть.
+  if (!to.length) return !(caps[a] === caps[b] && from.every(c => c === from[0]));
   return topColor(to) === topColor(from);
 }
 
@@ -1780,7 +1784,9 @@ board.addEventListener('click', e => {
     return;
   }
 
-  if (canPour(state.tubes, state.caps, state.selected, i)){
+  // маску замков передаём и здесь: полагаться на класс .locked — значит держать
+  // правила игры в CSS-классе, который может разъехаться с моделью
+  if (canPour(state.tubes, state.caps, state.selected, i, gameClosed())){
     const from = state.selected;
     tubeEls[from].classList.remove('sel');
     doMove(from, i);
@@ -1793,6 +1799,9 @@ board.addEventListener('click', e => {
     } else {
       state.selected = null;
       if (state.tubes[i].length >= state.caps[i]) showHint('Пробирка заполнена');
+      // в пустую отказ бывает ровно по одной причине — перестановка монолита
+      // в такую же по размеру пробирку; про «нужен такой же цвет» тут врать нельзя
+      else if (!state.tubes[i].length) showHint('Переставлять целиком в такую же пробирку незачем');
       else showHint('Сюда нельзя — нужен такой же цвет');
     }
   }

@@ -392,6 +392,26 @@
     opacity:0;transition:opacity .25s;pointer-events:none;z-index:80;white-space:nowrap;
   }
   .hint.show{opacity:1}
+
+  /* Плашка тупика и подсветка подсказки — обе ВНЕ потока (position:fixed).
+     Появись они в потоке, main пересчитал бы высоту и ужал все колбы ровно в тот
+     момент, когда игрок смотрит на поле — та же мина, что мы обходили с полкой. */
+  .deadbar{
+    position:fixed;left:12px;right:12px;z-index:79;pointer-events:none;
+    bottom:calc(env(safe-area-inset-bottom) + 88px);
+    padding:9px 14px;border-radius:15px;text-align:center;
+    background:rgba(46,20,34,.94);border:1px solid rgba(238,53,80,.45);
+    color:#ffd0d8;font-size:13px;font-weight:600;line-height:1.3;
+    opacity:0;transform:translateY(6px);transition:opacity .25s, transform .25s;
+  }
+  .deadbar.show{opacity:1;transform:none}
+  /* outline, а не box-shadow: у .tube в тени лежат внутренние рефлексы стекла,
+     перебивать их анимацией — значит гасить объём ровно на время подсветки */
+  .tube.tip{animation:tip 1s ease-in-out 3}
+  @keyframes tip{
+    0%,100%{outline:2px solid rgba(255,205,45,0);outline-offset:3px}
+    50%    {outline:2px solid rgba(255,205,45,.95);outline-offset:3px}
+  }
 </style>
 </head>
 <body>
@@ -410,11 +430,12 @@
     <button class="btn" id="btnUndo"><b>↩</b>Отменить</button>
     <button class="btn" id="btnAdd"><b>＋</b>Пробирка</button>
     <button class="btn" id="btnRestart"><b>⟳</b>Заново</button>
-    <button class="btn" id="btnSkip"><b>→</b>Дальше</button>
+    <button class="btn" id="btnHint"><b>💡</b>Подсказка</button>
   </footer>
 </div>
 
 <div class="hint" id="hint"></div>
+<div class="deadbar" id="dead">Отсюда уровень уже не собрать — отмени ход или начни заново</div>
 
 <div class="overlay" id="ovWin">
   <div class="card">
@@ -571,14 +592,20 @@ function canon(tubes, caps, locks){
     .sort().join('|');
 }
 
-function solvable(start, caps, locks){
+/* Вердикт трёхзначный, и это важно: одиночный DFS на комбинаторной задаче имеет
+   тяжелохвостое время, поэтому «не нашёл» и «доказал, что нет» — разные ответы.
+   Генератору хватало двух значений (обе неудачи = отбраковать раскладку), а вот
+   игроку сказать «ты в тупике» можно ТОЛЬКО на 'dead': ложное обвинение в тупике
+   хуже, чем промолчать. 'unknown' — поиск упёрся в бюджет и ничего не доказал. */
+function solveVerdict(start, caps, locks, budget){
+  const cap = budget || 150000;
   const seen = new Set();
   const stack = [start.map(t => t.slice())];
   let iter = 0;
   while (stack.length){
-    if (++iter > 150000) return false;
+    if (++iter > cap) return 'unknown';
     const cur = stack.pop();
-    if (isWin(cur, caps)) return true;
+    if (isWin(cur, caps)) return 'win';
     const key = canon(cur, caps, locks);
     if (seen.has(key)) continue;
     seen.add(key);
@@ -594,7 +621,46 @@ function solvable(start, caps, locks){
     for (const [a, b] of meh)  stack.push(applyMove(cur, caps, a, b));
     for (const [a, b] of good) stack.push(applyMove(cur, caps, a, b));
   }
-  return false;
+  return 'dead';                     // стек исчерпан, бюджет не тронут — доказано
+}
+
+// Генератору по-прежнему нужны два значения: и 'dead', и 'unknown' одинаково значат
+// «эту раскладку не берём». Поведение отбраковки не меняется ни на уровень.
+const solvable = (start, caps, locks) => solveVerdict(start, caps, locks) === 'win';
+
+/* ---- подсказка ----
+   Первый ход из пути DFS брать нельзя: поиск возвращает ПЕРВОЕ найденное решение,
+   а не кратчайшее, и повёл бы игрока окольной дорогой. Вместо этого ранжируем ходы
+   по-игроцки и берём лучший из тех, что сохраняют решаемость — обычно это первый же
+   кандидат, то есть один прогон солвера.
+   Подсказка смотрит на модель целиком, включая скрытые слои: на уровнях с «?» её совет
+   косвенно выдаёт то, что они прячут. Осознанный размен — инструмент против угадайки
+   в обмен на смягчение механики. */
+function rankMove(tubes, caps, a, b){
+  const from = tubes[a], to = tubes[b], c = topColor(from);
+  const n = pourCount(tubes, caps, a, b);
+  let s = n * 3;                                              // за раз больше слоёв
+  if (to.length){
+    s += 40;                                                  // слияние важнее слива в пустое
+    if (to.length + n === caps[b] && to.every(x => x === c)) s += 100;   // завершает колбу
+  }
+  if (n === from.length) s += 25;                             // освобождает колбу-источник
+  return s;
+}
+
+function findHint(){
+  const closed = gameClosed();
+  const moves = [];
+  for (let a = 0; a < state.tubes.length; a++)
+    for (let b = 0; b < state.tubes.length; b++)
+      if (canPour(state.tubes, state.caps, a, b, closed))
+        moves.push({ a, b, s: rankMove(state.tubes, state.caps, a, b) });
+  moves.sort((x, y) => y.s - x.s);
+  for (const m of moves){
+    const next = applyMove(state.tubes, state.caps, m.a, m.b);
+    if (solveVerdict(next, state.caps, state.locks) === 'win') return m;
+  }
+  return null;
 }
 
 /* ============ генератор уровней ============ */
@@ -611,6 +677,9 @@ function colorsForLevel(l){
    Правило победы это уже допускает — «в каждой колбе один цвет», а не «цвет в одной колбе». */
 const DUP_FROM = 20;              // с какого уровня появляются дубли
 const MAX_COLOR_TUBES = 20;       // потолок цветных колб, чтобы поле влезало в экран
+// Потолок поля целиком. 24 колбы — четыре ряда по шесть при слое 25px; 25-я уводит
+// в пятый ряд и роняет слой до 18.4px, то есть ужимает каждую колбу на четверть.
+const MAX_TUBES = 24;
 function dupTubes(level, nc){
   if (level < DUP_FROM) return 0;
   const room = Math.min(nc, MAX_COLOR_TUBES - nc);   // не больше двух колб на цвет
@@ -1182,12 +1251,44 @@ function maybeWin(){
   if (isWin(state.tubes, state.caps)) levelComplete();
 }
 
+/* ---- тупик ----
+   Проверка «легальных ходов не осталось» на этом поле почти бесполезна: при двух пустых
+   колбах ход есть практически всегда — на 270 случайных партий (уровни 60/120/200) не
+   встретилось ни одной такой позиции. Настоящий тупик другой: ходы есть, а собрать уже
+   нельзя, и это вопрос к солверу.
+   Из середины партии он дёшев (1–3 тысячи итераций, до 145 мс): часть цветов разобрана,
+   пространство состояний схлопнулось. Но 145 мс на главном потоке сразу после хода
+   читались бы рывком, поэтому считаем в простое и с задержкой — игрок, делающий ходы
+   подряд, проверку не запускает вовсе.
+   Предупреждаем ТОЛЬКО на доказанном 'dead'. На 'unknown' молчим: ложное обвинение
+   в тупике хуже, чем промолчать. */
+let deadTimer = 0;
+function setDeadBanner(on){ $('#dead').classList.toggle('show', on); }
+
+function scheduleDeadCheck(){
+  clearTimeout(deadTimer);
+  setDeadBanner(false);
+  if (state.locked) return;
+  deadTimer = setTimeout(() => {
+    if (state.anim > 0 || state.shelfAnim > 0 || state.locked) return;
+    const gen = state.gen;
+    const run = () => {
+      if (gen !== state.gen || state.locked) return;
+      setDeadBanner(solveVerdict(state.tubes, state.caps, state.locks) === 'dead');
+    };
+    if (window.requestIdleCallback) requestIdleCallback(run, { timeout: 1500 });
+    else setTimeout(run, 0);
+  }, 400);
+}
+
 function refreshHud(){
   $('#lvlNum').textContent = state.level;
   $('#movesTxt').textContent = 'ходов: ' + state.moves;
   $('#btnUndo').disabled = state.history.length === 0 || state.anim > 0;
-  $('#btnAdd').disabled  = state.addUsed || state.anim > 0;
-  $('#btnSkip').disabled = state.anim > 0;
+  // На полном поле «+пробирка» запрещена: 25-я колба уводит вёрстку в пятый ряд
+  // и ужимает слой с 25 до 18.4px — минус четверть высоты у каждой колбы ради одной.
+  $('#btnAdd').disabled  = state.addUsed || state.anim > 0 || state.tubes.length >= MAX_TUBES;
+  $('#btnHint').disabled = state.anim > 0 || state.locked;
 }
 
 function showHint(text){
@@ -1230,6 +1331,8 @@ function startLevel(l){
   buildBoard();
   refreshHud();
   save();
+  clearTimeout(deadTimer);          // уровень собран генератором как решаемый
+  setDeadBanner(false);
   if (state.shelfOn) hintShelfOnce();
 }
 
@@ -1744,6 +1847,7 @@ function doMove(a, b){
     refreshLocks(true);
     refreshHud();
     maybeWin();
+    scheduleDeadCheck();
   });
 }
 
@@ -1851,6 +1955,7 @@ $('#btnUndo').addEventListener('click', () => {
   refreshLocks(false);
   sndTap();
   refreshHud();
+  scheduleDeadCheck();
 });
 
 $('#btnAdd').addEventListener('click', () => {
@@ -1868,6 +1973,7 @@ $('#btnAdd').addEventListener('click', () => {
   refreshHud();
   sndTap();
   showHint('Добавлена пустая пробирка');
+  scheduleDeadCheck();
 });
 
 $('#btnRestart').addEventListener('click', () => {
@@ -1891,11 +1997,28 @@ $('#btnSound').addEventListener('click', () => {
 $('#btnHelp').addEventListener('click', () => $('#ovHelp').classList.add('show'));
 $('#btnCloseHelp').addEventListener('click', () => $('#ovHelp').classList.remove('show'));
 
-/* ---- пропуск уровня и выбор сложности ---- */
-$('#btnSkip').addEventListener('click', () => {
+/* ---- подсказка ----
+   Кнопка заняла место «Дальше»: пропуск уровня дублировался выбором уровня по тапу
+   на заголовок, а аварийным выходом с трудного уровня теперь работает подсказка. */
+$('#btnHint').addEventListener('click', () => {
   if (state.anim > 0 || state.locked) return;
+  const m = findHint();
+  if (!m){
+    sndNope();
+    setDeadBanner(true);
+    return;
+  }
+  // Источник выделяем по-настоящему — подсказка сразу наполовину сделана,
+  // игроку остаётся тапнуть подсвеченную цель.
+  if (state.selected !== null) tubeEls[state.selected].classList.remove('sel');
+  state.selected = m.a;
+  tubeEls[m.a].classList.add('sel');
+  const dst = tubeEls[m.b];
+  dst.classList.remove('tip'); void dst.offsetWidth; dst.classList.add('tip');
+  clearTimeout($('#btnHint')._t);
+  $('#btnHint')._t = setTimeout(() => dst.classList.remove('tip'), 3100);
   sndTap();
-  startLevel(state.level + 1);
+  showHint('Перелей в подсвеченную');
 });
 
 function openLevelPicker(){

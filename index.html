@@ -458,7 +458,7 @@
       <button data-lvl="73"><b>Очень сложный</b><small>23 колбы, дубли цветов</small></button>
     </div>
     <div class="lvlPick">
-      <input id="lvlInput" type="number" min="1" max="999" inputmode="numeric" placeholder="номер">
+      <input id="lvlInput" type="number" min="1" inputmode="numeric" placeholder="номер">
       <button id="btnGoLvl">Перейти</button>
     </div>
     <button class="ghost" id="btnCloseLevel">Закрыть</button>
@@ -501,6 +501,12 @@ const COLORS = ['#ee3550','#12eacf','#ffc21a','#7e00fc','#0082ee','#ff9569',
                 '#0393ab','#9bc800','#ff66cf','#d3bfff','#00a248','#b25a00'];
 const HIDDEN_FILL = '#160f27';   // цвет закрытого слоя
 const HIDDEN_FROM = 10;          // с какого уровня появляются скрытые слои
+/* Потолок ручного перехода. Играть можно и дальше — «Следующий уровень» номер не
+   ограничивает, — но выше этой отметки в поле номера уводить некуда: сложность
+   упирается в потолок к 76-му уровню (24 колбы, 12 цветов, два замка, две скляночки),
+   и дальше уровни отличаются только раскладкой. 2000 сидов таких раскладок — запас
+   на годы, а поле ввода остаётся коротким. */
+const MAX_LEVEL = 2000;
 const SAVE_KEY = 'watersort.v1';
 
 /* ============ утилиты ============ */
@@ -2035,6 +2041,7 @@ function openLevelPicker(){
 }
 const closeLevelPicker = () => $('#ovLevel').classList.remove('show');
 
+$('#lvlInput').max = MAX_LEVEL;
 $('#lvlBtn').addEventListener('click', openLevelPicker);
 $('#lvlBtn').addEventListener('keydown', e => {
   if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openLevelPicker(); }
@@ -2050,7 +2057,7 @@ document.querySelector('.lvlGrid').addEventListener('click', e => {
 });
 
 function goToTypedLevel(){
-  const l = clamp(Math.round(+$('#lvlInput').value || 1), 1, 999);
+  const l = clamp(Math.round(+$('#lvlInput').value || 1), 1, MAX_LEVEL);
   closeLevelPicker();
   startLevel(l);
 }

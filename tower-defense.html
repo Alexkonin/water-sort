@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Защита башни</title>
+<meta name="theme-color" content="#1b0f33">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Защита">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="shell.css">
+<style>
+  /* нижняя панель высокая: палитра + кнопка волны + иногда панель башни */
+  :root{--hint-bottom:202px}
+  #app{gap:8px;max-width:560px;margin:0 auto;width:100%}
+
+  /* ---------- полоса показателей ---------- */
+  .stats{
+    flex:0 0 auto;display:flex;gap:7px;
+  }
+  .stat{
+    flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:5px;
+    padding:7px 4px;border-radius:13px;background:rgba(255,255,255,.085);
+    font-size:14px;font-weight:800;white-space:nowrap;
+  }
+  .stat .ic{font-size:13px;opacity:.9}
+  .stat.hurt{animation:hurt .45s ease-out}
+  @keyframes hurt{
+    0%,100%{background:rgba(255,255,255,.085)}
+    35%    {background:rgba(238,53,80,.55)}
+  }
+  .stat.gain{animation:gain .45s ease-out}
+  @keyframes gain{
+    0%,100%{background:rgba(255,255,255,.085)}
+    35%    {background:rgba(255,210,63,.4)}
+  }
+
+  /* ---------- поле ---------- */
+  main{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center}
+  canvas{display:block;border-radius:18px;background:rgba(10,4,24,.34);touch-action:none}
+
+  /* ---------- нижняя панель ---------- */
+  footer{flex:0 0 auto;display:flex;flex-direction:column;gap:8px;padding-top:2px}
+
+  .palette{display:flex;gap:7px}
+  .twr{
+    flex:1 1 0;min-width:0;border:0;border-radius:15px;cursor:pointer;
+    padding:8px 3px 7px;background:rgba(255,255,255,.10);color:#fff;
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+    transition:transform .12s, background .2s, box-shadow .2s;
+  }
+  .twr:active{transform:scale(.94)}
+  .twr .em{font-size:19px;line-height:1}
+  .twr .nm{font-size:10.5px;font-weight:700;opacity:.8;letter-spacing:.1px}
+  .twr .pc{font-size:11.5px;font-weight:800;color:#ffd23f}
+  .twr.on{background:linear-gradient(180deg,#ffd23f,#ffa41b);box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+  .twr.on .nm{opacity:.85;color:#4a2600}
+  .twr.on .pc{color:#3a1d00}
+  /* Не хватает золота — кнопка гаснет, но остаётся нажимаемой: тап по ней
+     показывает цену подсказкой, иначе непонятно, почему ничего не происходит. */
+  .twr.poor{opacity:.42}
+
+  .row2{display:flex;gap:7px}
+  .go{
+    flex:1 1 auto;min-height:48px;border:0;border-radius:16px;cursor:pointer;
+    background:linear-gradient(180deg,#ffd23f,#ffa41b);color:#3a1d00;
+    font-size:15.5px;font-weight:800;transition:transform .12s, filter .2s;
+  }
+  .go:active{transform:scale(.97)}
+  .go[disabled]{filter:grayscale(.75) brightness(.7);pointer-events:none}
+  .spd{
+    flex:0 0 auto;width:56px;min-height:48px;border:0;border-radius:16px;cursor:pointer;
+    background:rgba(255,255,255,.10);color:#fff;font-size:15px;font-weight:800;
+    transition:transform .12s, background .2s;
+  }
+  .spd:active{transform:scale(.94)}
+  .spd.on{background:rgba(255,210,63,.28);color:#ffd23f}
+
+  /* ---------- панель выбранной башни ---------- */
+  .sel{
+    display:none;gap:7px;align-items:stretch;
+  }
+  .sel.show{display:flex}
+  .sel .info{
+    flex:1 1 auto;min-width:0;padding:6px 10px;border-radius:15px;
+    background:rgba(255,255,255,.085);display:flex;flex-direction:column;justify-content:center;
+  }
+  .sel .info b{font-size:13.5px;font-weight:800}
+  .sel .info small{font-size:11px;opacity:.6;letter-spacing:.2px}
+  .sel button{
+    flex:0 0 auto;border:0;border-radius:15px;cursor:pointer;padding:0 12px;min-height:46px;
+    font-size:12.5px;font-weight:800;transition:transform .12s;
+  }
+  .sel button:active{transform:scale(.94)}
+  .sel .up{background:linear-gradient(180deg,#9bc800,#6f9400);color:#16290b}
+  .sel .up[disabled]{filter:grayscale(.7) brightness(.72);pointer-events:none}
+  .sel .sell{background:rgba(255,255,255,.12);color:#ffd0d8}
+
+  /* ---------- выбор уровня ---------- */
+  .mapGrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+  .mapGrid button{
+    border:0;border-radius:15px;cursor:pointer;padding:9px 4px 7px;
+    background:rgba(255,255,255,.12);color:#fff;
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    transition:transform .12s, background .2s;
+  }
+  .mapGrid button:active{transform:scale(.94)}
+  .mapGrid button.done{background:rgba(155,200,0,.28)}
+  .mapGrid button.cur{background:linear-gradient(180deg,#ffd23f,#ffa41b);color:#3a1d00}
+  .mapGrid button[disabled]{opacity:.35;pointer-events:none}
+  .mapGrid .n{font-size:15px;font-weight:800;line-height:1}
+  .mapGrid .nm{font-size:9.5px;opacity:.7;line-height:1.1;text-align:center}
+  .mapGrid .st{font-size:10px;letter-spacing:-1px;color:#ffd23f;height:12px}
+  .stars-big{font-size:30px;letter-spacing:2px;color:#ffd23f;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <a class="icon-btn" id="btnMenu" href="index.html" title="В меню">☰</a>
+    <button class="icon-btn" id="btnSound" title="Звук">🔊</button>
+    <div class="hdr-title" id="title" role="button" tabindex="0" title="Выбрать уровень">
+      Уровень <span id="lvNum">1</span> ▾<small id="lvName">—</small>
+    </div>
+    <button class="icon-btn" id="btnRestart" title="Заново">⟳</button>
+    <button class="icon-btn" id="btnHelp" title="Как играть">?</button>
+  </header>
+
+  <div class="stats">
+    <div class="stat" id="stLives"><span class="ic">♥</span><span id="lives">15</span></div>
+    <div class="stat" id="stGold"><span class="ic">💰</span><span id="gold">0</span></div>
+    <div class="stat" id="stWave"><span class="ic">🌊</span><span id="wave">0/8</span></div>
+  </div>
+
+  <main><canvas id="cv"></canvas></main>
+
+  <footer>
+    <div class="sel" id="sel">
+      <div class="info"><b id="selName">—</b><small id="selStats">—</small></div>
+      <button class="up" id="btnUp">Улучшить<br><span id="upCost">—</span></button>
+      <button class="sell" id="btnSell">Продать<br><span id="sellSum">—</span></button>
+    </div>
+    <div class="palette" id="palette"></div>
+    <div class="row2">
+      <button class="go" id="btnGo">Начать волну</button>
+      <button class="spd" id="btnSpd">×1</button>
+    </div>
+  </footer>
+</div>
+
+<div class="hint" id="hint"></div>
+
+<div class="overlay" id="ovWin">
+  <div class="card">
+    <div class="big">🏆</div>
+    <h2 id="winTitle">Уровень пройден!</h2>
+    <div class="stars-big" id="winStars">★★★</div>
+    <p id="winSub">База выстояла</p>
+    <button class="cta" id="btnNext">Следующий уровень</button>
+    <button class="ghost" id="btnWinMaps">Выбрать уровень</button>
+  </div>
+</div>
+
+<div class="overlay" id="ovLose">
+  <div class="card">
+    <div class="big">💥</div>
+    <h2>База прорвана</h2>
+    <p id="loseSub">Враги дошли до базы</p>
+    <button class="cta" id="btnRetry">Попробовать снова</button>
+    <button class="ghost" id="btnLoseMaps">Выбрать уровень</button>
+  </div>
+</div>
+
+<div class="overlay" id="ovMaps">
+  <div class="card">
+    <div class="big">🗺️</div>
+    <h2>Выбор уровня</h2>
+    <p>Уровень открывается, когда пройден предыдущий</p>
+    <div class="mapGrid" id="mapGrid"></div>
+    <button class="ghost" id="btnCloseMaps">Закрыть</button>
+  </div>
+</div>
+
+<div class="overlay" id="ovHelp">
+  <div class="card">
+    <div class="big">🏰</div>
+    <h2>Как играть</h2>
+    <ol class="help-list">
+      <li>Выбери башню внизу и коснись свободной клетки — она встанет туда.</li>
+      <li>Нажми «Начать волну». Враги пойдут от портала по дороге к твоей базе.</li>
+      <li>За каждого убитого дают золото. На него строй и улучшай башни.</li>
+      <li>Коснись поставленной башни — её можно улучшить или продать (вернётся 60%).</li>
+      <li>Пропустил врага — минус жизнь. Кончились жизни — база прорвана.</li>
+      <li><b>Броневики</b> гасят слабые удары: по ним бьёт пушка и мортира, а молния почти бесполезна.</li>
+      <li>Три звезды дают, если не пропустил ни одного врага.</li>
+    </ol>
+    <button class="cta" id="btnCloseHelp">Понятно</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   ЗАЩИТА БАШНИ
+   Классическая оборона: дорога задана картой, башни ставятся на
+   свободные клетки рядом. Всё рисуется на одном canvas — объектов
+   в кадре десятки, и на DOM-узлах (как в «Разлей») это бы не жило.
+   ============================================================ */
+
+/* ============ сетка и карты ============
+   Поле 9x13 клеток: пропорция 0.69 — ровно портретная, влезает
+   между шапкой и панелью на телефоне без прокрутки.
+   Дорога задана списком путевых точек; между соседними точками
+   всегда ортогональный отрезок, клетки пути считаются проходом.
+   Валидатор в конце файла проверяет каждую карту на старте
+   (в консоли): ортогональность, самопересечения, вход с кромки. */
+const COLS = 9, ROWS = 13;
+
+const MAPS = [
+  { name:'Первая тропа', wp:[[0,2],[6,2],[6,7],[2,7],[2,11],[8,11]] },
+  { name:'Колено',       wp:[[4,0],[4,4],[1,4],[1,9],[7,9],[7,12]] },
+  { name:'Зигзаг',       wp:[[0,1],[5,1],[5,4],[1,4],[1,8],[7,8],[7,11],[0,11]] },
+  { name:'Крюк',         wp:[[4,0],[4,4],[7,4],[7,9],[2,9],[2,5],[0,5]] },
+  { name:'Ворота',       wp:[[0,3],[3,3],[3,9],[6,9],[6,3],[8,3]],
+                         blocked:[[1,6],[2,6],[4,6],[5,6],[7,6],[1,11],[4,11],[7,11]] },
+  { name:'Крест',        wp:[[4,0],[4,5],[0,5],[0,7],[8,7],[8,9],[4,9],[4,12]] },
+  { name:'Серпантин',    wp:[[0,1],[7,1],[7,4],[1,4],[1,7],[7,7],[7,10],[1,10],[1,12]] },
+  { name:'Спираль',      wp:[[4,0],[4,2],[7,2],[7,10],[1,10],[1,5],[5,5],[5,7]] },
+  { name:'Тиски',        wp:[[4,0],[4,3],[1,3],[1,7],[4,7],[4,10],[7,10],[7,5],[5,5]] },
+  { name:'Улитка',       wp:[[0,1],[7,1],[7,11],[1,11],[1,4],[5,4],[5,8],[3,8]] },
+  { name:'Гребень',      wp:[[1,0],[1,4],[3,4],[3,1],[5,1],[5,4],[7,4],[7,8],[5,8],[5,11],[3,11],[3,8],[1,8],[1,12]] },
+  { name:'Долгий путь',  wp:[[0,1],[7,1],[7,3],[1,3],[1,5],[7,5],[7,7],[1,7],[1,9],[7,9],[7,11],[1,11],[1,12]] }
+];
+
+/* ============ башни ============
+   Роли разведены не числами, а тем, ПО КОМУ башня работает.
+   Ключ к этому — броня: она вычитается из КАЖДОГО попадания,
+   поэтому частые слабые удары (молния) по броневику почти бесполезны,
+   а редкие тяжёлые (мортира, пушка) проходят. Без этого правила
+   все башни сводились бы к «урон в секунду за золото». */
+const TOWERS = {
+  gun:    { name:'Пушка',   em:'🔫', cost:55,  range:2.8, rate:1.25, dmg:13, kind:'shot',
+            color:'#ffc21a', about:'по одному, надёжно' },
+  frost:  { name:'Мороз',   em:'❄️', cost:70,  range:2.4, rate:1.00, dmg:4,  kind:'frost',
+            slow:0.45, slowT:1.7, color:'#12eacf', about:'замедляет на 45%' },
+  tesla:  { name:'Молния',  em:'⚡', cost:110, range:2.3, rate:1.00, dmg:8,  kind:'chain',
+            chain:3, color:'#d3bfff', about:'бьёт до трёх сразу' },
+  mortar: { name:'Мортира', em:'💥', cost:140, range:4.4, rate:0.55, dmg:30, kind:'splash',
+            splash:1.20, color:'#ff9569', about:'взрыв по площади' }
+};
+const TW_ORDER = ['gun','frost','tesla','mortar'];
+/* Улучшение: множитель урона, множитель радиуса, цена как доля от базовой.
+   Индекс — уровень, В КОТОРЫЙ улучшаем: UPGRADES[2] — прибавка и цена второго
+   уровня, UPGRADES[3] — третьего. Нулевой и первый пустые: башня рождается
+   первого уровня с базовыми числами, улучшать в него нечего.
+   Индексация именно по итоговому уровню, потому что её читают три места
+   (towerStats, upCost, sellSum), и любая другая договорённость означает
+   «минус один» в одном из них. */
+const UPGRADES = [null, null, { dmg:1.65, range:1.08, cost:0.9 }, { dmg:2.5, range:1.16, cost:1.7 }];
+const MAX_TW_LVL = 3;
+const SELL_BACK = 0.6;
+
+/* ============ враги ============ */
+const FOES = {
+  grunt:  { name:'Ползун',   hp:36,  sp:1.35, armor:0, bounty:8,  lives:1, r:0.30, color:'#9bc800' },
+  runner: { name:'Бегун',    hp:26,  sp:2.60, armor:0, bounty:7,  lives:1, r:0.26, color:'#ff66cf' },
+  tank:   { name:'Броневик', hp:95,  sp:0.95, armor:5, bounty:15, lives:1, r:0.34, color:'#0393ab' },
+  swarm:  { name:'Роевик',   hp:14,  sp:1.90, armor:0, bounty:4,  lives:1, r:0.20, color:'#ffc21a' },
+  /* Босс отнимает 3 жизни, а не 5, и здоровья у него меньше прежнего.
+     Причина: при 5 жизнях и 620 HP вся сложность поздних карт сводилась к нему
+     одному — симуляция теряла ровно 10 жизней (два босса) и на 5-м уровне,
+     и на 12-м, то есть звёзды перестали различать уровни. Теперь прорыв
+     одного босса — это 2 звезды, двух — одна, и между картами снова есть разница. */
+  boss:   { name:'Босс',     hp:430, sp:0.80, armor:6, bounty:70, lives:3, r:0.44, color:'#ee3550' }
+};
+
+const START_LIVES = 15;
+/* Стартовое золото растёт с уровнем, и это не поблажка, а необходимость:
+   здоровье волн умножается на номер уровня, а первая волна приходит до
+   всякого дохода. С фиксированным капиталом поздний уровень встречал бы
+   первую волну пятью пушками против втрое более крепких врагов —
+   не сложность, а заведомый проигрыш. Растёт медленнее здоровья
+   (2.8x против 3.9x к последней карте), поэтому кривая всё равно вверх. */
+const startGold = L => 240 + 40 * L;
+const WAVE_BONUS  = 35;          // за зачищенную волну
+const SAVE_KEY    = 'towerdef.v1';
+
+/* ---- состав волн ----
+   Волны не расписаны руками по уровням: 12 карт x 14 волн — это таблица,
+   которую невозможно держать согласованной. Вместо неё правило: чем дальше
+   уровень и волна, тем больше здоровья и тем раньше входят «сложные» типы.
+   Карты при этом рукотворные — именно они задают характер уровня. */
+const waveCount = L => Math.min(14, 8 + Math.floor(L / 2));
+
+function waveGroups(L, W){
+  const g = [];
+  const late = W / Math.max(1, waveCount(L) - 1);       // 0..1 — насколько волна поздняя
+  const boss = W === waveCount(L) - 1;
+  const midBoss = L >= 5 && W === Math.floor(waveCount(L) / 2);
+
+  g.push({ type:'grunt', n: 4 + Math.round(W * 0.6 + L * 0.2), gap: 0.62 });
+  if (W >= 2 || L >= 1)  g.push({ type:'runner', n: 2 + Math.round(W * 0.35 + L * 0.15), gap: 0.42 });
+  if (W >= 4 || L >= 2)  g.push({ type:'tank',   n: 1 + Math.round(late * (1 + L * 0.22)), gap: 1.15 });
+  if (W >= 5 || L >= 3)  g.push({ type:'swarm',  n: 5 + Math.round(late * (4 + L * 0.5)), gap: 0.25 });
+  if (midBoss)           g.push({ type:'boss',   n: 1, gap: 1 });
+  if (boss)              g.push({ type:'boss',   n: 1 + Math.floor(L / 4), gap: 2.2 });
+  return g;
+}
+/* Здоровье врагов. Слагаемые, а не произведение, и это главное решение:
+   произведение (1+aL)(1+bW) множит и ПЕРВУЮ волну уровня, из-за чего на
+   поздней карте игрок встречал втрое усиленных врагов, ещё ничего не заработав —
+   проигрыш на второй минуте с шестью башнями. Поэтому:
+     kW * W      — рост внутри уровня, одинаковый для всех карт;
+     kL * L      — небольшая надбавка за номер карты, она чувствуется с первой волны;
+     kX * L*late — основной вклад номера карты, но только к концу уровня.
+   Итог: любой уровень начинается посильно, а поздние заканчиваются жёстко. */
+const hpScale = (L, W) => {
+  const late = W / Math.max(1, waveCount(L) - 1);      // 0 в первой волне, 1 в последней
+  return 1 + 0.25 * W + 0.21 * L + 0.55 * L * late;
+};
+
+/* ============ сохранение ============ */
+let soundOn = true;
+const save = {};                 // save.stars[levelIndex] = 1..3
+function loadSave(){
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch { d = null; }
+  save.stars = (d && d.stars) || {};
+  if (d && typeof d.sound === 'boolean') soundOn = d.sound;
+}
+function writeSave(){
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ stars: save.stars, sound: soundOn })); }
+  catch {}
+}
+loadSave();
+// открыт уровень 0 и каждый следующий за пройденным
+const unlocked = i => i === 0 || save.stars[i - 1] > 0 || save.stars[i] > 0;
+function firstUnfinished(){
+  for (let i = 0; i < MAPS.length; i++) if (!save.stars[i]) return unlocked(i) ? i : Math.max(0, i - 1);
+  return MAPS.length - 1;
+}
+
+/* ============ утилиты ============ */
+const $ = s => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const plural = (n, one, few, many) => {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few;
+  return many;
+};
+
+/* ============ путь ============
+   Клетки пути и ломаная в клеточных координатах. Позиция врага — это
+   пройденное расстояние в КЛЕТКАХ, а не в пикселях: при повороте экрана
+   и смене размера клетки враги остаются там же, где были. */
+function buildPath(wp){
+  const cells = [];
+  const key = new Set();
+  const add = (x, y) => { const k = x + ',' + y; if (!key.has(k)){ key.add(k); cells.push([x, y]); } };
+  for (let i = 0; i < wp.length - 1; i++){
+    const [x1, y1] = wp[i], [x2, y2] = wp[i + 1];
+    const dx = Math.sign(x2 - x1), dy = Math.sign(y2 - y1);
+    let x = x1, y = y1;
+    add(x, y);
+    while (x !== x2 || y !== y2){ x += dx; y += dy; add(x, y); }
+  }
+  // ломаная по центрам путевых точек + длины отрезков
+  const pts = wp.map(([x, y]) => ({ x: x + 0.5, y: y + 0.5 }));
+  const seg = [];
+  let total = 0;
+  for (let i = 0; i < pts.length - 1; i++){
+    const len = Math.hypot(pts[i + 1].x - pts[i].x, pts[i + 1].y - pts[i].y);
+    seg.push({ from: pts[i], to: pts[i + 1], len, at: total });
+    total += len;
+  }
+  return { cells, cellKey: key, pts, seg, len: total };
+}
+// расстояние d (в клетках) -> точка на ломаной
+function atDist(path, d){
+  d = clamp(d, 0, path.len);
+  for (const s of path.seg){
+    if (d <= s.at + s.len || s === path.seg[path.seg.length - 1]){
+      const t = s.len ? (d - s.at) / s.len : 0;
+      return { x: s.from.x + (s.to.x - s.from.x) * t, y: s.from.y + (s.to.y - s.from.y) * t };
+    }
+  }
+  return path.pts[path.pts.length - 1];
+}
+
+/* ============ состояние ============ */
+const G = {
+  lv: 0, path: null, blocked: new Set(),
+  lives: START_LIVES, gold: startGold(0), leaked: 0,
+  wave: 0, waveRunning: false, queue: [], spawnT: 0,
+  foes: [], towers: [], shots: [], fx: [],
+  armed: null, selected: null,
+  speed: 1, paused: false, over: false,
+  t: 0
+};
+const cellFree = (x, y) =>
+  x >= 0 && y >= 0 && x < COLS && y < ROWS &&
+  !G.path.cellKey.has(x + ',' + y) && !G.blocked.has(x + ',' + y) &&
+  !G.towers.some(t => t.x === x && t.y === y);
+
+/* ============ canvas ============ */
+const cv = $('#cv'), ctx = cv.getContext('2d');
+let CELL = 30, OX = 0, OY = 0, DPR = 1;
+
+function layout(){
+  const main = document.querySelector('main');
+  const availW = main.clientWidth, availH = main.clientHeight;
+  if (!availW || !availH) return;
+  CELL = Math.max(14, Math.floor(Math.min(availW / COLS, availH / ROWS)));
+  const w = CELL * COLS, h = CELL * ROWS;
+  DPR = Math.min(window.devicePixelRatio || 1, 2.5);
+  cv.style.width = w + 'px';
+  cv.style.height = h + 'px';
+  cv.width = Math.round(w * DPR);
+  cv.height = Math.round(h * DPR);
+  OX = 0; OY = 0;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+const px = v => OX + v * CELL;
+const py = v => OY + v * CELL;
+
+/* ============ звук ============
+   Тот же подход, что в «Разлей»: короткие тоны на WebAudio, без файлов.
+   Контекст создаётся на первом касании — иначе iOS его не пускает. */
+let actx = null;
+function audio(){
+  if (!soundOn) return null;
+  if (!actx){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    actx = new AC();
+  }
+  if (actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function tone(freq, dur, vol, when, type){
+  const ac = audio(); if (!ac) return;
+  const t0 = ac.currentTime + (when || 0);
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type || 'triangle';
+  o.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(vol, t0 + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(ac.destination);
+  o.start(t0); o.stop(t0 + dur + 0.02);
+}
+// Выстрелов в секунду бывает десятки — свой звук у каждого превратится в треск.
+// Поэтому у стрельбы есть «горло»: не чаще раза в 70 мс и тише остального.
+let lastShot = 0;
+function sndShot(kind){
+  const now = performance.now();
+  if (now - lastShot < 70) return;
+  lastShot = now;
+  if (kind === 'splash') tone(90, 0.16, 0.05, 0, 'square');
+  else if (kind === 'chain') tone(1200, 0.06, 0.03, 0, 'sawtooth');
+  else if (kind === 'frost') tone(1500, 0.05, 0.025, 0, 'sine');
+  else tone(320, 0.05, 0.035, 0, 'square');
+}
+const sndKill    = () => tone(420, 0.07, 0.04, 0, 'triangle');
+const sndBoom    = () => { tone(70, 0.3, 0.08, 0, 'square'); tone(110, 0.2, 0.05, 0.02, 'sawtooth'); };
+const sndBuild   = () => { tone(520, 0.08, 0.06, 0); tone(780, 0.1, 0.05, 0.07); };
+const sndSell    = () => { tone(500, 0.08, 0.05, 0); tone(300, 0.12, 0.05, 0.07); };
+const sndLeak    = () => tone(150, 0.22, 0.09, 0, 'square');
+const sndTap     = () => tone(420, 0.06, 0.04, 0, 'sine');
+const sndNope    = () => tone(150, 0.11, 0.05, 0, 'square');
+const sndWave    = () => [330, 440].forEach((f, i) => tone(f, 0.16, 0.06, i * 0.1, 'triangle'));
+const sndWin     = () => [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.3, 0.09, i * 0.1));
+const sndLose    = () => [300, 240, 180].forEach((f, i) => tone(f, 0.35, 0.09, i * 0.14, 'square'));
+
+/* ============ подсказка ============ */
+let hintT = 0;
+function showHint(text){
+  const h = $('#hint');
+  h.textContent = text;
+  h.classList.add('show');
+  clearTimeout(hintT);
+  hintT = setTimeout(() => h.classList.remove('show'), 1900);
+}
+
+/* ============ старт уровня ============ */
+function startLevel(i){
+  G.lv = clamp(i, 0, MAPS.length - 1);
+  const m = MAPS[G.lv];
+  G.path = buildPath(m.wp);
+  G.blocked = new Set((m.blocked || []).map(([x, y]) => x + ',' + y));
+  G.lives = START_LIVES; G.gold = startGold(G.lv); G.leaked = 0;
+  G.wave = 0; G.waveRunning = false; G.queue = []; G.spawnT = 0;
+  G.foes = []; G.towers = []; G.shots = []; G.fx = [];
+  G.armed = null; G.selected = null;
+  G.speed = 1; G.over = false; G.paused = false;
+  $('#btnSpd').textContent = '×1';
+  $('#btnSpd').classList.remove('on');
+  $('#lvNum').textContent = G.lv + 1;
+  $('#lvName').textContent = m.name;
+  closeAll();
+  layout();
+  refreshHud();
+  refreshPalette();
+  refreshSel();
+}
+
+/* ============ волны ============ */
+function startWave(){
+  if (G.waveRunning || G.over) return;
+  if (G.wave >= waveCount(G.lv)) return;
+  const groups = waveGroups(G.lv, G.wave);
+  const scale = hpScale(G.lv, G.wave);
+  G.queue = [];
+  let t = 0;
+  for (const gr of groups){
+    for (let k = 0; k < gr.n; k++){
+      G.queue.push({ type: gr.type, at: t, scale });
+      t += gr.gap;
+    }
+    t += 0.7;                                  // пауза между группами
+  }
+  G.queue.sort((a, b) => a.at - b.at);
+  G.spawnT = 0;
+  G.waveRunning = true;
+  G.wave++;
+  refreshHud();
+  sndWave();
+}
+
+function spawn(type, scale){
+  const f = FOES[type];
+  const hp = Math.round(f.hp * scale);
+  G.foes.push({
+    type, d: 0, hp, hpMax: hp, sp: f.sp, armor: f.armor,
+    slow: 0, slowT: 0, r: f.r, color: f.color, bounty: f.bounty,
+    lives: f.lives, hit: 0
+  });
+}
+
+/* ============ бой ============ */
+function dmgFoe(f, dmg, kind){
+  // Броня вычитается из каждого попадания, но хотя бы 1 проходит всегда:
+  // иначе слабая башня против брони давала бы ноль и выглядела сломанной.
+  const real = Math.max(1, dmg - f.armor);
+  f.hp -= real;
+  f.hit = 0.12;
+  if (f.hp <= 0){
+    f.dead = true;
+    G.gold += f.bounty;
+    G.fx.push({ kind:'puff', x: atDist(G.path, f.d).x, y: atDist(G.path, f.d).y, t: 0, life: 0.35, color: f.color });
+    sndKill();
+    flash('#stGold', 'gain');
+  }
+  return real;
+}
+
+function towerStats(t){
+  const b = TOWERS[t.type];
+  let dmg = b.dmg, range = b.range;
+  for (let l = 2; l <= t.lvl; l++){
+    dmg = b.dmg * UPGRADES[l].dmg;
+    range = b.range * UPGRADES[l].range;
+  }
+  return { dmg, range, rate: b.rate };
+}
+const upCost = t => t.lvl >= MAX_TW_LVL ? null : Math.round(TOWERS[t.type].cost * UPGRADES[t.lvl + 1].cost);
+const sellSum = t => {
+  let spent = TOWERS[t.type].cost;
+  for (let l = 2; l <= t.lvl; l++) spent += Math.round(TOWERS[t.type].cost * UPGRADES[l].cost);
+  return Math.round(spent * SELL_BACK);
+};
+
+function fireTower(t){
+  const st = towerStats(t);
+  const b = TOWERS[t.type];
+  const tx = t.x + 0.5, ty = t.y + 0.5;
+  // цель — самый продвинувшийся враг в радиусе: классическое «first»,
+  // так башни не добивают тех, кто уже позади, пока вперёд рвутся новые
+  let best = null;
+  for (const f of G.foes){
+    if (f.dead) continue;
+    const p = atDist(G.path, f.d);
+    if (Math.hypot(p.x - tx, p.y - ty) > st.range + f.r) continue;
+    if (!best || f.d > best.f.d) best = { f, p };
+  }
+  if (!best) return;
+  t.aim = Math.atan2(best.p.y - ty, best.p.x - tx);
+  t.cool = 1 / st.rate;
+  sndShot(b.kind);
+
+  if (b.kind === 'chain'){
+    // молния: цепочка по ближайшим от предыдущего звена
+    const chain = [best.f];
+    let from = best.p;
+    while (chain.length < b.chain){
+      let nx = null;
+      for (const f of G.foes){
+        if (f.dead || chain.includes(f)) continue;
+        const p = atDist(G.path, f.d);
+        const dist = Math.hypot(p.x - from.x, p.y - from.y);
+        if (dist > 1.9) continue;
+        if (!nx || dist < nx.dist) nx = { f, p, dist };
+      }
+      if (!nx) break;
+      chain.push(nx.f); from = nx.p;
+    }
+    const pts = [{ x: tx, y: ty }];
+    for (const f of chain){ pts.push(atDist(G.path, f.d)); dmgFoe(f, st.dmg, 'chain'); }
+    G.fx.push({ kind:'bolt', pts, t: 0, life: 0.18, color: b.color });
+    return;
+  }
+
+  if (b.kind === 'splash'){
+    // мортира стреляет с упреждением: снаряд летит долго, и без прогноза
+    // по быстрым целям она не попадала бы никогда
+    const flight = Math.hypot(best.p.x - tx, best.p.y - ty) / 7.5;
+    const lead = atDist(G.path, best.f.d + best.f.sp * (1 - best.f.slow) * flight);
+    G.shots.push({ kind:'shell', x: tx, y: ty, from:{ x: tx, y: ty }, to: lead,
+                   t: 0, life: flight, dmg: st.dmg, splash: b.splash, color: b.color });
+    return;
+  }
+
+  // пушка и мороз — самонаводящийся снаряд
+  G.shots.push({ kind: b.kind === 'frost' ? 'ice' : 'ball', x: tx, y: ty, target: best.f,
+                 sp: 11, dmg: st.dmg, color: b.color,
+                 slow: b.slow, slowT: b.slowT });
+}
+
+/* ============ шаг мира ============ */
+function update(dt){
+  G.t += dt;
+
+  // появление врагов
+  if (G.waveRunning){
+    G.spawnT += dt;
+    while (G.queue.length && G.queue[0].at <= G.spawnT){
+      const q = G.queue.shift();
+      spawn(q.type, q.scale);
+    }
+  }
+
+  // враги
+  for (const f of G.foes){
+    if (f.dead) continue;
+    if (f.slowT > 0){ f.slowT -= dt; if (f.slowT <= 0) f.slow = 0; }
+    if (f.hit > 0) f.hit -= dt;
+    f.d += f.sp * (1 - f.slow) * dt;
+    if (f.d >= G.path.len){
+      f.dead = true; f.leaked = true;
+      G.lives -= f.lives; G.leaked += f.lives;
+      flash('#stLives', 'hurt');
+      sndLeak();
+      G.fx.push({ kind:'ring', x: G.path.pts[G.path.pts.length - 1].x, y: G.path.pts[G.path.pts.length - 1].y,
+                  t: 0, life: 0.4, color:'#ee3550', r: 1.2 });
+    }
+  }
+
+  // башни
+  for (const t of G.towers){
+    t.cool -= dt;
+    if (t.cool <= 0) fireTower(t);
+  }
+
+  // снаряды
+  for (const s of G.shots){
+    if (s.kind === 'shell'){
+      s.t += dt;
+      if (s.t >= s.life){
+        s.done = true;
+        // взрыв по площади: бьёт всех в радиусе от точки падения
+        for (const f of G.foes){
+          if (f.dead) continue;
+          const p = atDist(G.path, f.d);
+          if (Math.hypot(p.x - s.to.x, p.y - s.to.y) <= s.splash + f.r) dmgFoe(f, s.dmg, 'splash');
+        }
+        G.fx.push({ kind:'ring', x: s.to.x, y: s.to.y, t: 0, life: 0.3, color: s.color, r: s.splash });
+        sndBoom();
+      }
+      continue;
+    }
+    // самонаводящийся: если цель умерла, снаряд гаснет
+    if (!s.target || s.target.dead){ s.done = true; continue; }
+    const p = atDist(G.path, s.target.d);
+    const dist = Math.hypot(p.x - s.x, p.y - s.y);
+    const step = s.sp * dt;
+    if (dist <= step + s.target.r){
+      s.done = true;
+      dmgFoe(s.target, s.dmg, s.kind);
+      if (s.kind === 'ice' && !s.target.dead){ s.target.slow = s.slow; s.target.slowT = s.slowT; }
+    } else {
+      s.x += (p.x - s.x) / dist * step;
+      s.y += (p.y - s.y) / dist * step;
+    }
+  }
+
+  // эффекты
+  for (const e of G.fx){ e.t += dt; if (e.t >= e.life) e.done = true; }
+
+  // уборка
+  G.foes = G.foes.filter(f => !f.dead);
+  G.shots = G.shots.filter(s => !s.done);
+  G.fx = G.fx.filter(e => !e.done);
+
+  // конец волны
+  if (G.waveRunning && !G.queue.length && !G.foes.length){
+    G.waveRunning = false;
+    G.gold += WAVE_BONUS;
+    flash('#stGold', 'gain');
+    if (G.wave >= waveCount(G.lv)) levelWin();
+    else showHint('Волна отбита · +' + WAVE_BONUS + ' золота');
+  }
+  if (G.lives <= 0 && !G.over) levelLose();
+
+  refreshHud();
+}
+
+function flash(sel, cls){
+  const el = $(sel);
+  el.classList.remove(cls);
+  void el.offsetWidth;                  // перезапуск анимации
+  el.classList.add(cls);
+}
+
+/* ============ отрисовка ============ */
+function draw(){
+  ctx.clearRect(0, 0, cv.width, cv.height);
+
+  // свободные клетки — точками, чтобы видеть, куда можно ставить
+  ctx.fillStyle = 'rgba(255,255,255,.09)';
+  for (let y = 0; y < ROWS; y++)
+    for (let x = 0; x < COLS; x++){
+      if (G.path.cellKey.has(x + ',' + y)) continue;
+      if (G.blocked.has(x + ',' + y)) continue;
+      ctx.beginPath();
+      ctx.arc(px(x + 0.5), py(y + 0.5), Math.max(1, CELL * 0.045), 0, 7);
+      ctx.fill();
+    }
+
+  // заблокированные клетки — камни
+  for (const k of G.blocked){
+    const [x, y] = k.split(',').map(Number);
+    ctx.fillStyle = 'rgba(255,255,255,.10)';
+    roundRect(px(x + 0.14), py(y + 0.14), CELL * 0.72, CELL * 0.72, CELL * 0.22);
+    ctx.fill();
+  }
+
+  // дорога
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(0,0,0,.28)';
+  ctx.lineWidth = CELL * 0.82;
+  strokePath();
+  ctx.strokeStyle = 'rgba(214,190,255,.13)';
+  ctx.lineWidth = CELL * 0.66;
+  strokePath();
+
+  // подсветка клеток под постановку
+  if (G.armed){
+    const canAfford = G.gold >= TOWERS[G.armed].cost;
+    ctx.fillStyle = canAfford ? 'rgba(255,210,63,.13)' : 'rgba(255,255,255,.05)';
+    for (let y = 0; y < ROWS; y++)
+      for (let x = 0; x < COLS; x++){
+        if (!cellFree(x, y)) continue;
+        roundRect(px(x + 0.12), py(y + 0.12), CELL * 0.76, CELL * 0.76, CELL * 0.24);
+        ctx.fill();
+      }
+  }
+
+  // портал и база
+  const a = G.path.pts[0], b = G.path.pts[G.path.pts.length - 1];
+  drawPortal(a.x, a.y);
+  drawBase(b.x, b.y);
+
+  // радиус выбранной или наведённой башни
+  const ring = G.selected;
+  if (ring){
+    const st = towerStats(ring);
+    ctx.fillStyle = 'rgba(255,210,63,.09)';
+    ctx.strokeStyle = 'rgba(255,210,63,.45)';
+    ctx.lineWidth = Math.max(1, CELL * 0.03);
+    ctx.beginPath();
+    ctx.arc(px(ring.x + 0.5), py(ring.y + 0.5), st.range * CELL, 0, 7);
+    ctx.fill(); ctx.stroke();
+  }
+
+  for (const t of G.towers) drawTower(t);
+  for (const f of G.foes) drawFoe(f);
+  for (const s of G.shots) drawShot(s);
+  for (const e of G.fx) drawFx(e);
+}
+
+function strokePath(){
+  ctx.beginPath();
+  ctx.moveTo(px(G.path.pts[0].x), py(G.path.pts[0].y));
+  for (let i = 1; i < G.path.pts.length; i++) ctx.lineTo(px(G.path.pts[i].x), py(G.path.pts[i].y));
+  ctx.stroke();
+}
+function roundRect(x, y, w, h, r){
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
+  else {
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+}
+
+function drawPortal(x, y){
+  const p = 0.5 + 0.5 * Math.sin(G.t * 2.4);
+  ctx.strokeStyle = 'rgba(155,200,0,' + (0.4 + p * 0.4) + ')';
+  ctx.lineWidth = Math.max(1.5, CELL * 0.07);
+  ctx.beginPath();
+  ctx.arc(px(x), py(y), CELL * (0.26 + p * 0.06), 0, 7);
+  ctx.stroke();
+}
+function drawBase(x, y){
+  const grd = ctx.createLinearGradient(px(x), py(y - 0.4), px(x), py(y + 0.4));
+  grd.addColorStop(0, '#ffd23f'); grd.addColorStop(1, '#ff8a1b');
+  ctx.fillStyle = grd;
+  roundRect(px(x - 0.36), py(y - 0.36), CELL * 0.72, CELL * 0.72, CELL * 0.2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(58,29,0,.85)';
+  ctx.font = '700 ' + (CELL * 0.42) + 'px -apple-system,system-ui,sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('⌂', px(x), py(y) + CELL * 0.02);
+}
+
+function drawTower(t){
+  const b = TOWERS[t.type];
+  const cx = px(t.x + 0.5), cy = py(t.y + 0.5);
+  const s = CELL * 0.76;
+  ctx.fillStyle = 'rgba(0,0,0,.3)';
+  roundRect(cx - s / 2, cy - s / 2 + CELL * 0.04, s, s, CELL * 0.22);
+  ctx.fill();
+  const grd = ctx.createLinearGradient(cx, cy - s / 2, cx, cy + s / 2);
+  grd.addColorStop(0, 'rgba(255,255,255,.28)');
+  grd.addColorStop(1, 'rgba(255,255,255,.06)');
+  ctx.fillStyle = grd;
+  roundRect(cx - s / 2, cy - s / 2, s, s, CELL * 0.22);
+  ctx.fill();
+  if (G.selected === t){
+    ctx.strokeStyle = 'rgba(255,210,63,.9)';
+    ctx.lineWidth = Math.max(1.5, CELL * 0.05);
+    roundRect(cx - s / 2, cy - s / 2, s, s, CELL * 0.22);
+    ctx.stroke();
+  }
+  // ствол в сторону последней цели
+  if (t.aim != null){
+    ctx.strokeStyle = b.color;
+    ctx.lineWidth = Math.max(2, CELL * 0.11);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(t.aim) * CELL * 0.34, cy + Math.sin(t.aim) * CELL * 0.34);
+    ctx.stroke();
+  }
+  ctx.fillStyle = b.color;
+  ctx.beginPath();
+  ctx.arc(cx, cy, CELL * 0.155, 0, 7);
+  ctx.fill();
+  // уровень — точками под башней
+  for (let i = 0; i < t.lvl; i++){
+    ctx.fillStyle = '#ffd23f';
+    ctx.beginPath();
+    ctx.arc(cx + (i - (t.lvl - 1) / 2) * CELL * 0.15, cy + s / 2 - CELL * 0.08, CELL * 0.045, 0, 7);
+    ctx.fill();
+  }
+}
+
+function drawFoe(f){
+  const p = atDist(G.path, f.d);
+  const cx = px(p.x), cy = py(p.y);
+  const r = f.r * CELL;
+  ctx.fillStyle = 'rgba(0,0,0,.3)';
+  ctx.beginPath(); ctx.arc(cx, cy + CELL * 0.05, r, 0, 7); ctx.fill();
+  ctx.fillStyle = f.hit > 0 ? '#fff' : f.color;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill();
+  if (f.armor > 0){
+    ctx.strokeStyle = 'rgba(255,255,255,.7)';
+    ctx.lineWidth = Math.max(1, CELL * 0.045);
+    ctx.beginPath(); ctx.arc(cx, cy, r * 0.62, 0, 7); ctx.stroke();
+  }
+  if (f.slow > 0){
+    ctx.strokeStyle = 'rgba(18,234,207,.85)';
+    ctx.lineWidth = Math.max(1, CELL * 0.04);
+    ctx.beginPath(); ctx.arc(cx, cy, r + CELL * 0.07, 0, 7); ctx.stroke();
+  }
+  // полоска здоровья — только у подранка, иначе поле рябит
+  if (f.hp < f.hpMax){
+    const w = r * 2.1, h = Math.max(2, CELL * 0.07);
+    ctx.fillStyle = 'rgba(0,0,0,.55)';
+    ctx.fillRect(cx - w / 2, cy - r - h * 2.1, w, h);
+    ctx.fillStyle = f.hp / f.hpMax > 0.4 ? '#9bc800' : '#ee3550';
+    ctx.fillRect(cx - w / 2, cy - r - h * 2.1, w * (f.hp / f.hpMax), h);
+  }
+}
+
+function drawShot(s){
+  if (s.kind === 'shell'){
+    const t = s.t / s.life;
+    const x = s.from.x + (s.to.x - s.from.x) * t;
+    const y = s.from.y + (s.to.y - s.from.y) * t;
+    const lift = Math.sin(t * Math.PI) * CELL * 0.55;      // навесная траектория
+    ctx.fillStyle = s.color;
+    ctx.beginPath(); ctx.arc(px(x), py(y) - lift, CELL * 0.1, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.18)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(px(s.to.x), py(s.to.y), s.splash * CELL, 0, 7); ctx.stroke();
+    return;
+  }
+  ctx.fillStyle = s.color;
+  ctx.beginPath();
+  ctx.arc(px(s.x), py(s.y), CELL * (s.kind === 'ice' ? 0.075 : 0.06), 0, 7);
+  ctx.fill();
+}
+
+function drawFx(e){
+  const t = e.t / e.life;
+  if (e.kind === 'bolt'){
+    ctx.strokeStyle = e.color;
+    ctx.globalAlpha = 1 - t;
+    ctx.lineWidth = Math.max(1.5, CELL * 0.07);
+    ctx.beginPath();
+    ctx.moveTo(px(e.pts[0].x), py(e.pts[0].y));
+    for (let i = 1; i < e.pts.length; i++){
+      // ломаем линию, чтобы читалось как разряд, а не как палка
+      const a = e.pts[i - 1], b = e.pts[i];
+      const mx = (a.x + b.x) / 2 + (Math.random() - 0.5) * 0.35;
+      const my = (a.y + b.y) / 2 + (Math.random() - 0.5) * 0.35;
+      ctx.lineTo(px(mx), py(my));
+      ctx.lineTo(px(b.x), py(b.y));
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    return;
+  }
+  if (e.kind === 'ring'){
+    ctx.strokeStyle = e.color;
+    ctx.globalAlpha = 1 - t;
+    ctx.lineWidth = Math.max(1.5, CELL * 0.08 * (1 - t));
+    ctx.beginPath();
+    ctx.arc(px(e.x), py(e.y), e.r * CELL * (0.3 + t * 0.9), 0, 7);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    return;
+  }
+  // puff
+  ctx.fillStyle = e.color;
+  ctx.globalAlpha = (1 - t) * 0.8;
+  ctx.beginPath();
+  ctx.arc(px(e.x), py(e.y), CELL * (0.12 + t * 0.2), 0, 7);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+/* ============ цикл ============
+   dt зажат сверху: после сворачивания вкладки или долгой отрисовки
+   кадр может «прийти» через секунду, и без зажима враги телепортируются
+   сквозь всю дорогу, а снаряды пролетают мимо. */
+let last = 0;
+function frame(now){
+  requestAnimationFrame(frame);
+  const raw = (now - last) / 1000;
+  last = now;
+  if (!G.path) return;
+  if (!G.paused && !G.over){
+    const dt = clamp(raw, 0, 0.05) * G.speed;
+    if (dt > 0) update(dt);
+  }
+  draw();
+}
+
+/* ============ показатели и панели ============ */
+function refreshHud(){
+  $('#lives').textContent = Math.max(0, G.lives);
+  $('#gold').textContent = G.gold;
+  $('#wave').textContent = G.wave + '/' + waveCount(G.lv);
+  const go = $('#btnGo');
+  if (G.waveRunning){
+    go.disabled = true;
+    go.textContent = 'Волна идёт…';
+  } else if (G.wave >= waveCount(G.lv)){
+    go.disabled = true;
+    go.textContent = 'Все волны отбиты';
+  } else {
+    go.disabled = false;
+    go.textContent = 'Начать волну ' + (G.wave + 1);
+  }
+  refreshPalette();
+}
+
+let paletteBuilt = false;
+function refreshPalette(){
+  const box = $('#palette');
+  if (!paletteBuilt){
+    box.innerHTML = '';
+    for (const key of TW_ORDER){
+      const b = TOWERS[key];
+      const el = document.createElement('button');
+      el.className = 'twr';
+      el.dataset.t = key;
+      el.innerHTML = '<span class="em"></span><span class="nm"></span><span class="pc"></span>';
+      el.querySelector('.em').textContent = b.em;
+      el.querySelector('.nm').textContent = b.name;
+      el.querySelector('.pc').textContent = b.cost;
+      box.appendChild(el);
+    }
+    paletteBuilt = true;
+  }
+  for (const el of box.children){
+    const b = TOWERS[el.dataset.t];
+    el.classList.toggle('on', G.armed === el.dataset.t);
+    el.classList.toggle('poor', G.gold < b.cost);
+  }
+}
+
+function refreshSel(){
+  const t = G.selected;
+  const box = $('#sel');
+  box.classList.toggle('show', !!t);
+  if (!t) return;
+  const b = TOWERS[t.type], st = towerStats(t);
+  $('#selName').textContent = b.name + ' · ур. ' + t.lvl;
+  $('#selStats').textContent = 'урон ' + Math.round(st.dmg) + ' · радиус ' +
+    st.range.toFixed(1) + ' · ' + b.about;
+  const uc = upCost(t);
+  const up = $('#btnUp');
+  up.disabled = uc === null || G.gold < uc;
+  // на максимуме кнопка не обещает улучшения, которого нет
+  up.firstChild.textContent = uc === null ? 'Уровень' : 'Улучшить';
+  $('#upCost').textContent = uc === null ? 'максимум' : uc + ' 💰';
+  $('#sellSum').textContent = '+' + sellSum(t) + ' 💰';
+}
+
+/* ============ ввод ============ */
+function cellAt(ev){
+  const r = cv.getBoundingClientRect();
+  const x = Math.floor((ev.clientX - r.left) / CELL);
+  const y = Math.floor((ev.clientY - r.top) / CELL);
+  return { x, y };
+}
+
+cv.addEventListener('pointerdown', ev => {
+  if (G.over || G.paused) return;
+  ev.preventDefault();
+  const { x, y } = cellAt(ev);
+  if (x < 0 || y < 0 || x >= COLS || y >= ROWS) return;
+
+  const hit = G.towers.find(t => t.x === x && t.y === y);
+  if (hit){
+    G.selected = G.selected === hit ? null : hit;
+    G.armed = null;
+    refreshSel(); refreshPalette();
+    sndTap();
+    return;
+  }
+  if (G.armed){
+    const b = TOWERS[G.armed];
+    if (!cellFree(x, y)){ sndNope(); showHint('Здесь не построить'); return; }
+    if (G.gold < b.cost){ sndNope(); showHint('Не хватает золота: нужно ' + b.cost); return; }
+    G.gold -= b.cost;
+    const t = { type: G.armed, x, y, lvl: 1, cool: 0, aim: null };
+    G.towers.push(t);
+    G.armed = null;
+    G.selected = t;
+    sndBuild();
+    refreshHud(); refreshSel();
+    return;
+  }
+  if (G.selected){ G.selected = null; refreshSel(); }
+});
+
+$('#palette').addEventListener('click', ev => {
+  const el = ev.target.closest('.twr');
+  if (!el || G.over) return;
+  const key = el.dataset.t, b = TOWERS[key];
+  if (G.gold < b.cost){
+    sndNope();
+    showHint(b.name + ' стоит ' + b.cost + ' золота');
+    return;
+  }
+  G.armed = G.armed === key ? null : key;
+  G.selected = null;
+  sndTap();
+  refreshPalette(); refreshSel();
+  if (G.armed) showHint('Коснись свободной клетки');
+});
+
+$('#btnUp').addEventListener('click', () => {
+  const t = G.selected; if (!t) return;
+  const c = upCost(t);
+  if (c === null || G.gold < c){ sndNope(); return; }
+  G.gold -= c; t.lvl++;
+  sndBuild();
+  refreshHud(); refreshSel();
+});
+$('#btnSell').addEventListener('click', () => {
+  const t = G.selected; if (!t) return;
+  G.gold += sellSum(t);
+  G.towers = G.towers.filter(x => x !== t);
+  G.selected = null;
+  sndSell();
+  refreshHud(); refreshSel();
+});
+
+$('#btnGo').addEventListener('click', () => { startWave(); });
+$('#btnSpd').addEventListener('click', () => {
+  G.speed = G.speed === 1 ? 2 : 1;
+  $('#btnSpd').textContent = '×' + G.speed;
+  $('#btnSpd').classList.toggle('on', G.speed === 2);
+  sndTap();
+});
+$('#btnRestart').addEventListener('click', () => { startLevel(G.lv); showHint('Уровень начат заново'); });
+$('#btnSound').addEventListener('click', () => {
+  soundOn = !soundOn;
+  $('#btnSound').textContent = soundOn ? '🔊' : '🔇';
+  writeSave();
+  if (soundOn) sndTap();
+});
+
+/* ============ итоги уровня ============ */
+function levelWin(){
+  G.over = true;
+  const stars = G.leaked === 0 ? 3 : G.leaked <= 3 ? 2 : 1;
+  if (!save.stars[G.lv] || save.stars[G.lv] < stars){ save.stars[G.lv] = stars; writeSave(); }
+  $('#winStars').textContent = '★★★'.slice(0, stars) + '☆☆☆'.slice(0, 3 - stars);
+  $('#winTitle').textContent = 'Уровень ' + (G.lv + 1) + ' пройден!';
+  $('#winSub').textContent = G.leaked === 0
+    ? 'Ни один враг не прошёл'
+    : 'Прорвалось: ' + G.leaked + ' ' + plural(G.leaked, 'враг', 'врага', 'врагов');
+  $('#btnNext').style.display = G.lv + 1 < MAPS.length ? '' : 'none';
+  showOverlay('ovWin');
+  sndWin();
+}
+function levelLose(){
+  G.over = true;
+  $('#loseSub').textContent = 'Отбито волн: ' + Math.max(0, G.wave - 1) + ' из ' + waveCount(G.lv);
+  showOverlay('ovLose');
+  sndLose();
+}
+
+/* ============ оверлеи ============
+   Показывается не больше одного за раз. Иначе «Выбрать уровень» с экрана
+   победы открывало сетку карт ПОВЕРХ карточки победы: два размытых фона,
+   два диалога, и закрыть сетку значило потерять карточку победы насовсем.
+   prevOv помнит, откуда пришли, чтобы «Закрыть» возвращало туда же. */
+const OVERLAYS = ['ovWin','ovLose','ovMaps','ovHelp'];
+let prevOv = null;
+function showOverlay(id){
+  for (const k of OVERLAYS) $('#' + k).classList.toggle('show', k === id);
+  // при закрытии пауза снимается, только если уровень ещё идёт
+  G.paused = id ? true : G.over;
+}
+function closeAll(){
+  showOverlay(null);
+  G.paused = false;
+}
+function openMaps(){
+  prevOv = OVERLAYS.find(k => k !== 'ovMaps' && $('#' + k).classList.contains('show')) || null;
+  const grid = $('#mapGrid');
+  grid.innerHTML = '';
+  MAPS.forEach((m, i) => {
+    const b = document.createElement('button');
+    const st = save.stars[i] || 0;
+    b.disabled = !unlocked(i);
+    b.className = (i === G.lv ? 'cur' : st ? 'done' : '');
+    b.innerHTML = '<span class="n"></span><span class="nm"></span><span class="st"></span>';
+    b.querySelector('.n').textContent = unlocked(i) ? (i + 1) : '🔒';
+    b.querySelector('.nm').textContent = m.name;
+    b.querySelector('.st').textContent = st ? '★★★'.slice(0, st) : '';
+    b.addEventListener('click', () => { startLevel(i); });
+    grid.appendChild(b);
+  });
+  showOverlay('ovMaps');
+  sndTap();
+}
+$('#title').addEventListener('click', openMaps);
+$('#title').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openMaps(); }
+});
+const closeMaps = () => showOverlay(prevOv);
+$('#btnCloseMaps').addEventListener('click', closeMaps);
+$('#ovMaps').addEventListener('click', e => { if (e.target.id === 'ovMaps') closeMaps(); });
+$('#btnWinMaps').addEventListener('click', openMaps);
+$('#btnLoseMaps').addEventListener('click', openMaps);
+$('#btnNext').addEventListener('click', () => startLevel(G.lv + 1));
+$('#btnRetry').addEventListener('click', () => startLevel(G.lv));
+$('#btnHelp').addEventListener('click', () => { showOverlay('ovHelp'); sndTap(); });
+$('#btnCloseHelp').addEventListener('click', () => showOverlay(null));
+
+/* ============ окружение ============ */
+addEventListener('resize', () => { layout(); });
+addEventListener('orientationchange', () => setTimeout(layout, 150));
+// Свёрнутая вкладка не должна «догонять» время: ставим на паузу,
+// иначе при возврате волна оказывается прошедшей без игрока.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden){ G.paused = true; return; }
+  // вернулись: играем дальше, только если ничего не открыто и уровень не окончен
+  G.paused = G.over || !!document.querySelector('.overlay.show');
+  last = performance.now();
+});
+
+/* ============ проверка карт ============
+   Данные карт — руками набранные координаты, и опечатка в них даёт
+   не ошибку, а тихо кривой уровень. Поэтому каждая карта проверяется
+   на старте: отрезки только ортогональные, путь не пересекает сам себя,
+   вход на кромке поля, клетки под застройку есть. Жалобы — в консоль. */
+(function validateMaps(){
+  MAPS.forEach((m, i) => {
+    const say = msg => console.warn('Карта ' + (i + 1) + ' «' + m.name + '»: ' + msg);
+    for (const [x, y] of m.wp)
+      if (x < 0 || y < 0 || x >= COLS || y >= ROWS) say('точка вне поля ' + x + ',' + y);
+    for (let k = 0; k < m.wp.length - 1; k++){
+      const [x1, y1] = m.wp[k], [x2, y2] = m.wp[k + 1];
+      if (x1 !== x2 && y1 !== y2) say('отрезок не ортогональный: ' + [x1, y1] + ' → ' + [x2, y2]);
+      if (x1 === x2 && y1 === y2) say('нулевой отрезок в точке ' + [x1, y1]);
+    }
+    const p = buildPath(m.wp);
+    // самопересечение: считаем клетки по отрезкам и сравниваем с уникальными
+    let walked = 0;
+    for (let k = 0; k < m.wp.length - 1; k++){
+      const [x1, y1] = m.wp[k], [x2, y2] = m.wp[k + 1];
+      walked += Math.abs(x2 - x1) + Math.abs(y2 - y1);
+    }
+    if (walked + 1 !== p.cells.length) say('путь пересекает сам себя (' + (walked + 1 - p.cells.length) + ' клеток дважды)');
+    const [ex, ey] = m.wp[0];
+    if (ex !== 0 && ey !== 0 && ex !== COLS - 1 && ey !== ROWS - 1) say('вход не на кромке поля');
+    const blocked = new Set((m.blocked || []).map(([x, y]) => x + ',' + y));
+    for (const k of blocked) if (p.cellKey.has(k)) say('камень лежит на дороге: ' + k);
+    let free = 0;
+    for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++)
+      if (!p.cellKey.has(x + ',' + y) && !blocked.has(x + ',' + y)) free++;
+    if (free < 30) say('мало места под башни: ' + free);
+  });
+})();
+
+/* ============ пуск ============ */
+$('#btnSound').textContent = soundOn ? '🔊' : '🔇';
+startLevel(firstUnfinished());
+requestAnimationFrame(now => { last = now; requestAnimationFrame(frame); });
+if (!Object.keys(save.stars).length) setTimeout(() => showHint('Выбери башню внизу и поставь у дороги'), 800);
+
+if ('serviceWorker' in navigator)
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+</script>
+</body>
+</html>

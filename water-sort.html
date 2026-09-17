@@ -1,0 +1,2098 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Разлей по цветам</title>
+<meta name="theme-color" content="#1b0f33">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Разлей">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>
+  :root{
+    --w: 52px;
+    --u: 44px;
+    --gap: 14px;
+    --cap: 5;                    /* слоёв в пробирке, синхронно с JS CAP */
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
+  /* канву красит фон КОРНЯ. Пока фон висел только на body, всё, до чего body
+     не дотянулся (системная полоса под home indicator), оставалось белым.
+     Цвет — крайний стоп нижнего градиента, поэтому стыка не видно. */
+  html{background:#241533}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,sans-serif;
+    color:#fff;
+    background:#241533;
+    background:
+      radial-gradient(70% 42% at 50% 46%, rgba(150,105,190,.22) 0%, rgba(150,105,190,0) 70%),
+      radial-gradient(125% 95% at 50% 8%, #4b2f66 0%, #3a2350 42%, #241533 100%);
+    user-select:none;-webkit-user-select:none;
+    touch-action:manipulation;
+  }
+  #app{
+    height:100dvh;display:flex;flex-direction:column;
+    padding:calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 10px);
+  }
+  /* iOS с домашнего экрана: black-translucent поднимает документ под статус-бар,
+     но 100% по-прежнему меряется БЕЗ верхнего инсета — снизу остаётся незакрашенная
+     полоса ровно в его высоту. Возвращаем инсет корню, и полоса уходит под фон.
+     Растим только html: body с height:100% тянется за его итоговой высотой сам,
+     а вот min-height на обоих сложил бы инсет дважды — body вылез бы из html.
+     #app не трогаем: лишняя высота утащила бы кнопки под нижнюю кромку,
+     а недостача просто поднимает их — риск несимметричный. */
+  @media (display-mode: standalone){
+    html{min-height:calc(100% + env(safe-area-inset-top))}
+  }
+
+  /* ---------- шапка ---------- */
+  header{display:flex;align-items:center;justify-content:space-between;gap:7px;flex:0 0 auto}
+  /* ссылка в шапке ведёт себя как кнопка: снимаем подчёркивание и наследуем цвет */
+  a.icon-btn{text-decoration:none;flex:0 0 auto}
+  /* Номер уровня — единственный тянущийся элемент, поэтому три кнопки
+     остаются на своих местах, а длинный номер («Уровень 1987») ужимает себя. */
+  .lvl{flex:1 1 auto;min-width:0}
+  .lvl{
+    font-size:17px;font-weight:700;letter-spacing:.2px;opacity:.95;
+    cursor:pointer;padding:4px 10px;border-radius:12px;text-align:center;
+    transition:background .2s, transform .12s;
+  }
+  .lvl:active{transform:scale(.95);background:rgba(255,255,255,.10)}
+  .lvl .caret{font-size:12px;opacity:.55;vertical-align:middle}
+  .lvl small{display:block;font-size:11px;font-weight:500;opacity:.5;letter-spacing:.4px;margin-top:2px}
+  .icon-btn{
+    width:40px;height:40px;border:0;border-radius:13px;
+    background:rgba(255,255,255,.10);color:#fff;font-size:18px;line-height:1;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:transform .12s, background .2s;
+  }
+  .icon-btn:active{transform:scale(.9)}
+
+  /* ---------- поле ---------- */
+  main{
+    flex:1 1 auto;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:calc(var(--gap) + 14px);
+    min-height:0;
+  }
+  .row{display:flex;align-items:flex-end;justify-content:center;gap:var(--gap)}
+  /* зазор между тройками пробирок */
+  .spacer{flex:0 0 auto;width:calc(var(--gap) * 1.15)}
+
+  .tube{
+    --neck: calc(var(--u) * .30);
+    --wall: 3px;
+    position:relative;flex:0 0 auto;
+    width:var(--w);
+    height:calc(var(--u) * var(--cap) + var(--neck) + var(--wall));
+    border-radius:10px 10px calc(var(--w) * .5) calc(var(--w) * .5);
+    background:
+      linear-gradient(100deg,
+        rgba(255,255,255,.10) 0 6%,
+        rgba(255,255,255,.02) 16% 80%,
+        rgba(255,255,255,.07) 92% 100%),
+      rgba(255,255,255,.045);
+    /* стенка + внутренние рефлексы стекла; боковые тени сильнее — они «скругляют» цилиндр */
+    box-shadow:
+      inset 0 0 0 var(--wall) rgba(255,255,255,.54),
+      inset 9px 0 12px -8px rgba(255,255,255,.55),
+      inset -9px 0 13px -8px rgba(255,255,255,.36),
+      inset 12px 0 16px -14px rgba(0,0,0,.45),
+      inset -12px 0 16px -14px rgba(0,0,0,.40),
+      inset 0 -12px 16px -10px rgba(255,255,255,.30),
+      /* было filter:drop-shadow — он пересчитывался покадрово на всех колбах;
+         box-shadow повторяет форму по border-radius и почти неотличим */
+      0 8px 12px rgba(0,0,0,.32);
+    isolation:isolate;          /* filter создавал стекинг-контекст, возвращаем его */
+    transition:transform .16s cubic-bezier(.34,1.45,.5,1);
+    cursor:pointer;
+  }
+  /* ободок горлышка */
+  .tube::before{
+    content:'';position:absolute;z-index:3;
+    left:calc(var(--wall) * -1);right:calc(var(--wall) * -1);
+    top:calc(var(--neck) * .62);height:var(--wall);
+    border-radius:2px;background:rgba(255,255,255,.34);
+  }
+  .tube.sel{transform:translateY(-18px)}
+  /* will-change только на время полёта: содержимое пробирки в это время статично,
+     поэтому она растеризуется один раз, а кадры становятся чистой GPU-трансформацией.
+     Вешать это на все пробирки нельзя — каждый слой ест видеопамять. */
+  /* pointer-events:none обязателен: наклонённая на ~120° колба перекрывает прямоугольником
+     2-4 соседние, и тап по свободной колбе попадал в летящую — ход просто не срабатывал */
+  .tube.flying{
+    transition:transform .26s cubic-bezier(.3,.85,.35,1);
+    z-index:60;will-change:transform;pointer-events:none;
+  }
+  .tube.flying.back{transition:transform .2s cubic-bezier(.32,1.2,.5,1)}
+  .tube.done{animation:pop .45s ease}
+  @keyframes pop{
+    0%{transform:translateY(0) scale(1)}
+    35%{transform:translateY(-8px) scale(1.06,.94)}
+    70%{transform:translateY(0) scale(.97,1.04)}
+    100%{transform:translateY(0) scale(1)}
+  }
+  .mouth{position:absolute;top:0;left:50%;width:0;height:0}
+  .liquid{
+    position:absolute;overflow:hidden;
+    left:var(--wall);right:var(--wall);bottom:var(--wall);
+    height:calc(var(--u) * var(--cap));
+    display:flex;flex-direction:column-reverse;
+    border-radius:4px 4px calc((var(--w) - var(--wall) * 2) * .5) calc((var(--w) - var(--wall) * 2) * .5);
+  }
+  .seg{
+    position:relative;
+    width:100%;height:var(--u);flex:0 0 auto;
+    transition:height .13s linear;
+    /* цилиндрическая подсветка: тёмные бока, светлая полоса ближе к левому краю —
+       именно она читается как объём жидкости в круглой колбе */
+    background-image:linear-gradient(90deg,
+      rgba(0,0,0,.26) 0%,
+      rgba(0,0,0,.05) 14%,
+      rgba(255,255,255,.20) 33%,
+      rgba(255,255,255,.05) 52%,
+      rgba(0,0,0,.08) 74%,
+      rgba(0,0,0,.24) 100%);
+    box-shadow:
+      inset 0 -7px 9px -7px rgba(0,0,0,.30),
+      inset 0 7px 9px -7px rgba(255,255,255,.16);
+  }
+  /* скрытый слой: цвет неизвестен, пока он не станет верхним */
+  .seg.hid::after{
+    content:'?';
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:calc(var(--u) * .44);font-weight:800;color:rgba(255,255,255,.40);
+    text-shadow:0 1px 2px rgba(0,0,0,.5);
+  }
+  /* вспышка в момент раскрытия */
+  .seg.reveal{animation:reveal .5s ease-out}
+  @keyframes reveal{
+    0%{filter:brightness(2.6) saturate(1.4)}
+    100%{filter:none}
+  }
+  /* во время перелива высоту крутит rAF — переход мешает */
+  .liquid.pouring .seg{transition:none}
+  /* верхний слой: поверхность жидкости — эллипс, а не плоская линия.
+     Круглая колба смотрится сверху овалом, это главный признак объёма. */
+  .liquid > .seg.top{
+    box-shadow:
+      inset 0 6px 7px -6px rgba(0,0,0,.30),
+      inset 0 -7px 9px -7px rgba(0,0,0,.28);
+  }
+  .liquid > .seg.top::before{
+    content:'';position:absolute;z-index:1;
+    left:4%;right:4%;top:calc(var(--u) * -.07);
+    height:calc(var(--u) * .16);
+    border-radius:50%;
+    background:rgba(255,255,255,.30);
+    box-shadow:0 1px 2px rgba(255,255,255,.22);
+  }
+  /* у скрытого слоя поверхность не подсвечиваем — он должен читаться глухим */
+  .liquid > .seg.top.hid::before{display:none}
+  /* колыхание поверхности, когда струя дошла */
+  .seg.wob{animation:wob .40s cubic-bezier(.3,1.3,.5,1);transform-origin:50% 100%}
+  @keyframes wob{
+    0%{transform:scaleY(1.16)}
+    40%{transform:scaleY(.93)}
+    70%{transform:scaleY(1.04)}
+    100%{transform:scaleY(1)}
+  }
+  /* блики на стекле поверх жидкости */
+  .shine{
+    position:absolute;z-index:2;pointer-events:none;border-radius:99px;
+    left:13%;width:8%;
+    top:calc(var(--neck) + var(--u) * .40);bottom:calc(var(--w) * .46);
+    background:linear-gradient(180deg,
+      rgba(255,255,255,.46) 0%, rgba(255,255,255,.22) 55%, rgba(255,255,255,.06) 100%);
+    filter:blur(.7px);
+  }
+  .shine.sm{
+    left:auto;right:12%;width:4.5%;
+    top:calc(var(--neck) + var(--u) * 1.15);bottom:calc(var(--w) * .62);
+    background:linear-gradient(180deg, rgba(255,255,255,.24), rgba(255,255,255,.05));
+  }
+
+  /* ---------- брызги/капли (струя рисуется в SVG-оверлее) ---------- */
+  .drop{
+    position:fixed;width:6px;height:6px;border-radius:50%;z-index:69;
+    pointer-events:none;animation:drop .40s cubic-bezier(.35,.05,.75,1) forwards;
+  }
+  @keyframes drop{
+    0%{transform:translate(0,0) scale(1);opacity:.95}
+    40%{transform:translate(calc(var(--dx) * .55), var(--dy)) scale(.85);opacity:.9}
+    100%{transform:translate(var(--dx), 13px) scale(.28);opacity:0}
+  }
+  .ripple{
+    position:fixed;border-radius:50%;z-index:69;pointer-events:none;
+    border:2px solid rgba(255,255,255,.5);
+    animation:ripple .42s ease-out forwards;
+  }
+  @keyframes ripple{
+    0%{transform:scale(.35);opacity:.65}
+    100%{transform:scale(1.25);opacity:0}
+  }
+  .drip{
+    position:fixed;width:7px;height:9px;z-index:69;pointer-events:none;
+    border-radius:50% 50% 56% 56%;
+    animation:drip .40s cubic-bezier(.4,0,.9,1) forwards;
+  }
+  @keyframes drip{
+    0%{transform:translateY(0) scaleY(.8);opacity:0}
+    18%{opacity:1}
+    100%{transform:translateY(var(--fall)) scaleY(1.4);opacity:.1}
+  }
+
+  /* ---------- низ ---------- */
+  footer{flex:0 0 auto;display:flex;gap:8px;justify-content:center;padding-top:6px}
+  .btn{
+    flex:1 1 0;max-width:120px;min-height:52px;border:0;border-radius:16px;
+    background:rgba(255,255,255,.12);color:#fff;font-size:12px;font-weight:600;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    cursor:pointer;transition:transform .12s, opacity .2s;
+    padding:0 2px;white-space:nowrap;
+  }
+  .btn b{font-size:18px;font-weight:400;line-height:1}
+  .btn:active{transform:scale(.94)}
+  .btn:disabled{opacity:.32;pointer-events:none}
+
+  /* ---------- закрытая колба ----------
+     Это другая сущность, чем скрытые слои «?»: там неизвестен цвет одного слоя,
+     здесь недоступна вся колба. Поэтому и вид принципиально другой — глухая крышка
+     во всю высоту с замком и числом, а не тёмный сегмент внутри стекла. */
+  .tube.locked{cursor:default}
+  .tube.locked .liquid{visibility:hidden}
+  .tube.locked .shine{opacity:.3}
+  .lock{
+    position:absolute;inset:var(--wall);z-index:1;display:none;
+    flex-direction:column;align-items:center;justify-content:center;
+    gap:calc(var(--u) * .12);
+    border-radius:6px 6px calc((var(--w) - var(--wall) * 2) * .5) calc((var(--w) - var(--wall) * 2) * .5);
+    background:
+      repeating-linear-gradient(135deg,
+        rgba(255,255,255,.05) 0 5px, rgba(255,255,255,0) 5px 10px),
+      linear-gradient(180deg,#3a2a52 0%,#241a36 55%,#1a1228 100%);
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.14), inset 0 -8px 12px -8px rgba(0,0,0,.6);
+    transform-origin:50% 0;
+  }
+  .tube.locked .lock, .lock.pop{display:flex}
+  .lock .ico{font-size:calc(var(--u) * .52);line-height:1;opacity:.9}
+  .lock .num{
+    font-size:calc(var(--u) * .40);font-weight:800;line-height:1;color:#fff;
+    background:rgba(0,0,0,.42);border-radius:99px;
+    padding:calc(var(--u) * .09) calc(var(--u) * .22);
+  }
+  /* крышка слетает вверх — .tube не режет overflow, поэтому она уходит за край стекла */
+  .lock.pop{z-index:5;pointer-events:none;animation:lockOff .5s cubic-bezier(.36,.06,.3,1) forwards}
+  @keyframes lockOff{
+    0%  {opacity:1;transform:translateY(0) rotate(0deg) scale(1)}
+    28% {opacity:1;transform:translateY(-8px) rotate(-3deg) scale(1.03)}
+    100%{opacity:0;transform:translateY(-64px) rotate(-14deg) scale(.86)}
+  }
+
+  /* ---------- полка собранных ---------- */
+  /* Полоса резервируется с первого кадра уровня и больше не меняет высоту:
+     layout() меряет живую board.clientHeight, и полка, вылезающая по первой
+     сборке, пересчитала бы размер всех пробирок ровно в момент полёта. */
+  #shelf{flex:0 0 auto;position:relative;height:0;z-index:62}
+  #shelf.on{height:var(--shelf-h,54px)}
+  #shelf .tube{
+    position:absolute;top:var(--shelf-pad,4px);
+    /* размер даёт scale, а не подмена --w/--u: --wall и blur в .shine заданы
+       в абсолютных px, и при подмене переменных стенка осталась бы 3px
+       на 12-пиксельной колбе. При scale конечный кадр полёта совпадает
+       с покоем бит-в-бит — стыка нет вообще. */
+    transform-origin:0 0;
+    transform:scale(var(--shelf-scale,.2));
+    transition:none;cursor:default;
+  }
+  /* при масштабе ~0.2 блики превращаются в шум, а blur(.7px) в каждом из них —
+     в отдельный filter-контекст на каждую миниатюру. Градиент .seg оставляем:
+     он один держит объём и стоит одно background-image без теней. */
+  #shelf .shine{display:none}
+  #shelf .seg.top::before{display:none}
+  .shelfCount{
+    position:absolute;right:2px;top:50%;transform:translateY(-50%);
+    font-size:12px;font-weight:800;letter-spacing:.3px;
+    color:rgba(255,255,255,.5);background:rgba(255,255,255,.08);
+    border-radius:11px;padding:3px 9px;transition:transform .14s;
+  }
+  .shelfCount.bump{transform:translateY(-50%) scale(1.18)}
+  /* место улетевшей пробирки. Ряд не должен съезжать: параллельный перелив
+     рисует струю по координатам, снятым в начале своей анимации.
+     Стенка 1px и в 10 раз бледнее стеклянной — дырку нельзя спутать
+     с пустой пробиркой, которая является легальной целью перелива. */
+  .hole{
+    flex:0 0 auto;width:var(--w);pointer-events:none;
+    height:calc(var(--u) * var(--cap) + var(--u) * .3 + 3px);
+    border-radius:10px 10px calc(var(--w) * .5) calc(var(--w) * .5);
+    background:rgba(255,255,255,.028);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.055);
+  }
+  /* на время полёта растеризуем: содержимое статично, кадры становятся чистой
+     GPU-трансформацией. На 20 осевших миниатюрах will-change держать нельзя —
+     каждый слой ест видеопамять, поэтому класс снимается в finish(). */
+  .tube.flyx{
+    z-index:64;will-change:transform;pointer-events:none;
+    transform-origin:0 0;transition:none;
+  }
+
+  /* ---------- оверлей победы ---------- */
+  .overlay{
+    position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+    background:rgba(12,6,26,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    opacity:0;pointer-events:none;transition:opacity .25s;
+  }
+  .overlay.show{opacity:1;pointer-events:auto}
+  .card{
+    width:min(320px,84vw);padding:28px 22px 22px;border-radius:26px;text-align:center;
+    background:linear-gradient(165deg,#5c2f8f,#341a5c);
+    box-shadow:0 24px 60px rgba(0,0,0,.5);
+    transform:translateY(14px) scale(.94);transition:transform .3s cubic-bezier(.2,1.3,.4,1);
+  }
+  .overlay.show .card{transform:none}
+  .card .big{font-size:44px;line-height:1;margin-bottom:12px}
+  .card h2{margin:0 0 6px;font-size:22px}
+  .card p{margin:0 0 20px;opacity:.65;font-size:14px}
+  .cta{
+    width:100%;min-height:54px;border:0;border-radius:17px;cursor:pointer;
+    background:linear-gradient(180deg,#ffd23f,#ffa41b);color:#3a1d00;
+    font-size:17px;font-weight:800;transition:transform .12s;
+  }
+  .cta:active{transform:scale(.96)}
+  .ghost{
+    margin-top:10px;width:100%;min-height:42px;border:0;background:transparent;
+    color:rgba(255,255,255,.55);font-size:14px;cursor:pointer;
+  }
+  /* ---------- выбор уровня ---------- */
+  .lvlGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
+  .lvlGrid button{
+    border:0;border-radius:15px;cursor:pointer;padding:12px 8px;
+    background:rgba(255,255,255,.12);color:#fff;text-align:center;
+    display:flex;flex-direction:column;gap:4px;transition:transform .12s, background .2s;
+  }
+  .lvlGrid button:active{transform:scale(.95)}
+  .lvlGrid button.cur{background:linear-gradient(180deg,#ffd23f,#ffa41b);color:#3a1d00}
+  .lvlGrid b{font-size:14px;font-weight:800}
+  .lvlGrid small{font-size:11px;opacity:.65}
+  .lvlPick{display:flex;gap:8px}
+  .lvlPick input{
+    flex:1 1 0;min-width:0;min-height:48px;border:0;border-radius:15px;padding:0 14px;
+    background:rgba(0,0,0,.28);color:#fff;font-size:16px;font-weight:700;text-align:center;
+  }
+  .lvlPick input::placeholder{color:rgba(255,255,255,.35);font-weight:500}
+  .lvlPick button{
+    flex:0 0 auto;min-height:48px;padding:0 20px;border:0;border-radius:15px;cursor:pointer;
+    background:rgba(255,255,255,.16);color:#fff;font-size:15px;font-weight:700;
+    transition:transform .12s;
+  }
+  .lvlPick button:active{transform:scale(.95)}
+
+  .hint{
+    position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 88px);transform:translateX(-50%);
+    background:rgba(0,0,0,.55);padding:9px 16px;border-radius:20px;font-size:13px;
+    opacity:0;transition:opacity .25s;pointer-events:none;z-index:80;white-space:nowrap;
+  }
+  .hint.show{opacity:1}
+
+  /* Плашка тупика и подсветка подсказки — обе ВНЕ потока (position:fixed).
+     Появись они в потоке, main пересчитал бы высоту и ужал все колбы ровно в тот
+     момент, когда игрок смотрит на поле — та же мина, что мы обходили с полкой. */
+  .deadbar{
+    position:fixed;left:12px;right:12px;z-index:79;pointer-events:none;
+    bottom:calc(env(safe-area-inset-bottom) + 88px);
+    padding:9px 14px;border-radius:15px;text-align:center;
+    background:rgba(46,20,34,.94);border:1px solid rgba(238,53,80,.45);
+    color:#ffd0d8;font-size:13px;font-weight:600;line-height:1.3;
+    opacity:0;transform:translateY(6px);transition:opacity .25s, transform .25s;
+  }
+  .deadbar.show{opacity:1;transform:none}
+  /* outline, а не box-shadow: у .tube в тени лежат внутренние рефлексы стекла,
+     перебивать их анимацией — значит гасить объём ровно на время подсветки */
+  .tube.tip{animation:tip 1s ease-in-out 3}
+  @keyframes tip{
+    0%,100%{outline:2px solid rgba(255,205,45,0);outline-offset:3px}
+    50%    {outline:2px solid rgba(255,205,45,.95);outline-offset:3px}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <a class="icon-btn" id="btnMenu" href="index.html" title="В меню">☰</a>
+    <button class="icon-btn" id="btnSound" title="Звук">🔊</button>
+    <div class="lvl" id="lvlBtn" role="button" tabindex="0" title="Выбрать уровень">Уровень <span id="lvlNum">1</span> <span class="caret">▾</span><small id="movesTxt">ходов: 0</small></div>
+    <button class="icon-btn" id="btnHelp" title="Как играть">?</button>
+  </header>
+
+  <div id="shelf"></div>
+
+  <main id="board"></main>
+
+  <footer>
+    <button class="btn" id="btnUndo"><b>↩</b>Отменить</button>
+    <button class="btn" id="btnAdd"><b>＋</b>Пробирка</button>
+    <button class="btn" id="btnRestart"><b>⟳</b>Заново</button>
+    <button class="btn" id="btnHint"><b>💡</b>Подсказка</button>
+  </footer>
+</div>
+
+<div class="hint" id="hint"></div>
+<div class="deadbar" id="dead">Отсюда уровень уже не собрать — отмени ход или начни заново</div>
+
+<div class="overlay" id="ovWin">
+  <div class="card">
+    <div class="big">🎉</div>
+    <h2 id="winTitle">Уровень пройден!</h2>
+    <p id="winSub">Отличная работа</p>
+    <button class="cta" id="btnNext">Следующий уровень</button>
+  </div>
+</div>
+
+<div class="overlay" id="ovLevel">
+  <div class="card">
+    <div class="big">🎚️</div>
+    <h2>Выбор уровня</h2>
+    <p>Чем выше номер, тем сложнее: больше цветов, скрытые слои и маленькие скляночки.</p>
+    <div class="lvlGrid">
+      <button data-lvl="1"><b>Лёгкий</b><small>3 цвета</small></button>
+      <button data-lvl="12"><b>Средний</b><small>6 цветов, «?»</small></button>
+      <button data-lvl="35"><b>Сложный</b><small>16 колб, скляночка</small></button>
+      <button data-lvl="73"><b>Очень сложный</b><small>23 колбы, дубли цветов</small></button>
+    </div>
+    <div class="lvlPick">
+      <input id="lvlInput" type="number" min="1" inputmode="numeric" placeholder="номер">
+      <button id="btnGoLvl">Перейти</button>
+    </div>
+    <button class="ghost" id="btnCloseLevel">Закрыть</button>
+  </div>
+</div>
+
+<div class="overlay" id="ovHelp">
+  <div class="card">
+    <div class="big">🧪</div>
+    <h2>Как играть</h2>
+    <p>Нажми на пробирку, чтобы взять верхний слой жидкости, потом на другую — чтобы перелить.<br><br>
+       Переливать можно только на такой же цвет или в пустую пробирку.<br><br>
+       Слои с «?» скрыты — цвет откроется, когда слой станет верхним.<br><br>
+       Цель — собрать каждый цвет в отдельной пробирке.</p>
+    <button class="cta" id="btnCloseHelp">Понятно</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ============ константы ============ */
+const CAP = 5;                       // слоёв в пробирке (дублируется в CSS как --cap)
+/* Палитра разложена так, чтобы соседей по оттенку разводила СВЕТЛОТА, а не тон:
+   на слое высотой 19-25px светлотный канал единственный с нормальной разрешающей
+   способностью, и пары, разведённые только оттенком, сливаются.
+   Считать различимость надо по ОТРИСОВАННОМУ цвету, а не по hex: поверх слоя лежит
+   градиент от rgba(0,0,0,.26) до rgba(255,255,255,.20) плюс inset-тени и блик .shine,
+   поэтому подсвеченный тёмный может совпасть с затенённым светлым — именно так
+   прошлые светло-серый и шифер сходились до ΔE 3.5 при базовом 28.2.
+   Порядок значим: генератор берёт цвета по индексам 0..nc-1, а nc растёт с уровнем,
+   поэтому палитра обязана быть хорошей на каждом префиксе, а не только целиком.
+   И главное правило, на котором спотыкались обе прошлые версии: 12 насыщенных цветов
+   не помещаются в десяток нареченных категорий, поэтому две пары обязаны делить
+   семью — но только те, где разрыв по светлоте даёт РАЗНОЕ НАЗВАНИЕ (золотой против
+   коричневого, фиолетовый против сиреневого). Три оттенка подряд внутри одной
+   категории путаются даже при формально приличном ΔE: их приходится не различать
+   глазом, а помнить, который из них который. */
+const COLORS = ['#ee3550','#12eacf','#ffc21a','#7e00fc','#0082ee','#ff9569',
+                '#0393ab','#9bc800','#ff66cf','#d3bfff','#00a248','#b25a00'];
+const HIDDEN_FILL = '#160f27';   // цвет закрытого слоя
+const HIDDEN_FROM = 10;          // с какого уровня появляются скрытые слои
+/* Потолок ручного перехода. Играть можно и дальше — «Следующий уровень» номер не
+   ограничивает, — но выше этой отметки в поле номера уводить некуда: сложность
+   упирается в потолок к 76-му уровню (24 колбы, 12 цветов, два замка, две скляночки),
+   и дальше уровни отличаются только раскладкой. 2000 сидов таких раскладок — запас
+   на годы, а поле ввода остаётся коротким. */
+const MAX_LEVEL = 2000;
+const SAVE_KEY = 'watersort.v1';
+
+/* ============ утилиты ============ */
+const $ = s => document.querySelector(s);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+// 1 колбу / 2-4 колбы / 5+ колб
+const plural = (n, one, few, many) => {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+  return many;
+};
+
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+/* ============ правила игры ============
+   Пробирки бывают разной вместимости: полноразмерные на CAP слоёв и маленькие
+   «скляночки» на пару слоёв — они работают как временная полка. caps[i] — вместимость. */
+const topColor  = t => t.length ? t[t.length - 1] : -1;
+const fullSame  = (t, cap) => t.length === cap && t.every(c => c === t[0]);
+const isDone    = (t, cap) => fullSame(t, cap);
+// «Собрана» — только полноразмерная: из маленькой всегда можно вылить обратно,
+// иначе цвет в ней запирался бы и уровень становился нерешаемым.
+const isSolved  = (t, cap) => cap === CAP && fullSame(t, cap);
+const isWin     = (tubes, caps) => tubes.every((t, i) => t.length === 0 || isDone(t, caps[i]));
+
+/* ---- закрытые колбы ----
+   locks[i] = 0 — обычная; k > 0 — откроется, когда собрано k колб. Замок не хранится
+   отдельным состоянием, а вычисляется из поля: сколько полноразмерных колб уже собрано.
+   Отсюда два бесплатных свойства — отмена хода сама возвращает замок на место, и
+   канонизация состояний в солвере остаётся корректной без лишнего измерения. */
+function solvedCount(tubes, caps){
+  let k = 0;
+  for (let i = 0; i < tubes.length; i++) if (isSolved(tubes[i], caps[i])) k++;
+  return k;
+}
+// маска «закрыта ли колба» — считается ОДИН раз на состояние: в солвере canPour
+// зовётся n² раз, и пересчёт внутри него сделал бы проверку решаемости квадратично дороже
+function closedMask(tubes, caps, locks){
+  if (!locks || !locks.some(v => v > 0)) return null;
+  const n = solvedCount(tubes, caps);
+  return locks.map(v => v > 0 && n < v);
+}
+
+function canPour(tubes, caps, a, b, closed){
+  if (a === b) return false;
+  if (closed && (closed[a] || closed[b])) return false;   // из закрытой не льём и в неё тоже
+  const from = tubes[a], to = tubes[b];
+  if (!from.length || to.length >= caps[b]) return false;
+  if (isSolved(from, caps[a])) return false;
+  // В пустую льём всегда. Прежний запрет «не гонять монолит в пустоту» экономил солверу
+  // ветки, но ПРОТЕКАЛ: колба с зелёным верхом и «?» под ним отказывала в переливе ровно
+  // тогда, когда под «?» тоже зелёный — то есть сам отказ сообщал игроку то, что «?»
+  // обязан прятать. Солверу отсечка и не нужна: перестановка монолита в пустую той же
+  // вместимости даёт ТО ЖЕ каноническое состояние, и seen отбрасывает её сам.
+  if (!to.length) return true;
+  return topColor(to) === topColor(from);
+}
+
+function pourCount(tubes, caps, a, b){
+  const from = tubes[a], c = topColor(from);
+  let k = 0;
+  for (let i = from.length - 1; i >= 0 && from[i] === c; i--) k++;
+  return Math.min(k, caps[b] - tubes[b].length);
+}
+
+function applyMove(tubes, caps, a, b){
+  const nx = tubes.map(t => t.slice());
+  const n = pourCount(nx, caps, a, b);
+  for (let i = 0; i < n; i++) nx[b].push(nx[a].pop());
+  return nx;
+}
+
+/* ============ солвер (проверка решаемости) ============ */
+// Вместимость входит в ключ: пробирки с одним содержимым, но разной ёмкости неравноценны.
+// Порог замка — тоже: подписи сортируются, и без него закрытая колба слилась бы с открытой
+// такого же содержания, а ходы у них разные.
+function canon(tubes, caps, locks){
+  return tubes
+    .map((t, i) => caps[i] + '/' + (locks ? locks[i] : 0) + ':' + t.join(','))
+    .sort().join('|');
+}
+
+/* Вердикт трёхзначный, и это важно: одиночный DFS на комбинаторной задаче имеет
+   тяжелохвостое время, поэтому «не нашёл» и «доказал, что нет» — разные ответы.
+   Генератору хватало двух значений (обе неудачи = отбраковать раскладку), а вот
+   игроку сказать «ты в тупике» можно ТОЛЬКО на 'dead': ложное обвинение в тупике
+   хуже, чем промолчать. 'unknown' — поиск упёрся в бюджет и ничего не доказал. */
+function solveVerdict(start, caps, locks, budget){
+  const cap = budget || 150000;
+  const seen = new Set();
+  const stack = [start.map(t => t.slice())];
+  let iter = 0;
+  while (stack.length){
+    if (++iter > cap) return 'unknown';
+    const cur = stack.pop();
+    if (isWin(cur, caps)) return 'win';
+    const key = canon(cur, caps, locks);
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const closed = closedMask(cur, caps, locks);
+    const good = [], meh = [];
+    for (let a = 0; a < cur.length; a++){
+      for (let b = 0; b < cur.length; b++){
+        if (!canPour(cur, caps, a, b, closed)) continue;
+        (cur[b].length ? good : meh).push([a, b]);   // слияние цветов важнее слива в пустое
+      }
+    }
+    for (const [a, b] of meh)  stack.push(applyMove(cur, caps, a, b));
+    for (const [a, b] of good) stack.push(applyMove(cur, caps, a, b));
+  }
+  return 'dead';                     // стек исчерпан, бюджет не тронут — доказано
+}
+
+// Генератору по-прежнему нужны два значения: и 'dead', и 'unknown' одинаково значат
+// «эту раскладку не берём». Поведение отбраковки не меняется ни на уровень.
+const solvable = (start, caps, locks) => solveVerdict(start, caps, locks) === 'win';
+
+/* ---- подсказка ----
+   Первый ход из пути DFS брать нельзя: поиск возвращает ПЕРВОЕ найденное решение,
+   а не кратчайшее, и повёл бы игрока окольной дорогой. Вместо этого ранжируем ходы
+   по-игроцки и берём лучший из тех, что сохраняют решаемость — обычно это первый же
+   кандидат, то есть один прогон солвера.
+   Подсказка смотрит на модель целиком, включая скрытые слои: на уровнях с «?» её совет
+   косвенно выдаёт то, что они прячут. Осознанный размен — инструмент против угадайки
+   в обмен на смягчение механики. */
+function rankMove(tubes, caps, a, b){
+  const from = tubes[a], to = tubes[b], c = topColor(from);
+  const n = pourCount(tubes, caps, a, b);
+  let s = n * 3;                                              // за раз больше слоёв
+  if (to.length){
+    s += 40;                                                  // слияние важнее слива в пустое
+    if (to.length + n === caps[b] && to.every(x => x === c)) s += 100;   // завершает колбу
+  }
+  if (n === from.length) s += 25;                             // освобождает колбу-источник
+  return s;
+}
+
+function findHint(){
+  const closed = gameClosed();
+  const moves = [];
+  for (let a = 0; a < state.tubes.length; a++)
+    for (let b = 0; b < state.tubes.length; b++)
+      if (canPour(state.tubes, state.caps, a, b, closed))
+        moves.push({ a, b, s: rankMove(state.tubes, state.caps, a, b) });
+  moves.sort((x, y) => y.s - x.s);
+  for (const m of moves){
+    const next = applyMove(state.tubes, state.caps, m.a, m.b);
+    if (solveVerdict(next, state.caps, state.locks) === 'win') return m;
+  }
+  return null;
+}
+
+/* ============ генератор уровней ============ */
+function colorsForLevel(l){
+  const thresholds = [2, 5, 9, 14, 20, 27, 35, 44, 54];
+  let c = 3;
+  for (const t of thresholds) if (l > t) c++;
+  return Math.min(c, COLORS.length);
+}
+
+/* ---- дубли цветов ----
+   Поле растёт не за счёт новых цветов (больше десятка их не развести на глаз), а за
+   счёт того, что один цвет занимает две колбы: тогда его нужно собрать в две полные.
+   Правило победы это уже допускает — «в каждой колбе один цвет», а не «цвет в одной колбе». */
+const DUP_FROM = 20;              // с какого уровня появляются дубли
+const MAX_COLOR_TUBES = 20;       // потолок цветных колб, чтобы поле влезало в экран
+// Потолок поля целиком. 24 колбы — четыре ряда по шесть при слое 25px; 25-я уводит
+// в пятый ряд и роняет слой до 18.4px, то есть ужимает каждую колбу на четверть.
+const MAX_TUBES = 24;
+function dupTubes(level, nc){
+  if (level < DUP_FROM) return 0;
+  const room = Math.min(nc, MAX_COLOR_TUBES - nc);   // не больше двух колб на цвет
+  return clamp(Math.floor((level - DUP_FROM) / 8) + 1, 0, Math.max(0, room));
+}
+
+/* ---- скрытые слои ----
+   Нижние слои закрыты знаком «?»; слой раскрывается, когда становится верхним.
+   Уровень при этом остаётся решаемым (солвер видит всё) — незнание компенсируется
+   отменой хода и запасной пробиркой, как принято в жанре. */
+// hidden[i][k] === true → слой k пробирки i закрыт. Флаг на каждый слой (а не «сколько
+// снизу»), поэтому «?» могут стоять вразброс, а не сплошной колодой у дна.
+function hiddenForLevel(level, tubes, locks){
+  const hidden = tubes.map(t => t.map(() => false));
+  // максимум 2 скрытых слоя из CAP: больше — игра превращается в угадайку
+  const depth = level < HIDDEN_FROM ? 0 : level < 20 ? 1 : 2;
+  if (!depth) return hidden;
+  const share = level < 20 ? 0.6 : 0.85;         // доля пробирок со скрытыми слоями
+  const rnd = mulberry32((Math.imul(level, 40503) ^ 0x9e3779b9) >>> 0);
+  for (let i = 0; i < tubes.length; i++){
+    const len = tubes[i].length;
+    // в закрытой колбе слои не прячем: она и так не видна целиком, а снятие крышки
+    // должно показывать настоящие цвета, иначе это двойное наказание за одно и то же
+    if (locks && locks[i] > 0) continue;
+    if (len < 2 || rnd() >= share) continue;
+    // верхний слой не прячем — игрок должен видеть, что переливает
+    const idx = [];
+    for (let k = 0; k < len - 1; k++) idx.push(k);
+    for (let k = idx.length - 1; k > 0; k--){
+      const j = Math.floor(rnd() * (k + 1));
+      [idx[k], idx[j]] = [idx[j], idx[k]];
+    }
+    const cnt = Math.min(depth, idx.length);
+    for (let k = 0; k < cnt; k++) hidden[i][idx[k]] = true;
+  }
+  return hidden;
+}
+
+// цвет для отрисовки слоя: скрытый — тёмный
+function segColor(tube, idx){
+  return state.hidden[tube] && state.hidden[tube][idx]
+    ? HIDDEN_FILL : COLORS[state.tubes[tube][idx] % COLORS.length];
+}
+
+// после хода: слой, ставший верхним, раскрывается. Возвращает индексы пробирок.
+function revealTops(){
+  const opened = [];
+  for (let i = 0; i < state.tubes.length; i++){
+    const h = state.hidden[i];
+    if (!h || !h.length) continue;
+    let changed = false;
+    if (isDone(state.tubes[i], state.caps[i])){
+      // собранную открываем целиком — иначе не видно, что она готова
+      for (let k = 0; k < h.length; k++) if (h[k]){ h[k] = false; changed = true; }
+    } else {
+      const top = state.tubes[i].length - 1;
+      if (top >= 0 && h[top]){ h[top] = false; changed = true; }
+    }
+    if (changed) opened.push(i);
+  }
+  return opened;
+}
+
+// Порядок пробирок перемешиваем, иначе пустые и маленькие выстраиваются хвостом
+// в конце поля. На решаемость перестановка не влияет.
+function shuffleTubes(tubes, caps, locks, rnd){
+  const order = tubes.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--){
+    const j = Math.floor(rnd() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return {
+    tubes: order.map(i => tubes[i]),
+    caps:  order.map(i => caps[i]),
+    locks: order.map(i => locks[i])
+  };
+}
+
+// маленькие скляночки-полки: появляются с ростом уровня
+const SMALL_CAP  = 2;
+const SMALL_FROM = 15;
+const smallCount = l => l < SMALL_FROM ? 0 : l < 30 ? 1 : 2;
+
+/* ---- сколько колб закрыто ----
+   Порог считаем от собранных, поэтому механика имеет смысл только там, где полка уже
+   включена (от 11 колб = 20-й уровень): игрок видит счётчик N/M и то же число на крышке. */
+const LOCK_FROM  = 25;
+const lockCount  = l => l < LOCK_FROM ? 0 : l < 40 ? 1 : 2;
+const LOCK_STEPS = [2, 4];        // сколько собрать до открытия первой и второй крышки
+
+function generateLevel(level){
+  const nc = colorsForLevel(level);
+  const base = (Math.imul(level, 2654435761) >>> 0);
+  const small = smallCount(level);
+  const colorTubes = nc + dupTubes(level, nc);      // цветных колб (с учётом дублей)
+  const caps = [];
+  for (let i = 0; i < colorTubes + 2; i++) caps.push(CAP);
+  for (let i = 0; i < small; i++) caps.push(SMALL_CAP);
+
+  for (let attempt = 0; attempt < 400; attempt++){
+    const rnd = mulberry32((base + attempt * 7919) >>> 0);
+    // раздаём колбы цветам: каждому одна, лишние — случайным, но не больше двух на цвет
+    const perColor = new Array(nc).fill(1);
+    for (let left = colorTubes - nc; left > 0; ){
+      const c = Math.floor(rnd() * nc);
+      if (perColor[c] < 2){ perColor[c]++; left--; }
+    }
+    const pool = [];
+    for (let c = 0; c < nc; c++)
+      for (let k = 0; k < perColor[c] * CAP; k++) pool.push(c);
+    for (let i = pool.length - 1; i > 0; i--){
+      const j = Math.floor(rnd() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    const tubes = [];
+    for (let i = 0; i < colorTubes; i++) tubes.push(pool.slice(i * CAP, (i + 1) * CAP));
+    tubes.push([], []);                       // две пустые пробирки
+    for (let i = 0; i < small; i++) tubes.push([]);   // маленькие — стартуют пустыми
+
+    // запираем только цветные полноразмерные: скляночка обязана оставаться полкой,
+    // а пустая — рабочим местом. Число закрытых ограничено так, чтобы порог открытия
+    // был достижим на одних лишь открытых колбах
+    const locks = new Array(tubes.length).fill(0);
+    const nLocks = Math.min(lockCount(level), Math.max(0, colorTubes - LOCK_STEPS[1] - 1));
+    for (let k = 0; k < nLocks; k++){
+      let idx;
+      do { idx = Math.floor(rnd() * colorTubes); } while (locks[idx]);
+      locks[idx] = LOCK_STEPS[k];
+    }
+
+    if (tubes.some((t, i) => isDone(t, caps[i]))) continue;  // готовый цвет на старте
+    // солвер знает про замки: если порог недостижим, раскладка отбраковывается здесь же
+    if (solvable(tubes, caps, locks)) return shuffleTubes(tubes, caps, locks, rnd);
+  }
+  // страховка (на практике не срабатывает): заведомо решаемая раскладка —
+  // собранное поле с обменянными верхними слоями двух пробирок
+  const tubes = [];
+  for (let i = 0; i < colorTubes; i++) tubes.push(new Array(CAP).fill(i % nc));
+  tubes[0][CAP - 1] = tubes[1][0];              // меняем верхушки, иначе всё собрано сразу
+  tubes[1][CAP - 1] = tubes[0][0];
+  tubes.push([], []);
+  for (let i = 0; i < small; i++) tubes.push([]);
+  return { tubes, caps, locks: new Array(tubes.length).fill(0) };   // страховке замки не нужны
+}
+
+/* ============ звук ============ */
+let actx = null, soundOn = true;
+function audio(){
+  if (!actx){
+    const C = window.AudioContext || window.webkitAudioContext;
+    if (!C) return null;
+    actx = new C();
+  }
+  if (actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function tone(freq, dur, vol, when, type){
+  if (!soundOn) return;
+  const ac = audio(); if (!ac) return;
+  const t0 = ac.currentTime + (when || 0);
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type || 'sine';
+  o.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(vol, t0 + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(ac.destination);
+  o.start(t0); o.stop(t0 + dur + 0.05);
+}
+// Буфер шума генерится ОДИН раз и зацикливается: раньше на каждый перелив в главном
+// потоке заполнялись десятки тысяч семплов — ровно в тот кадр, когда пошла струя.
+let NOISE_BUF = null;
+function noiseBuffer(ac){
+  if (NOISE_BUF && NOISE_BUF.sampleRate === ac.sampleRate) return NOISE_BUF;
+  const len = Math.ceil(ac.sampleRate * 2);
+  const buf = ac.createBuffer(1, len, ac.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  NOISE_BUF = buf;
+  return buf;
+}
+
+// шум воды: полосовой фильтр по белому шуму + подъём тона, как у наполняющейся ёмкости
+function sndFlow(dur){
+  if (!soundOn) return;
+  const ac = audio(); if (!ac) return;
+
+  const src = ac.createBufferSource();
+  src.buffer = noiseBuffer(ac);
+  src.loop = true;                       // длительность задаётся stop(), не длиной буфера
+  const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.9;
+  const g  = ac.createGain();
+  const t0 = ac.currentTime;
+
+  bp.frequency.setValueAtTime(650, t0);
+  bp.frequency.linearRampToValueAtTime(1600, t0 + dur);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(0.13, t0 + 0.06);
+  g.gain.setValueAtTime(0.13, t0 + Math.max(0.08, dur - 0.09));
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur + 0.03);
+
+  src.connect(bp); bp.connect(g); g.connect(ac.destination);
+  src.start(t0); src.stop(t0 + dur + 0.05);
+}
+const sndPlop     = () => tone(240, 0.10, 0.06, 0, 'sine');
+const sndComplete = () => { tone(660, .16, .09, 0); tone(880, .22, .09, .09); };
+const sndWin      = () => [523, 659, 784, 1046].forEach((f, i) => tone(f, .3, .1, i * .1));
+const sndTap      = () => tone(420, .07, .05, 0, 'sine');
+// открытие крышки — восходящее трезвучие, чтобы не путалось со звуком сбора
+const sndUnlock   = () => [392, 523, 784].forEach((f, i) => tone(f, i === 2 ? .3 : .14, .085, i * .085));
+const sndNope     = () => tone(150, .12, .06, 0, 'square');
+
+/* ============ состояние ============ */
+const state = {
+  level: 1,
+  tubes: [],
+  caps: [],                       // вместимость каждой пробирки (CAP или SMALL_CAP)
+  hidden: [],                     // какие слои закрыты знаком «?»
+  locks: [],                      // 0 — обычная колба, k — откроется после k собранных
+  moves: 0,
+  history: [],
+  selected: null,
+  addUsed: false,
+  busyTubes: new Set(),           // пробирки, занятые текущими переливами
+  anim: 0,                        // сколько переливов сейчас в полёте
+  gen: 0,                         // поколение поля: смена уровня обрывает летящие анимации
+  locked: false,                  // показан оверлей победы — ввод заморожен
+  shelf: [],                      // индексы собранных пробирок в порядке сборки
+  shelfOn: false,                 // включена ли полка на этом уровне (заморожено в startLevel)
+  shelfMax: 0,                    // сколько пробирок предстоит собрать
+  shelfAnim: 0                    // сколько пробирок летит на полку/обратно
+};
+// снимок для отмены хода: цвета и скрытие вместе, иначе отмена «подсматривала» бы.
+// Полка едет тем же снимком — иначе после отмены модель и картинка разъедутся.
+const snapshot = () => JSON.stringify({
+  t: state.tubes, h: state.hidden, c: state.caps, s: state.shelf, k: state.locks
+});
+let tubeEls = [];
+let holeEls = [];                 // заглушки на месте улетевших — по ним пробирка возвращается
+let UNIT = 44;                    // высота одного слоя в px (совпадает с CSS --u)
+
+const board = $('#board');
+const shelf = $('#shelf');
+
+/* ============ полка собранных ============
+   Собранная пробирка остаётся в state.tubes на своём индексе: индексы держат
+   busyTubes и параллельные переливы, а isWin читает ту же модель. Полка —
+   только про DOM, правила игры (canPour/pourCount/isWin/солвер) не меняются.
+   Триггер строго по isSolved: у залитой скляночки isDone тоже true, но из неё
+   обязано быть можно вылить обратно — иначе уровень становится нерешаемым. */
+const SHELF_H    = 54;            // высота полосы, px
+const SHELF_PAD  = 4;
+const SHELF_COUNT_W = 58;         // место под пилюлю счётчика справа
+const SHELF_MIN  = 11;            // с какого числа пробирок полка включается
+let SHELF = { scale: .2, slotW: 10, step: 12, padL: 8 };
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const onShelf = i => state.shelf.indexOf(i) !== -1;
+const pendingFlights = new Set();
+
+function save(){
+  try{
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ level: state.level, sound: soundOn }));
+  }catch(e){}
+}
+function load(){
+  try{
+    const d = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
+    if (d.level) state.level = d.level;
+    if (d.sound === false) soundOn = false;
+  }catch(e){}
+}
+
+/* ============ отрисовка ============ */
+// В фоновой вкладке clientWidth/innerWidth могут быть нулями — подстраховываемся,
+// иначе поле схлопнется в минимальный размер и таким и останется.
+const vpW = () => window.innerWidth  || document.documentElement.clientWidth  || 390;
+const vpH = () => window.innerHeight || document.documentElement.clientHeight || 780;
+
+function layout(rows, cols){
+  const bw = board.clientWidth  || (vpW() - 24);
+  const bh = board.clientHeight || (vpH() - 210);
+  const gap = cols > 5 ? 9 : 13;
+
+  // чем меньше пробирок — тем крупнее они на экране
+  const maxW = cols <= 4 ? 86 : cols === 5 ? 72 : 60;
+  const maxU = rows === 1 ? 78 : rows === 2 ? 62 : rows === 3 ? 52 : 42;
+
+  // в ряду ещё зазоры между тройками — они тоже съедают ширину
+  const spacers = Math.floor((cols - 1) / 3);
+  let w = (bw - gap * (cols + 1) - spacers * gap * 2.15) / cols;
+  w = clamp(w, 28, maxW);
+  // высота пробирки = 4u + горлышко (0.30u) + стенка; плюс запас на подъём и отступы
+  // высота пробирки = CAP·u + горлышко (0.30u) + стенка
+  let u = (bh - (rows - 1) * (gap + 14) - 26 - rows * 3) / rows / (CAP + 0.3);
+  u = clamp(Math.min(u, w * 0.95), 18, maxU);
+
+  UNIT = +u.toFixed(1);
+  document.documentElement.style.setProperty('--cap', CAP);
+  document.documentElement.style.setProperty('--w', w.toFixed(1) + 'px');
+  document.documentElement.style.setProperty('--u', u.toFixed(1) + 'px');
+  document.documentElement.style.setProperty('--gap', gap + 'px');
+  layoutShelf(w, u);
+}
+
+// Шаг между миниатюрами считается сразу под ФИНАЛЬНОЕ число собранных, а не под
+// текущее. Тогда посадка N-й пробирки никогда не двигает предыдущие и не портит
+// цель полёта, вычисленную до его старта.
+function layoutShelf(w, u){
+  const tubeH = u * CAP + u * 0.30 + TUBE_WALL;   // = формула height в CSS-правиле .tube
+  const scale = clamp((SHELF_H - SHELF_PAD * 2) / tubeH, .10, .45);
+  const slotW = w * scale;
+  const avail = (shelf.clientWidth || (vpW() - 24)) - SHELF_COUNT_W;
+  const n = Math.max(1, state.shelfMax);
+  // при нехватке ширины миниатюры наезжают друг на друга — это читается
+  // как пробирки в штативе; скролл в игровой полосе конкурировал бы с тапами
+  const step = n > 1 ? Math.min(slotW + 5, (avail - slotW) / (n - 1)) : 0;
+  const padL = Math.max(2, (avail - (n - 1) * step - slotW) / 2);
+  SHELF = { scale, slotW, step, padL };
+
+  const root = document.documentElement.style;
+  root.setProperty('--shelf-h', SHELF_H + 'px');
+  root.setProperty('--shelf-pad', SHELF_PAD + 'px');
+  root.setProperty('--shelf-scale', scale.toFixed(4));
+  // layout() зовут ещё дважды после сборки — одна запись переменной
+  // поправляет масштаб всей полки разом, но left у слотов нужно переставить
+  state.shelf.forEach((i, p) => { if (tubeEls[i]) placeOnShelf(tubeEls[i], p); });
+}
+
+function placeOnShelf(el, p){
+  el.style.left = (SHELF.padL + p * SHELF.step).toFixed(1) + 'px';
+}
+
+function makeTube(i){
+  const el = document.createElement('div');
+  el.className = 'tube' + (state.caps[i] < CAP ? ' small' : '');
+  el.style.setProperty('--cap', state.caps[i]);   // высота пробирки = --u × --cap
+  el.dataset.i = i;
+  el.innerHTML = '<div class="mouth"></div><div class="liquid"></div>' +
+                 '<div class="shine"></div><div class="shine sm"></div>' +
+                 '<div class="lock"><div class="ico">🔒</div><div class="num"></div></div>';
+  tubeEls[i] = el;
+  paintTube(i);
+  return el;
+}
+
+function paintTube(i){
+  const liq = tubeEls[i].querySelector('.liquid');
+  liq.classList.remove('pouring');
+  liq.innerHTML = '';
+  for (let k = 0; k < state.tubes[i].length; k++){
+    const s = document.createElement('div');
+    s.className = 'seg' + (state.hidden[i] && state.hidden[i][k] ? ' hid' : '');
+    s.style.backgroundColor = segColor(i, k);
+    liq.appendChild(s);
+  }
+  if (liq.lastElementChild) liq.lastElementChild.classList.add('top');
+  paintLock(i, solvedCount(state.tubes, state.caps));
+}
+
+const gameClosed = () => closedMask(state.tubes, state.caps, state.locks);
+const lockLeft = i => Math.max(0, (state.locks[i] || 0) - solvedCount(state.tubes, state.caps));
+
+// Крышка: содержимое прячет CSS (.tube.locked .liquid), поэтому paintTube остаётся
+// одинаковым для закрытой и открытой колбы — рисовать нечего, кроме числа на крышке.
+function paintLock(i, done){
+  const el = tubeEls[i];
+  if (!el) return;
+  const need = state.locks[i] || 0;
+  const closed = need > 0 && done < need;
+  el.classList.toggle('locked', closed);
+  if (closed) el.querySelector('.lock .num').textContent = need - done;
+}
+
+// Замки — производная от поля, поэтому пересчитываем их разом после любого изменения.
+// animate=true только для хода: при ререндере и отмене крышка просто оказывается на месте.
+function refreshLocks(animate){
+  if (!state.locks.some(v => v > 0)) return;
+  const done = solvedCount(state.tubes, state.caps);
+  for (let i = 0; i < state.locks.length; i++){
+    if (!state.locks[i] || !tubeEls[i]) continue;
+    const wasClosed = tubeEls[i].classList.contains('locked');
+    const closed = done < state.locks[i];
+    if (closed === wasClosed){ paintLock(i, done); continue; }
+    paintLock(i, done);
+    if (!closed && animate) playUnlock(i);
+  }
+}
+
+function playUnlock(i){
+  const el = tubeEls[i];
+  sndUnlock();
+  if (reduceMotion.matches) return;
+  const cover = el.querySelector('.lock');
+  cover.classList.remove('pop');
+  void cover.offsetWidth;
+  cover.classList.add('pop');                 // .lock.pop держит display, пока крышка улетает
+  setTimeout(() => cover.classList.remove('pop'), 520);
+  // вспышка раскрытия — тот же приём, что у скрытых слоёв
+  el.querySelectorAll('.liquid .seg').forEach(s => {
+    s.classList.remove('reveal'); void s.offsetWidth; s.classList.add('reveal');
+  });
+}
+
+function makeHole(i){
+  const el = document.createElement('div');
+  el.className = 'hole';
+  holeEls[i] = el;
+  return el;
+}
+
+function buildBoard(){
+  board.innerHTML = '';
+  tubeEls = [];
+  holeEls = [];
+  const n = state.tubes.length;
+  const perRow = n <= 5 ? n : n <= 8 ? 4 : n <= 12 ? 5 : 6;
+  const rows = Math.ceil(n / perRow);
+  const cols = Math.ceil(n / rows);
+  // сетка считается от общего числа пробирок и не меняется, когда собранные
+  // уезжают: их места держат заглушки, поле не перекраивается ни разу за уровень
+  layout(rows, cols);
+
+  let idx = 0;
+  for (let r = 0; r < rows; r++){
+    const row = document.createElement('div');
+    row.className = 'row';
+    const count = Math.min(cols, n - idx);
+    for (let k = 0; k < count; k++, idx++){
+      // пробирки идут группами по три — так поле читается, когда их много
+      if (k && k % 3 === 0){
+        const sp = document.createElement('div');
+        sp.className = 'spacer';
+        row.appendChild(sp);
+      }
+      row.appendChild(onShelf(idx) ? makeHole(idx) : makeTube(idx));
+    }
+    board.appendChild(row);
+  }
+  renderShelf();
+  // после реального замера пересчитываем размеры; rAF в скрытой вкладке не сработает,
+  // поэтому дублируем таймером
+  requestAnimationFrame(() => layout(rows, cols));
+  setTimeout(() => layout(rows, cols), 60);
+}
+
+// Полка восстанавливается из state.shelf, а не хранится в DOM: любой ререндер
+// (поворот экрана, «+пробирка», отмена) собирает её заново сам.
+function renderShelf(){
+  shelf.innerHTML = '';
+  shelf.classList.toggle('on', state.shelfOn);
+  if (!state.shelfOn) return;
+  state.shelf.forEach((i, p) => {
+    shelf.appendChild(makeTube(i));
+    placeOnShelf(tubeEls[i], p);
+  });
+  const c = document.createElement('div');
+  c.className = 'shelfCount';
+  c.textContent = state.shelf.length + '/' + state.shelfMax;
+  shelf.appendChild(c);
+}
+
+function updateShelfCount(bump){
+  const c = shelf.querySelector('.shelfCount');
+  if (!c) return;
+  c.textContent = state.shelf.length + '/' + state.shelfMax;
+  if (!bump) return;
+  c.classList.remove('bump');
+  void c.offsetWidth;
+  c.classList.add('bump');
+  setTimeout(() => c.classList.remove('bump'), 150);
+}
+
+/* ---- перелёт ----
+   FLIP настоящим узлом: сначала приводим DOM к конечному состоянию, потом
+   анимируем ИЗ инверсии В ничего. Клон-«призрак» отпадает по двум причинам:
+   tubeEls[i] — единственная связь модели с DOM, и на прилёте пришлось бы
+   кадрово-точно подменять призрак миниатюрой (один пропущенный кадр = мигание).
+   WAAPI, а не CSS-transition: нужен жёсткий синхронный стоп по anim.cancel(). */
+function runFlight(i, keyframes, duration){
+  const el = tubeEls[i];
+  const gen = state.gen;
+  el.classList.add('flyx');
+  state.shelfAnim++;
+  const rec = { done: false };
+  rec.finish = () => {
+    if (rec.done) return;
+    rec.done = true;
+    pendingFlights.delete(rec);
+    el.classList.remove('flyx');       // will-change снимаем: 20 слоёв съели бы видеопамять
+    state.shelfAnim = Math.max(0, state.shelfAnim - 1);
+    if (gen !== state.gen) return;     // поле уже другое — трогать нечего
+    refreshHud();
+    maybeWin();
+  };
+  pendingFlights.add(rec);
+  if (reduceMotion.matches){           // движение выключено, но перенос остаётся:
+    rec.finish();                      // это смена состояния игры, а не украшение
+    return;
+  }
+  rec.anim = el.animate(keyframes, { duration, fill: 'none' });
+  rec.anim.onfinish = rec.finish;
+  rec.anim.oncancel = rec.finish;
+}
+
+// Жёсткий стоп перед любой перестройкой поля. DOM уже в конечном состоянии,
+// промежуточен только transform — поэтому сброс синхронный и без ожиданий.
+function settleFlights(){
+  for (const rec of [...pendingFlights]){
+    if (rec.anim) rec.anim.cancel();
+    rec.finish();
+  }
+}
+
+function sendToShelf(i){
+  const el = tubeEls[i];
+  if (!el || onShelf(i)) return;
+  const F = el.getBoundingClientRect();   // замер ДО любых трансформов
+  const p = state.shelf.length;
+  state.shelf.push(i);
+  el.parentNode.replaceChild(makeHole(i), el);
+  shelf.appendChild(el);
+  placeOnShelf(el, p);
+  updateShelfCount(true);
+
+  const L = el.getBoundingClientRect();
+  const dx = F.left - L.left, dy = F.top - L.top;
+  // подскок «щелчок узнавания» вписан в первые кадры полёта, а не сделан классом
+  // .done: pop и полёт анимируют один и тот же transform, а два источника на одном
+  // свойстве дают либо проглоченный pop, либо зависимость от порядка каскада
+  runFlight(i, [
+    { transform: `translate(${dx}px,${dy}px) scale(1)`,      offset: 0,
+      easing: 'cubic-bezier(.3,1.5,.6,1)' },
+    { transform: `translate(${dx}px,${dy - 14}px) scale(1)`, offset: .18,
+      easing: 'cubic-bezier(.4,.06,.25,1)' },
+    { transform: `scale(${SHELF.scale})`,                    offset: 1 }
+  ], 430);
+}
+
+// Полка — стек: отмена всегда снимает последнюю собранную и всегда в её же,
+// никуда не девшуюся заглушку. Перепаковки полки не бывает никогда.
+function returnFromShelf(){
+  if (!state.shelf.length) return false;
+  const i = state.shelf[state.shelf.length - 1];
+  const el = tubeEls[i], hole = holeEls[i];
+  if (!el || !hole || !hole.parentNode) return false;
+
+  const F = el.getBoundingClientRect();
+  state.shelf.pop();
+  hole.parentNode.replaceChild(el, hole);
+  holeEls[i] = null;
+  el.style.left = '';
+  updateShelfCount(false);
+
+  const L = el.getBoundingClientRect();
+  const dx = F.left - L.left, dy = F.top - L.top;
+  // быстрее прилёта: возврат — не награда, а коррекция, и читаться должен как отмотка
+  runFlight(i, [
+    { transform: `translate(${dx}px,${dy}px) scale(${SHELF.scale})` },
+    { transform: 'none' }
+  ], 220);
+  return true;
+}
+
+// Победу показываем, когда осядут и переливы, и перелёты на полку: иначе
+// последняя собранная пробирка улетала бы уже поверх оверлея.
+function maybeWin(){
+  if (state.locked) return;
+  if (state.anim > 0 || state.shelfAnim > 0) return;
+  if (isWin(state.tubes, state.caps)) levelComplete();
+}
+
+/* ---- тупик ----
+   Проверка «легальных ходов не осталось» на этом поле почти бесполезна: при двух пустых
+   колбах ход есть практически всегда — на 270 случайных партий (уровни 60/120/200) не
+   встретилось ни одной такой позиции. Настоящий тупик другой: ходы есть, а собрать уже
+   нельзя, и это вопрос к солверу.
+   Из середины партии он дёшев (1–3 тысячи итераций, до 145 мс): часть цветов разобрана,
+   пространство состояний схлопнулось. Но 145 мс на главном потоке сразу после хода
+   читались бы рывком, поэтому считаем в простое и с задержкой — игрок, делающий ходы
+   подряд, проверку не запускает вовсе.
+   Предупреждаем ТОЛЬКО на доказанном 'dead'. На 'unknown' молчим: ложное обвинение
+   в тупике хуже, чем промолчать. */
+let deadTimer = 0;
+function setDeadBanner(on){ $('#dead').classList.toggle('show', on); }
+
+function scheduleDeadCheck(){
+  clearTimeout(deadTimer);
+  setDeadBanner(false);
+  if (state.locked) return;
+  deadTimer = setTimeout(() => {
+    if (state.anim > 0 || state.shelfAnim > 0 || state.locked) return;
+    const gen = state.gen;
+    const run = () => {
+      if (gen !== state.gen || state.locked) return;
+      setDeadBanner(solveVerdict(state.tubes, state.caps, state.locks) === 'dead');
+    };
+    if (window.requestIdleCallback) requestIdleCallback(run, { timeout: 1500 });
+    else setTimeout(run, 0);
+  }, 400);
+}
+
+function refreshHud(){
+  $('#lvlNum').textContent = state.level;
+  $('#movesTxt').textContent = 'ходов: ' + state.moves;
+  $('#btnUndo').disabled = state.history.length === 0 || state.anim > 0;
+  // На полном поле «+пробирка» запрещена: 25-я колба уводит вёрстку в пятый ряд
+  // и ужимает слой с 25 до 18.4px — минус четверть высоты у каждой колбы ради одной.
+  $('#btnAdd').disabled  = state.addUsed || state.anim > 0 || state.tubes.length >= MAX_TUBES;
+  $('#btnHint').disabled = state.anim > 0 || state.locked;
+}
+
+function showHint(text){
+  const h = $('#hint');
+  h.textContent = text;
+  h.classList.add('show');
+  clearTimeout(showHint._t);
+  showHint._t = setTimeout(() => h.classList.remove('show'), 1400);
+}
+
+/* ============ уровень ============ */
+function startLevel(l){
+  settleFlights();
+  state.level = l;
+  const gen = generateLevel(l);
+  state.tubes = gen.tubes;
+  state.caps = gen.caps;
+  state.locks = gen.locks || new Array(gen.tubes.length).fill(0);
+  state.hidden = hiddenForLevel(l, state.tubes, state.locks);
+  state.moves = 0;
+  state.history = [];
+  state.selected = null;
+  state.addUsed = false;
+  state.busyTubes.clear();
+  state.anim = 0;
+  state.gen++;                    // всё, что ещё летит, при следующем кадре свернётся
+  state.locked = false;
+
+  // Гейт по числу пробирок, а не по номеру уровня: 11 — ровно та точка, где
+  // buildBoard уходит в третий ряд и пробирки начинают мельчать, то есть порог
+  // совпадает с реальной теснотой и переедет сам, если перенастроить генератор.
+  // Заморожено на весь уровень: «+пробирка» не должна включать механику посреди партии.
+  state.shelf = [];
+  state.shelfAnim = 0;
+  state.shelfOn = state.tubes.length >= SHELF_MIN;
+  state.shelfMax = state.tubes.reduce(
+    (k, t, i) => k + (t.length && state.caps[i] === CAP ? 1 : 0), 0);
+  shelf.classList.toggle('on', state.shelfOn);   // до buildBoard: layout() меряет живую высоту поля
+
+  buildBoard();
+  refreshHud();
+  save();
+  clearTimeout(deadTimer);          // уровень собран генератором как решаемый
+  setDeadBanner(false);
+  if (state.shelfOn) hintShelfOnce();
+}
+
+// Разовая подсказка на первом уровне с полкой — налог на путаницу платим один раз
+function hintShelfOnce(){
+  try{
+    if (localStorage.getItem(SAVE_KEY + '.shelfHint')) return;
+    localStorage.setItem(SAVE_KEY + '.shelfHint', '1');
+  }catch(e){}
+  setTimeout(() => showHint('Собранные пробирки уезжают наверх'), 900);
+}
+
+/* ============ анимация переливания ============ */
+// Тайминги, мс (LIFT — подъём/наклон — задаётся внутри animatePour)
+const T_FALL = 75;               // струя летит от горлышка до поверхности
+const T_UNIT = 105;              // на каждый переливаемый слой
+
+const smooth = p => p * p * (3 - 2 * p);
+const easeOut = p => 1 - (1 - p) * (1 - p);
+
+/* ---- геометрия SVG-перелива ----
+   Жидкость источника рисуется в SVG-оверлее: полость пробирки поворачивается
+   (clipPath), а слои — ГОРИЗОНТАЛЬНЫЕ полосы в мировых координатах. Поэтому
+   поверхность всегда горизонтальна, а не крутится вместе со стеклом. */
+const TUBE_WALL = 3;          // = CSS --wall
+const lerp = (a, b, p) => a + (b - a) * p;
+
+// многоугольник внутренней полости в client-координатах ПОКОЯ (прямоугольник
+// Wi × 4u со скруглённым полукруглым дном радиуса Wi/2)
+function cavityPolygon(fRect, cap){
+  const Wi = fRect.width - 2 * TUBE_WALL, r = Wi / 2;
+  const left = fRect.left + TUBE_WALL, right = fRect.right - TUBE_WALL;
+  const bottom = fRect.bottom - TUBE_WALL, top = bottom - cap * UNIT;
+  const cx = (left + right) / 2, arcCy = bottom - r;
+  const p = [[left, top], [right, top], [right, arcCy]];
+  const SEG = 14;
+  for (let i = 1; i < SEG; i++){
+    const a = Math.PI * (i / SEG);
+    p.push([cx + r * Math.cos(a), arcCy + r * Math.sin(a)]);  // полукруг вниз
+  }
+  p.push([left, arcCy]);
+  return { poly: p, left, right, top, bottom };
+}
+
+// перенос точки покоя в мир: world = center' + R(deg)·(p − center)
+function mapper(ocx, ocy, dx, dy, deg){
+  const r = deg * Math.PI / 180, c = Math.cos(r), s = Math.sin(r);
+  return ([x, y]) => {
+    const px = x - ocx, py = y - ocy;
+    return [ocx + dx + px * c - py * s, ocy + dy + px * s + py * c];
+  };
+}
+// площадь части полигона НИЖЕ мировой горизонтали y=ys (жидкость тянет вниз, y растёт вниз)
+function areaBelow(poly, ys){
+  const out = [], n = poly.length;
+  for (let i = 0; i < n; i++){
+    const a = poly[i], b = poly[(i + 1) % n];
+    const ain = a[1] >= ys, bin = b[1] >= ys;
+    if (ain) out.push(a);
+    if (ain !== bin){
+      const t = (ys - a[1]) / (b[1] - a[1]);
+      out.push([a[0] + t * (b[0] - a[0]), ys]);
+    }
+  }
+  let s = 0;
+  for (let i = 0; i < out.length; i++){
+    const a = out[i], b = out[(i + 1) % out.length];
+    s += a[0] * b[1] - b[0] * a[1];
+  }
+  return Math.abs(s) / 2;
+}
+// уровень поверхности (мировой y), при котором ниже него площадь = V
+function surfaceForArea(poly, V, minY, maxY){
+  if (V <= 0) return maxY;
+  let lo = minY, hi = maxY;
+  for (let i = 0; i < 22; i++){
+    const mid = (lo + hi) / 2;
+    if (areaBelow(poly, mid) > V) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+function polyPath(poly){
+  let d = 'M' + poly[0][0].toFixed(1) + ',' + poly[0][1].toFixed(1);
+  for (let i = 1; i < poly.length; i++) d += 'L' + poly[i][0].toFixed(1) + ',' + poly[i][1].toFixed(1);
+  return d + 'Z';
+}
+// лента струи: квадратичная безье со слегка провисающей осью и сужением книзу
+function ribbonPath(P0, P1, wTop, wBot){
+  const C = [P0[0] * 0.32 + P1[0] * 0.68, P0[1] * 0.14 + P1[1] * 0.86];
+  const K = 12, L = [], R = [];
+  for (let i = 0; i <= K; i++){
+    const s = i / K, mt = 1 - s;
+    const x = mt * mt * P0[0] + 2 * mt * s * C[0] + s * s * P1[0];
+    const y = mt * mt * P0[1] + 2 * mt * s * C[1] + s * s * P1[1];
+    let tx = 2 * mt * (C[0] - P0[0]) + 2 * s * (P1[0] - C[0]);
+    let ty = 2 * mt * (C[1] - P0[1]) + 2 * s * (P1[1] - C[1]);
+    const len = Math.hypot(tx, ty) || 1;
+    const nx = -ty / len, ny = tx / len, w = (wTop + (wBot - wTop) * s) / 2;
+    L.push([x + nx * w, y + ny * w]);
+    R.push([x - nx * w, y - ny * w]);
+  }
+  let d = 'M' + L[0][0].toFixed(1) + ',' + L[0][1].toFixed(1);
+  for (let i = 1; i <= K; i++) d += 'L' + L[i][0].toFixed(1) + ',' + L[i][1].toFixed(1);
+  for (let i = K; i >= 0; i--) d += 'L' + R[i][0].toFixed(1) + ',' + R[i][1].toFixed(1);
+  return d + 'Z';
+}
+
+// Пул SVG-оверлеев: переливы идут параллельно, поэтому каждому нужен свой слой
+// (и свой clipPath-id, иначе они переопределят друг друга).
+const PFX_POOL = [];
+function acquireSVG(){
+  let fx = PFX_POOL.find(f => !f.taken);
+  if (fx){ fx.taken = true; fx.svg.style.display = 'block'; return fx; }
+  fx = buildSVG(PFX_POOL.length);
+  PFX_POOL.push(fx);
+  fx.taken = true;
+  fx.svg.style.display = 'block';
+  return fx;
+}
+function releaseSVG(fx){ fx.taken = false; fx.svg.style.display = 'none'; }
+
+function buildSVG(idx){
+  const NS = 'http://www.w3.org/2000/svg';
+  const clipId = 'pfxClip' + idx;
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('id', 'pourfx' + idx);
+  // will-change поднимает оверлей в свой слой: иначе перерисовка струи каждый кадр
+  // инвалидирует тайлы страницы под ним — а там все пробирки с тенями и бликами
+  svg.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:58;' +
+                      'pointer-events:none;display:none;will-change:transform';
+  const defs = document.createElementNS(NS, 'defs');
+  const clip = document.createElementNS(NS, 'clipPath');
+  clip.setAttribute('id', clipId);
+  const clipPath = document.createElementNS(NS, 'path');
+  clip.appendChild(clipPath); defs.appendChild(clip);
+
+  // тот же цилиндрический градиент, что у DOM-слоёв: без него жидкость в наклонённой
+  // колбе выглядела бы плоской, а в стоящих — объёмной
+  const gradId = 'pfxVol' + idx;
+  const grad = document.createElementNS(NS, 'linearGradient');
+  grad.setAttribute('id', gradId);
+  grad.setAttribute('gradientUnits', 'userSpaceOnUse');  // вектор задаём поперёк колбы
+  [['0%','#000','.26'],['14%','#000','.05'],['33%','#fff','.20'],
+   ['52%','#fff','.05'],['74%','#000','.08'],['100%','#000','.24']].forEach(([o,c,a]) => {
+    const st = document.createElementNS(NS, 'stop');
+    st.setAttribute('offset', o); st.setAttribute('stop-color', c); st.setAttribute('stop-opacity', a);
+    grad.appendChild(st);
+  });
+  defs.appendChild(grad);
+
+  const bands = document.createElementNS(NS, 'g');
+  bands.setAttribute('clip-path', 'url(#' + clipId + ')');
+  const rects = [];
+  for (let i = 0; i <= CAP; i++){ const r = document.createElementNS(NS, 'rect'); bands.appendChild(r); rects.push(r); }
+  const volume = document.createElementNS(NS, 'rect');   // объём поверх слоёв
+  volume.setAttribute('fill', 'url(#' + gradId + ')');
+  bands.appendChild(volume);
+  const shine = document.createElementNS(NS, 'rect');    // блик поверхности
+  shine.setAttribute('fill', 'rgba(255,255,255,.28)'); bands.appendChild(shine);
+  const stream = document.createElementNS(NS, 'path');
+  svg.append(defs, bands, stream);
+  document.body.appendChild(svg);
+  return { NS, svg, clipPath, rects, shine, stream, grad, volume, taken: false };
+}
+
+// Рисует перелив. Модель к этому моменту УЖЕ обновлена (см. doMove), поэтому состояние
+// источника до хода приходит в plan — иначе параллельные переливы читали бы чужие данные.
+function animatePour(plan){
+  const { a, b, n, colorIdx, srcColors, startA, startB } = plan;
+  const gen = state.gen;
+  return new Promise(resolve => {
+    const fromEl = tubeEls[a], toEl = tubeEls[b];
+    const color = COLORS[colorIdx % COLORS.length];
+
+    // Колба после выделения едет вверх по CSS-переходу (.sel = translateY(-18px)).
+    // Если читать её геометрию в этот момент — поймаем промежуточные координаты, и
+    // жидкость прыгнет на 6-10px при переходе DOM→SVG. Сначала возвращаем в покой.
+    fromEl.classList.remove('sel');
+    fromEl.style.transition = 'none';
+    fromEl.style.transform = 'none';
+
+    const fRect = fromEl.getBoundingClientRect();
+    const tRect = toEl.getBoundingClientRect();
+    const H = fRect.height, W = fRect.width;
+    const ocx = fRect.left + W / 2, ocy = fRect.top + H / 2;
+    const streamW = clamp(W * 0.44, 16, 34);      // толщина струи у носика (шире = «из колбы»)
+
+    // горлышко должно встать строго над центром пробирки-приёмника
+    const Mx = tRect.left + tRect.width / 2;
+    let My = tRect.top - Math.max(13, H * 0.09);
+
+    // положение пробирки при угле ang (со знаком стороны side): горлышко в (Mx,My)
+    let side = Mx >= ocx ? 1 : -1;
+    const geomAt = ang => {
+      const r = ang * side * Math.PI / 180;
+      return { dx: (Mx - (H / 2) * Math.sin(r)) - ocx,
+               dy: (My + (H / 2) * Math.cos(r)) - ocy, deg: ang * side };
+    };
+
+    // Пробирка наклоняется ГОРЛЫШКОМ ВНИЗ (~116–132°): жидкость скапливается у носика
+    // и льётся через него. Проверяем, что повёрнутая пробирка целиком в кадре.
+    const fits = ang => {
+      const r = ang * side * Math.PI / 180;
+      const half = (Math.abs(Math.sin(r)) * H + Math.abs(Math.cos(r)) * W) / 2;
+      const cx = Mx - (H / 2) * Math.sin(r);
+      return (cx - half) >= 6 && (cx + half) <= vpW() - 6;
+    };
+    if (!fits(120)) side = -side;                 // другая сторона поместится лучше
+    let fitMax = 114;
+    for (let ang = 138; ang >= 108; ang -= 2){ if (fits(ang)){ fitMax = ang; break; } }
+
+    // геометрия полости и кумулятивные объёмы слоёв (из покоя → стык бесшовный)
+    const capA = state.caps[a];
+    const cav = cavityPolygon(fRect, capA);
+    const Cv = [0];
+    for (let i = 1; i <= capA; i++) Cv[i] = areaBelow(cav.poly, cav.bottom - i * UNIT);
+
+    const Vfull = Cv[startA], Vend = Cv[startA - n];
+    const totalPour = Vfull - Vend;
+    // Горлышко вниз → жидкость скапливается у носика, а верхний цвет (тот, что льётся)
+    // оказывается у носика. Строим слои источника от НОСИКА вверх (обратный порядок
+    // хранения); lo/hi — накопленный объём от носика.
+    const pool = [];
+    let acc = 0;
+    for (let j = 0; j < startA; j++){
+      const s = startA - 1 - j;                   // сверху вниз по хранению
+      const vol = Cv[s + 1] - Cv[s];
+      pool.push({ color: srcColors[s], lo: acc, hi: acc + vol });
+      acc += vol;
+    }
+    const angEnd = clamp(fitMax, 116, 132);
+    const angStart = angEnd - 12;
+
+    const toLiq = toEl.querySelector('.liquid');
+    toLiq.classList.add('pouring');
+    const dstSegs = Array.from(toLiq.children);
+    for (let i = 0; i < n; i++){
+      const s = document.createElement('div');
+      s.className = 'seg'; s.style.backgroundColor = color; s.style.height = '0px';
+      toLiq.appendChild(s); dstSegs.push(s);
+    }
+    dstSegs.slice(0, startB).forEach(s => { s.style.height = UNIT + 'px'; });
+    const baseY = toLiq.getBoundingClientRect().bottom;
+    const innerW = W - 6;
+    const setFill = (segs, amount) => {
+      let top = -1;
+      for (let i = 0; i < segs.length; i++){
+        const f = clamp(amount - i, 0, 1);
+        segs[i].style.height = (f * UNIT).toFixed(2) + 'px';
+        if (f > 0.02) top = i;
+      }
+      for (let i = 0; i < segs.length; i++) segs[i].classList.toggle('top', i === top);
+    };
+
+    // чтобы наклонённая пробирка не вылезла за верх экрана — опускаем всю сцену
+    { const ge = geomAt(angEnd), me = mapper(ocx, ocy, ge.dx, ge.dy, ge.deg);
+      let mY = 1e9; for (const p of cav.poly){ const q = me(p); if (q[1] < mY) mY = q[1]; }
+      const TOP = 44; if (mY < TOP) My += TOP - mY; }
+
+    const fx = acquireSVG();
+    const fromLiq = fromEl.querySelector('.liquid');
+
+    // общий рисователь жидкости источника для произвольного положения пробирки;
+    // возвращает точку носика (нижний угол устья)
+    const drawSource = (dx, dy, deg, Dv) => {
+      const m = mapper(ocx, ocy, dx, dy, deg);
+      const wp = cav.poly.map(m);
+      let minY = 1e9, maxY = -1e9, minX = 1e9, maxX = -1e9;
+      for (const p of wp){ if (p[1] < minY) minY = p[1]; if (p[1] > maxY) maxY = p[1];
+                           if (p[0] < minX) minX = p[0]; if (p[0] > maxX) maxX = p[0]; }
+      fx.clipPath.setAttribute('d', polyPath(wp));
+      const bandX = (minX - 8).toFixed(1), bandW = (maxX - minX + 16).toFixed(1);
+      let ri = 0;
+      for (let j = 0; j < pool.length; j++){
+        const lo = Math.max(0, pool[j].lo - Dv), hi = Math.max(0, pool[j].hi - Dv);
+        const rect = fx.rects[ri++];
+        if (hi - lo < 0.5){ rect.setAttribute('height', '0'); continue; }
+        const yLo = surfaceForArea(wp, lo, minY, maxY);   // ниже, у носика
+        const yHi = surfaceForArea(wp, hi, minY, maxY);   // выше, к дну
+        rect.setAttribute('x', bandX); rect.setAttribute('width', bandW);
+        rect.setAttribute('y', yHi.toFixed(1)); rect.setAttribute('height', (yLo - yHi).toFixed(1));
+        rect.setAttribute('fill', pool[j].color);
+      }
+      for (; ri < fx.rects.length; ri++) fx.rects[ri].setAttribute('height', '0');
+      const Vsrc = Vfull - Dv;
+      const surf = Vsrc > 1 ? surfaceForArea(wp, Vsrc, minY, maxY) : null;
+      if (surf !== null){
+        fx.shine.setAttribute('x', bandX); fx.shine.setAttribute('width', bandW);
+        fx.shine.setAttribute('y', surf.toFixed(1)); fx.shine.setAttribute('height', '3');
+      } else fx.shine.setAttribute('height', '0');
+
+      // градиент объёма ведём поперёк колбы: вектор берём из её же поворота,
+      // иначе жидкость подсветится «по экрану», а не по цилиндру
+      const rad = deg * Math.PI / 180;
+      const halfW = (fRect.width - 2 * TUBE_WALL) / 2;
+      const gx = Math.cos(rad) * halfW, gy = Math.sin(rad) * halfW;
+      const midX = (minX + maxX) / 2, midY = (minY + maxY) / 2;
+      fx.grad.setAttribute('x1', (midX - gx).toFixed(1));
+      fx.grad.setAttribute('y1', (midY - gy).toFixed(1));
+      fx.grad.setAttribute('x2', (midX + gx).toFixed(1));
+      fx.grad.setAttribute('y2', (midY + gy).toFixed(1));
+      fx.volume.setAttribute('x', bandX);
+      fx.volume.setAttribute('width', bandW);
+      fx.volume.setAttribute('y', (minY - 4).toFixed(1));
+      fx.volume.setAttribute('height', (maxY - minY + 8).toFixed(1));
+
+      const c1 = m([cav.left, cav.top]), c2 = m([cav.right, cav.top]);
+      return c1[1] >= c2[1] ? c1 : c2;
+    };
+
+    const setTf = (dx, dy, deg) => {
+      fromEl.style.transform = 'translate(' + dx.toFixed(1) + 'px,' + dy.toFixed(1) +
+        'px) rotate(' + deg.toFixed(2) + 'deg)';
+    };
+
+    // старт: жидкость источника переходит с DOM на SVG без «хлопка»
+    fromEl.classList.remove('sel');
+    fromEl.classList.add('flying');
+    fromEl.style.transition = 'none';
+    fromLiq.style.visibility = 'hidden';
+    fx.svg.style.display = 'block';
+
+    const gS = geomAt(angStart);
+    const LIFT = 165, FLOW = T_UNIT * n + 90, POUR = T_FALL + FLOW;
+    const t0 = performance.now();
+    let lastDrop = -1e9, lastRipple = -1e9, spawn = 0, flowStarted = false;
+
+    const frame = now => {
+      // уровень сменили посреди перелива — сворачиваемся, поле уже перерисовано заново
+      if (gen !== state.gen){
+        releaseSVG(fx);
+        fromLiq.style.visibility = '';
+        fromEl.style.transition = ''; fromEl.style.transform = '';
+        fromEl.classList.remove('flying', 'back');
+        resolve(); return;
+      }
+      const t = now - t0;
+
+      // ---- фаза 1: подъём из слота с одновременным наклоном (всё в rAF, синхронно с SVG) ----
+      if (t < LIFT){
+        const p = smooth(clamp(t / LIFT, 0, 1));
+        const dx = lerp(0, gS.dx, p), dy = lerp(-18, gS.dy, p), deg = lerp(0, gS.deg, p);
+        setTf(dx, dy, deg);
+        drawSource(dx, dy, deg, 0);
+        requestAnimationFrame(frame); return;
+      }
+      if (!flowStarted){ flowStarted = true; sndFlow(POUR / 1000); }
+
+      // ---- фаза 2: слив ----
+      const pt = t - LIFT;
+      const flowP = clamp((pt - T_FALL) / FLOW, 0, 1);
+      const ang = lerp(angStart, angEnd, easeOut(flowP));
+      const g = geomAt(ang);
+      setTf(g.dx, g.dy, g.deg);
+
+      const Dv = totalPour * smooth(flowP);
+      const v = n * smooth(flowP);
+      const lipPt = drawSource(g.dx, g.dy, g.deg, Dv);
+      setFill(dstSegs, startB + v);
+
+      // ---- струя: широкая лента из самого горлышка ----
+      const surfaceY = baseY - (startB + v) * UNIT;
+      let botY;
+      if (pt < T_FALL){ const p = pt / T_FALL; botY = lipPt[1] + (surfaceY - lipPt[1]) * p * p; }
+      else botY = surfaceY;
+      const P0 = [lipPt[0], lipPt[1]];
+      const P1 = [Mx + Math.sin(pt / 38) * 1.4, botY];
+      const env = Math.max(0.45, Math.sin(Math.PI * clamp(pt / POUR, 0, 1)) ** 0.4);
+      fx.stream.setAttribute('d', ribbonPath(P0, P1, streamW * env, streamW * 0.6 * env));
+      fx.stream.setAttribute('fill', color);
+
+      if (pt > T_FALL && flowP < 1){
+        if (pt - lastDrop > 62){ lastDrop = pt; dropletsAt(P1[0], surfaceY, color, spawn++); }
+        if (pt - lastRipple > 130){ lastRipple = pt; rippleAt(P1[0], surfaceY, innerW); }
+      }
+
+      if (pt < POUR){ requestAnimationFrame(frame); return; }
+
+      // ---- финал: модель уже актуальна, просто приводим DOM к ней ----
+      releaseSVG(fx);
+      fromLiq.style.visibility = '';
+      paintTube(a);
+      paintTube(b);
+      dripAt(P1[0], lipPt[1], surfaceY - lipPt[1], color);
+      sndPlop();
+      const surfSeg = toLiq.lastElementChild;
+      if (surfSeg){ surfSeg.classList.remove('wob'); void surfSeg.offsetWidth; surfSeg.classList.add('wob'); }
+
+      // ---- фаза 3: пробирка возвращается ----
+      fromEl.style.transition = '';
+      fromEl.classList.add('back');
+      void fromEl.offsetWidth;
+      fromEl.style.transform = '';
+      setTimeout(() => { fromEl.classList.remove('flying', 'back'); resolve(); }, 200);
+    };
+    requestAnimationFrame(frame);
+  });
+}
+
+// после перелива: высоты снова из CSS, «поверхность» — на верхнем слое
+function normalizeLiquid(liq){
+  liq.classList.remove('pouring');
+  const kids = Array.from(liq.children);
+  kids.forEach((s, i) => {
+    s.style.height = '';
+    s.classList.toggle('top', i === kids.length - 1);
+  });
+}
+
+function dropletsAt(x, y, color, i){
+  for (let k = 0; k < 2; k++){
+    const d = document.createElement('div');
+    d.className = 'drop';
+    d.style.backgroundColor = color;
+    d.style.left = (x - 3) + 'px';
+    d.style.top  = (y - 3) + 'px';
+    d.style.setProperty('--dx', ((k ? 1 : -1) * (6 + (i * 7) % 10)) + 'px');
+    d.style.setProperty('--dy', (-8 - (i * 5) % 7) + 'px');
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 420);
+  }
+}
+
+function rippleAt(x, y, w){
+  const r = document.createElement('div');
+  r.className = 'ripple';
+  r.style.width = w + 'px';
+  r.style.height = Math.max(5, w * 0.24) + 'px';
+  r.style.left = (x - w / 2) + 'px';
+  r.style.top  = (y - Math.max(5, w * 0.24) / 2) + 'px';
+  document.body.appendChild(r);
+  setTimeout(() => r.remove(), 440);
+}
+
+function dripAt(x, y, fall, color){
+  const d = document.createElement('div');
+  d.className = 'drip';
+  d.style.backgroundColor = color;
+  d.style.left = (x - 3.5) + 'px';
+  d.style.top  = y + 'px';
+  d.style.setProperty('--fall', Math.max(12, fall) + 'px');
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 420);
+}
+
+/* ============ ход ============
+   Модель меняется СРАЗУ, анимация — только показ. Так можно затевать следующий перелив,
+   не дожидаясь конца предыдущего: занятыми считаются лишь две задействованные пробирки. */
+function doMove(a, b){
+  if (state.locked) return;
+  if (state.busyTubes.has(a) || state.busyTubes.has(b)) return;
+  if (!canPour(state.tubes, state.caps, a, b, gameClosed())) return;
+
+  const n = pourCount(state.tubes, state.caps, a, b);
+  const colorIdx = topColor(state.tubes[a]);
+  const startA = state.tubes[a].length;
+  const startB = state.tubes[b].length;
+  const wasDone = isDone(state.tubes[b], state.caps[b]);
+
+  state.history.push(snapshot());
+  if (state.history.length > 250) state.history.shift();
+
+  // среди переливаемых может оказаться скрытый слой того же цвета — раскрываем сразу,
+  // иначе он поехал бы тёмным, пока льётся цветная струя
+  if (state.hidden[a]) for (let s = startA - n; s < startA; s++) state.hidden[a][s] = false;
+  const srcColors = state.tubes[a].map((_, s) => segColor(a, s));   // снимок ДО хода
+
+  // применяем ход к модели
+  state.tubes[a].length = startA - n;
+  if (state.hidden[a]) state.hidden[a].length = startA - n;
+  for (let i = 0; i < n; i++){
+    state.tubes[b].push(colorIdx);
+    if (state.hidden[b]) state.hidden[b].push(false);      // долитое всегда видно
+  }
+  const opened = revealTops();
+
+  state.moves++;
+  state.selected = null;
+  state.busyTubes.add(a); state.busyTubes.add(b);
+  state.anim++;
+  refreshHud();
+
+  const justDone = !wasDone && isDone(state.tubes[b], state.caps[b]);
+  // на полку — только полноразмерная: у залитой скляночки isDone тоже true,
+  // но из неё обязано быть можно вылить обратно, иначе уровень нерешаем
+  const justSolved = state.shelfOn && isSolved(state.tubes[b], state.caps[b]);
+
+  const gen = state.gen;
+  animatePour({ a, b, n, colorIdx, srcColors, startA, startB }).then(() => {
+    if (gen !== state.gen) return;             // поле уже другое — трогать нечего
+    state.busyTubes.delete(a); state.busyTubes.delete(b);
+    state.anim = Math.max(0, state.anim - 1);
+
+    if (opened.length){                          // раскрылся скрытый слой
+      sndTap();
+      for (const i of opened){
+        const seg = tubeEls[i].querySelector('.liquid').lastElementChild;
+        if (seg){ seg.classList.remove('reveal'); void seg.offsetWidth; seg.classList.add('reveal'); }
+      }
+    }
+    if (justSolved){
+      sndComplete();
+      sendToShelf(b);            // подскок живёт в первых кадрах полёта, .done не вешаем
+    } else if (justDone){
+      tubeEls[b].classList.remove('done');
+      void tubeEls[b].offsetWidth;
+      tubeEls[b].classList.add('done');
+      sndComplete();
+    }
+    // снаружи ветки сбора: замки считаются от собранных колб, а не от полки, и
+    // не должны молча перестать работать, если полка на уровне выключена
+    refreshLocks(true);
+    refreshHud();
+    maybeWin();
+    scheduleDeadCheck();
+  });
+}
+
+async function levelComplete(){
+  state.locked = true;
+  sndWin();
+  await sleep(420);
+  $('#winTitle').textContent = 'Уровень ' + state.level + ' пройден!';
+  $('#winSub').textContent = 'Ходов: ' + state.moves;
+  $('#ovWin').classList.add('show');
+}
+
+/* ============ ввод ============ */
+board.addEventListener('click', e => {
+  if (state.locked) return;                    // поле заморожено только оверлеем победы
+  const el = e.target.closest('.tube');
+  if (!el) {
+    if (state.selected !== null){ tubeEls[state.selected].classList.remove('sel'); state.selected = null; }
+    return;
+  }
+  const i = +el.dataset.i;
+  // занята только та пара пробирок, что участвует в текущем переливе; остальные свободны
+  if (state.busyTubes.has(i)){ sndNope(); return; }
+
+  if (el.classList.contains('locked')){
+    const n = lockLeft(i);
+    sndNope();
+    showHint('Откроется, когда соберёшь ещё ' + n + ' ' + plural(n, 'колбу', 'колбы', 'колб'));
+    return;
+  }
+
+  if (state.selected === null){
+    if (!state.tubes[i].length){ sndNope(); return; }
+    if (isSolved(state.tubes[i], state.caps[i])){ sndNope(); showHint('Эта пробирка уже готова'); return; }
+    state.selected = i;
+    el.classList.add('sel');
+    sndTap();
+    return;
+  }
+
+  if (state.selected === i){
+    el.classList.remove('sel');
+    state.selected = null;
+    return;
+  }
+
+  // выбранная могла уехать в перелив, пока игрок думал
+  if (state.busyTubes.has(state.selected)){
+    tubeEls[state.selected].classList.remove('sel');
+    state.selected = i;
+    el.classList.add('sel');
+    sndTap();
+    return;
+  }
+
+  // маску замков передаём и здесь: полагаться на класс .locked — значит держать
+  // правила игры в CSS-классе, который может разъехаться с моделью
+  if (canPour(state.tubes, state.caps, state.selected, i, gameClosed())){
+    const from = state.selected;
+    tubeEls[from].classList.remove('sel');
+    doMove(from, i);
+  } else {
+    tubeEls[state.selected].classList.remove('sel');
+    sndNope();
+    if (state.tubes[i].length && !isSolved(state.tubes[i], state.caps[i])){
+      state.selected = i;
+      el.classList.add('sel');
+    } else {
+      state.selected = null;
+      if (state.tubes[i].length >= state.caps[i]) showHint('Пробирка заполнена');
+      else showHint('Сюда нельзя — нужен такой же цвет');
+    }
+  }
+});
+
+/* ============ кнопки ============ */
+const sameArr = (a, b) => a.length === b.length && a.every((v, k) => v === b[k]);
+
+$('#btnUndo').addEventListener('click', () => {
+  if (state.anim > 0 || state.locked || !state.history.length) return;
+  settleFlights();
+  if (state.selected !== null) tubeEls[state.selected].classList.remove('sel');
+  state.selected = null;
+  const prev = JSON.parse(state.history.pop());
+  const prevShelf = prev.s || [];
+  const sameCount = prev.t.length === state.tubes.length;
+  state.tubes = prev.t;
+  state.hidden = prev.h;
+  if (prev.c) state.caps = prev.c;
+  if (prev.k) state.locks = prev.k;
+  state.moves = Math.max(0, state.moves - 1);
+  // шорткат «то же число пробирок → только перекрасить» полку не видит:
+  // её состав меняется, а длина массива нет. Сверяем состав явно, иначе
+  // модель говорит «на поле», а пробирка так и осталась наверху.
+  const popOne = sameCount && state.shelf.length === prevShelf.length + 1 &&
+                 prevShelf.every((v, k) => v === state.shelf[k]);
+  if (sameCount && (popOne || sameArr(state.shelf, prevShelf))){
+    state.tubes.forEach((_, i) => paintTube(i));
+    if (popOne) returnFromShelf();       // сначала перекрасили, потом вернули
+  } else {
+    state.shelf = prevShelf;
+    buildBoard();
+  }
+  // откат ниже порога снова закрывает крышку — без анимации, это отмотка, а не событие
+  refreshLocks(false);
+  sndTap();
+  refreshHud();
+  scheduleDeadCheck();
+});
+
+$('#btnAdd').addEventListener('click', () => {
+  if (state.anim > 0 || state.locked || state.addUsed) return;
+  settleFlights();
+  state.addUsed = true;
+  if (state.selected !== null) tubeEls[state.selected].classList.remove('sel');
+  state.selected = null;
+  state.history.push(snapshot());
+  state.tubes.push([]);
+  state.hidden.push([]);
+  state.caps.push(CAP);
+  state.locks.push(0);
+  buildBoard();
+  refreshHud();
+  sndTap();
+  showHint('Добавлена пустая пробирка');
+  scheduleDeadCheck();
+});
+
+$('#btnRestart').addEventListener('click', () => {
+  if (state.anim > 0 || state.locked) return;
+  startLevel(state.level);
+  sndTap();
+});
+
+$('#btnNext').addEventListener('click', () => {
+  $('#ovWin').classList.remove('show');
+  startLevel(state.level + 1);
+});
+
+$('#btnSound').addEventListener('click', () => {
+  soundOn = !soundOn;
+  $('#btnSound').textContent = soundOn ? '🔊' : '🔇';
+  if (soundOn) sndTap();
+  save();
+});
+
+$('#btnHelp').addEventListener('click', () => $('#ovHelp').classList.add('show'));
+$('#btnCloseHelp').addEventListener('click', () => $('#ovHelp').classList.remove('show'));
+
+/* ---- подсказка ----
+   Кнопка заняла место «Дальше»: пропуск уровня дублировался выбором уровня по тапу
+   на заголовок, а аварийным выходом с трудного уровня теперь работает подсказка. */
+$('#btnHint').addEventListener('click', () => {
+  if (state.anim > 0 || state.locked) return;
+  const m = findHint();
+  if (!m){
+    sndNope();
+    setDeadBanner(true);
+    return;
+  }
+  // Источник выделяем по-настоящему — подсказка сразу наполовину сделана,
+  // игроку остаётся тапнуть подсвеченную цель.
+  if (state.selected !== null) tubeEls[state.selected].classList.remove('sel');
+  state.selected = m.a;
+  tubeEls[m.a].classList.add('sel');
+  const dst = tubeEls[m.b];
+  dst.classList.remove('tip'); void dst.offsetWidth; dst.classList.add('tip');
+  clearTimeout($('#btnHint')._t);
+  $('#btnHint')._t = setTimeout(() => dst.classList.remove('tip'), 3100);
+  sndTap();
+  showHint('Перелей в подсвеченную');
+});
+
+function openLevelPicker(){
+  if (state.anim > 0 || state.locked) return;
+  $('#lvlInput').value = state.level;
+  // подсвечиваем пресет, в диапазон которого попадает текущий уровень
+  const presets = [...document.querySelectorAll('.lvlGrid button')];
+  const marks = presets.map(b => +b.dataset.lvl);
+  let cur = 0;
+  for (let i = 0; i < marks.length; i++) if (state.level >= marks[i]) cur = i;
+  presets.forEach((b, i) => b.classList.toggle('cur', i === cur));
+  $('#ovLevel').classList.add('show');
+  sndTap();
+}
+const closeLevelPicker = () => $('#ovLevel').classList.remove('show');
+
+$('#lvlInput').max = MAX_LEVEL;
+$('#lvlBtn').addEventListener('click', openLevelPicker);
+$('#lvlBtn').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openLevelPicker(); }
+});
+$('#btnCloseLevel').addEventListener('click', closeLevelPicker);
+$('#ovLevel').addEventListener('click', e => { if (e.target.id === 'ovLevel') closeLevelPicker(); });
+
+document.querySelector('.lvlGrid').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  closeLevelPicker();
+  startLevel(+b.dataset.lvl);
+});
+
+function goToTypedLevel(){
+  const l = clamp(Math.round(+$('#lvlInput').value || 1), 1, MAX_LEVEL);
+  closeLevelPicker();
+  startLevel(l);
+}
+$('#btnGoLvl').addEventListener('click', goToTypedLevel);
+$('#lvlInput').addEventListener('keydown', e => { if (e.key === 'Enter') goToTypedLevel(); });
+
+let resizeT;
+const relayout = () => {
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => {
+    if (state.anim > 0) return;
+    settleFlights();               // иначе перелёт анимировал бы уже осиротевший узел
+    buildBoard();
+  }, 150);
+};
+window.addEventListener('resize', relayout);
+// вкладку могли открыть в фоне — там размеры ещё нулевые
+document.addEventListener('visibilitychange', () => { if (!document.hidden) relayout(); });
+
+/* ============ старт ============ */
+load();
+$('#btnSound').textContent = soundOn ? '🔊' : '🔇';
+startLevel(state.level);
+if (state.level === 1) setTimeout(() => showHint('Нажми на пробирку, потом на другую'), 700);
+
+/* PWA: офлайн-режим (работает только по http/https) */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+</script>
+</body>
+</html>

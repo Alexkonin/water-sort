@@ -1,0 +1,96 @@
+/* Общая оболочка: фон, безопасные зоны, шапка, карточки-оверлеи.
+   Подключают меню и «Защита башни». «Разлей по цветам» живёт на своём
+   встроенном CSS и сюда не смотрит: его вёрстка выверена под пробирки,
+   и вынимать из неё общую часть — риск сломать работающее ради красоты.
+   Поэтому база здесь продублирована сознательно; правки фона и кнопок
+   для новых страниц делаются тут, для «Разлей» — в его файле. */
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
+/* канву красит фон КОРНЯ: до чего body не дотянулся (полоса под home indicator),
+   осталось бы белым. Цвет — крайний стоп нижнего градиента, стыка не видно. */
+html{background:#241533}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,sans-serif;
+  color:#fff;
+  background:#241533;
+  background:
+    radial-gradient(70% 42% at 50% 46%, rgba(150,105,190,.22) 0%, rgba(150,105,190,0) 70%),
+    radial-gradient(125% 95% at 50% 8%, #4b2f66 0%, #3a2350 42%, #241533 100%);
+  user-select:none;-webkit-user-select:none;
+  touch-action:manipulation;
+}
+#app{
+  height:100dvh;display:flex;flex-direction:column;
+  padding:calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 10px);
+}
+/* iOS с домашнего экрана: black-translucent поднимает документ под статус-бар,
+   но 100% меряется БЕЗ верхнего инсета — снизу остаётся незакрашенная полоса.
+   Растим только html: body с height:100% тянется за ним сам. */
+@media (display-mode: standalone){
+  html{min-height:calc(100% + env(safe-area-inset-top))}
+}
+
+/* ---------- шапка ---------- */
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:0 0 auto}
+.icon-btn{
+  width:40px;height:40px;flex:0 0 auto;border:0;border-radius:13px;
+  background:rgba(255,255,255,.10);color:#fff;font-size:18px;line-height:1;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:transform .12s, background .2s;
+}
+.icon-btn:active{transform:scale(.9)}
+.icon-btn[disabled]{opacity:.32;pointer-events:none}
+.hdr-title{
+  flex:1 1 auto;min-width:0;text-align:center;
+  font-size:17px;font-weight:700;letter-spacing:.2px;opacity:.95;
+}
+.hdr-title small{display:block;font-size:11px;font-weight:500;opacity:.5;letter-spacing:.4px;margin-top:2px}
+
+/* ---------- оверлеи ---------- */
+.overlay{
+  position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+  background:rgba(12,6,26,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.overlay.show{opacity:1;pointer-events:auto}
+.card{
+  width:min(330px,86vw);max-height:86dvh;overflow-y:auto;
+  padding:26px 22px 20px;border-radius:26px;text-align:center;
+  background:linear-gradient(165deg,#5c2f8f,#341a5c);
+  box-shadow:0 24px 60px rgba(0,0,0,.5);
+  transform:translateY(14px) scale(.94);transition:transform .3s cubic-bezier(.2,1.3,.4,1);
+}
+.overlay.show .card{transform:none}
+.card .big{font-size:44px;line-height:1;margin-bottom:12px}
+.card h2{margin:0 0 6px;font-size:22px}
+.card p{margin:0 0 18px;opacity:.65;font-size:14px;line-height:1.45}
+.card p:last-of-type{margin-bottom:20px}
+.cta{
+  width:100%;min-height:54px;border:0;border-radius:17px;cursor:pointer;
+  background:linear-gradient(180deg,#ffd23f,#ffa41b);color:#3a1d00;
+  font-size:17px;font-weight:800;transition:transform .12s;
+}
+.cta:active{transform:scale(.96)}
+.ghost{
+  margin-top:10px;width:100%;min-height:42px;border:0;background:transparent;
+  color:rgba(255,255,255,.55);font-size:14px;cursor:pointer;
+}
+.help-list{text-align:left;margin:0 0 18px;padding-left:20px;font-size:14px;line-height:1.55;opacity:.8}
+.help-list li{margin-bottom:7px}
+
+/* ---------- всплывающая подсказка ---------- */
+/* Отступ снизу задаёт страница через --hint-bottom: у разных игр разная
+   высота нижней панели, и фиксированные 96px прятали подсказку под кнопками. */
+.hint{
+  position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + var(--hint-bottom, 96px));
+  transform:translate(-50%,10px);z-index:90;
+  padding:9px 16px;border-radius:14px;background:rgba(20,10,38,.92);
+  color:#fff;font-size:13px;font-weight:600;white-space:nowrap;
+  opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;
+}
+.hint.show{opacity:1;transform:translate(-50%,0)}
+
+@media (prefers-reduced-motion: reduce){
+  .overlay,.overlay .card,.hint,.icon-btn{transition:none}
+}

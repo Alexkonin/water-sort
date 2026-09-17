@@ -41,7 +41,7 @@
 
   /* ---------- поле ---------- */
   main{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center}
-  canvas{display:block;border-radius:18px;background:rgba(10,4,24,.34);touch-action:none}
+  canvas{display:block;max-width:100%;max-height:100%;border-radius:18px;background:rgba(10,4,24,.34);touch-action:none}
 
   /* ---------- нижняя панель ---------- */
   footer{flex:0 0 auto;display:flex;flex-direction:column;gap:8px;padding-top:2px}
@@ -81,10 +81,13 @@
   .spd.on{background:rgba(255,210,63,.28);color:#ffd23f}
 
   /* ---------- панель выбранной башни ---------- */
+  /* Панель занимает место ВСЕГДА, показываясь и пряча содержимое через visibility.
+     С display:none появление панели сжимало поле, а canvas оставался прежнего
+     размера и вылезал на показатели сверху и на саму панель снизу. */
   .sel{
-    display:none;gap:7px;align-items:stretch;
+    display:flex;gap:7px;align-items:stretch;min-height:46px;visibility:hidden;
   }
-  .sel.show{display:flex}
+  .sel.show{visibility:visible}
   .sel .info{
     flex:1 1 auto;min-width:0;padding:6px 10px;border-radius:15px;
     background:rgba(255,255,255,.085);display:flex;flex-direction:column;justify-content:center;
@@ -198,9 +201,10 @@
       <li>Нажми «Начать волну». Враги пойдут от портала по дороге к твоей базе.</li>
       <li>За каждого убитого дают золото. На него строй и улучшай башни.</li>
       <li>Коснись поставленной башни — её можно улучшить или продать (вернётся 60%).</li>
-      <li>Пропустил врага — минус жизнь. Кончились жизни — база прорвана.</li>
+      <li>Дошедший до ворот враг не исчезает: он бьёт замок, пока жив, и убить его могут только башни. Зато у ворот он открытая мишень — броня не спасает, урон двойной. Держи оборону у ворот.</li>
+      <li>Замок выдерживает 20 ударов. Кончилась прочность — база прорвана.</li>
       <li><b>Броневики</b> гасят слабые удары: по ним бьёт пушка и мортира, а молния почти бесполезна.</li>
-      <li>Три звезды дают, если не пропустил ни одного врага.</li>
+      <li>Три звезды дают, если замок не получил ни одного удара.</li>
     </ol>
     <button class="cta" id="btnCloseHelp">Понятно</button>
   </div>
@@ -268,20 +272,29 @@ const MAX_TW_LVL = 3;
 const SELL_BACK = 0.6;
 
 /* ============ враги ============ */
+/* hit — урон замку за удар, atk — секунд между ударами. Дошедший враг не исчезает,
+   а осаждает: встаёт у ворот и бьёт, пока его не убьют. Башни в радиусе продолжают
+   по нему стрелять, и стоящая цель — лёгкая. Отсюда стратегия: у ворот нужна оборона. */
 const FOES = {
-  grunt:  { name:'Ползун',   hp:36,  sp:1.35, armor:0, bounty:8,  lives:1, r:0.30, color:'#9bc800' },
-  runner: { name:'Бегун',    hp:26,  sp:2.60, armor:0, bounty:7,  lives:1, r:0.26, color:'#ff66cf' },
-  tank:   { name:'Броневик', hp:95,  sp:0.95, armor:5, bounty:15, lives:1, r:0.34, color:'#0393ab' },
-  swarm:  { name:'Роевик',   hp:14,  sp:1.90, armor:0, bounty:4,  lives:1, r:0.20, color:'#ffc21a' },
-  /* Босс отнимает 3 жизни, а не 5, и здоровья у него меньше прежнего.
-     Причина: при 5 жизнях и 620 HP вся сложность поздних карт сводилась к нему
-     одному — симуляция теряла ровно 10 жизней (два босса) и на 5-м уровне,
-     и на 12-м, то есть звёзды перестали различать уровни. Теперь прорыв
-     одного босса — это 2 звезды, двух — одна, и между картами снова есть разница. */
-  boss:   { name:'Босс',     hp:430, sp:0.80, armor:6, bounty:70, lives:3, r:0.44, color:'#ee3550' }
+  grunt:  { name:'Ползун',   hp:36,  sp:1.35, armor:0, bounty:8,  hit:1, atk:1.6, r:0.30, color:'#9bc800' },
+  runner: { name:'Бегун',    hp:26,  sp:2.60, armor:0, bounty:7,  hit:1, atk:1.2, r:0.26, color:'#ff66cf' },
+  tank:   { name:'Броневик', hp:95,  sp:0.95, armor:5, bounty:15, hit:2, atk:2.2, r:0.34, color:'#0393ab' },
+  swarm:  { name:'Роевик',   hp:14,  sp:1.90, armor:0, bounty:4,  hit:1, atk:1.3, r:0.20, color:'#ffc21a' },
+  /* Босс у ворот бьёт как ползун — по одному, — но живёт долго; его цена
+     набирается временем, а не силой удара. При трёх за две секунды дошедший
+     босс на поздней карте был автоматическим проигрышем.
+     Когда босс был вдвое крепче и снимал 5 жизней разом, вся сложность поздних
+     карт сводилась к нему одному: симуляция теряла ровно 10 жизней и на 5-м
+     уровне, и на 12-м — звёзды перестали различать карты. */
+  boss:   { name:'Босс',     hp:430, sp:0.80, armor:6, bounty:70, hit:1, atk:2.0, r:0.44, color:'#ee3550' }
 };
 
-const START_LIVES = 15;
+const START_LIVES = 20;             // прочность замка
+/* Замок сам не воюет. Была мысль дать ему лучников, чтобы осада имела предел
+   без башен у ворот, — отвергнута: две стреляющие сущности путают, откуда
+   урон и что делать. Правило одно: убивают только башни, поэтому у ворот
+   должна стоять оборона. Кольца осады сжаты так, чтобы пушка на соседней
+   с замком клетке доставала до любого слота. */
 /* Стартовое золото растёт с уровнем, и это не поблажка, а необходимость:
    здоровье волн умножается на номер уровня, а первая волна приходит до
    всякого дохода. С фиксированным капиталом поздний уровень встречал бы
@@ -398,7 +411,7 @@ function atDist(path, d){
 /* ============ состояние ============ */
 const G = {
   lv: 0, path: null, blocked: new Set(),
-  lives: START_LIVES, gold: startGold(0), leaked: 0,
+  lives: START_LIVES, gold: startGold(0), dmgTaken: 0, reached: 0,
   wave: 0, waveRunning: false, queue: [], spawnT: 0,
   foes: [], towers: [], shots: [], fx: [],
   armed: null, selected: null,
@@ -412,15 +425,17 @@ const cellFree = (x, y) =>
 
 /* ============ canvas ============ */
 const cv = $('#cv'), ctx = cv.getContext('2d');
-let CELL = 30, OX = 0, OY = 0, DPR = 1;
+let CELL = 30, OX = 0, OY = 0, DPR = 1, laidOut = false;
 
 function layout(){
   const main = document.querySelector('main');
   const availW = main.clientWidth, availH = main.clientHeight;
   if (!availW || !availH) return;
-  CELL = Math.max(14, Math.floor(Math.min(availW / COLS, availH / ROWS)));
+  const cell = Math.max(14, Math.floor(Math.min(availW / COLS, availH / ROWS)));
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  if (laidOut && cell === CELL && dpr === DPR) return;      // ничего не изменилось
+  CELL = cell; DPR = dpr; laidOut = true;
   const w = CELL * COLS, h = CELL * ROWS;
-  DPR = Math.min(window.devicePixelRatio || 1, 2.5);
   cv.style.width = w + 'px';
   cv.style.height = h + 'px';
   cv.width = Math.round(w * DPR);
@@ -498,7 +513,7 @@ function startLevel(i){
   const m = MAPS[G.lv];
   G.path = buildPath(m.wp);
   G.blocked = new Set((m.blocked || []).map(([x, y]) => x + ',' + y));
-  G.lives = START_LIVES; G.gold = startGold(G.lv); G.leaked = 0;
+  G.lives = START_LIVES; G.gold = startGold(G.lv); G.dmgTaken = 0; G.reached = 0;
   G.wave = 0; G.waveRunning = false; G.queue = []; G.spawnT = 0;
   G.foes = []; G.towers = []; G.shots = []; G.fx = [];
   G.armed = null; G.selected = null;
@@ -543,21 +558,61 @@ function spawn(type, scale){
   G.foes.push({
     type, d: 0, hp, hpMax: hp, sp: f.sp, armor: f.armor,
     slow: 0, slowT: 0, r: f.r, color: f.color, bounty: f.bounty,
-    lives: f.lives, hit: 0, ph: Math.random() * 6.283
+    hit: 0, ph: Math.random() * 6.283,
+    siege: false, slot: -1, atk: 0, lunge: 0
   });
+}
+
+/* ============ осада ============
+   Дошедший до конца дороги враг не исчезает, а занимает слот в полукольце
+   перед воротами — со стороны, откуда пришёл, — и бьёт замок с интервалом
+   своего типа. Слоты нужны, чтобы толпа не сливалась в одну точку: каждый
+   стоит на своём месте, а при нехватке слотов кольцо отступает от ворот. */
+/* Первое кольцо на 0.95 клетки от центра замка: полширины замка (0.36) плюс
+   радиус босса (0.44) плюс зазор — иначе толпа стояла прямо на башенках.
+   Все слоты в пределах 1.8 клетки от замка: пушка (радиус 2.8) на соседней
+   клетке достаёт до любого. Позиция потом прижимается к полю — у замка
+   в углу боковые слоты иначе уходили бы за кромку. */
+const SIEGE_SLOTS = [[-0.95, 0], [-0.9, 0.45], [-0.9, -0.45], [-1.3, 0.22], [-1.3, -0.22],
+                     [-1.25, 0.7], [-1.25, -0.7], [-1.65, 0], [-1.6, 0.45], [-1.6, -0.45],
+                     [-1.5, 0.95], [-1.5, -0.95]];
+function siegeFrame(){
+  const P = G.path.pts, b = P[P.length - 1], a = P[P.length - 2] || { x: b.x - 1, y: b.y };
+  return { b, h: Math.atan2(b.y - a.y, b.x - a.x) };
+}
+function foePos(f){
+  if (!f.siege) return atDist(G.path, f.d);
+  const { b, h } = siegeFrame();
+  const [ox, oy] = SIEGE_SLOTS[f.slot % SIEGE_SLOTS.length];
+  const lx = ox - Math.floor(f.slot / SIEGE_SLOTS.length) * 0.5 + (f.lunge > 0 ? f.lunge * 0.16 : 0);
+  return { x: clamp(b.x + Math.cos(h) * lx - Math.sin(h) * oy, 0.35, COLS - 0.35),
+           y: clamp(b.y + Math.sin(h) * lx + Math.cos(h) * oy, 0.35, ROWS - 0.35) };
+}
+const foeHeading = f => f.siege ? siegeFrame().h : headingAt(G.path, f.d);
+function startSiege(f){
+  f.siege = true; f.d = G.path.len;
+  const used = new Set(G.foes.filter(x => x.siege && !x.dead && x !== f).map(x => x.slot));
+  let k = 0; while (used.has(k)) k++;
+  f.slot = k;
+  f.atk = FOES[f.type].atk * 0.6;          // первый удар — чуть раньше, чем обычный интервал
+  G.reached++;
 }
 
 /* ============ бой ============ */
 function dmgFoe(f, dmg, kind){
   // Броня вычитается из каждого попадания, но хотя бы 1 проходит всегда:
   // иначе слабая башня против брони давала бы ноль и выглядела сломанной.
-  const real = Math.max(1, dmg - f.armor);
+  // У ворот враг стоит и бьёт — открытая мишень: броня не работает, урон
+  // удвоен. Без этого дошедший босс был проигрышем: две пушки у ворот пилили
+  // его под минуту, а он за это время сносил замок вдвое. Теперь прорыв босса
+  // стоит около десяти прочности — больно (одна звезда), но не конец.
+  const real = f.siege ? Math.max(1, dmg * 2) : Math.max(1, dmg - f.armor);
   f.hp -= real;
   f.hit = 0.12;
   if (f.hp <= 0){
     f.dead = true;
     G.gold += f.bounty;
-    const p = atDist(G.path, f.d);
+    const p = foePos(f);
     G.fx.push({ kind:'puff', x: p.x, y: p.y, t: 0, life: 0.45, color: f.color, parts: parts(7, 0.9, (f.d * 1000) | 0) });
     sndKill();
     flash('#stGold', 'gain');
@@ -590,7 +645,7 @@ function fireTower(t){
   let best = null;
   for (const f of G.foes){
     if (f.dead) continue;
-    const p = atDist(G.path, f.d);
+    const p = foePos(f);
     if (Math.hypot(p.x - tx, p.y - ty) > st.range + f.r) continue;
     if (!best || f.d > best.f.d) best = { f, p };
   }
@@ -608,7 +663,7 @@ function fireTower(t){
       let nx = null;
       for (const f of G.foes){
         if (f.dead || chain.includes(f)) continue;
-        const p = atDist(G.path, f.d);
+        const p = foePos(f);
         const dist = Math.hypot(p.x - from.x, p.y - from.y);
         if (dist > 1.9) continue;
         if (!nx || dist < nx.dist) nx = { f, p, dist };
@@ -617,7 +672,7 @@ function fireTower(t){
       chain.push(nx.f); from = nx.p;
     }
     const pts = [{ x: tx, y: ty }];
-    for (const f of chain){ pts.push(atDist(G.path, f.d)); dmgFoe(f, st.dmg, 'chain'); }
+    for (const f of chain){ pts.push(foePos(f)); dmgFoe(f, st.dmg, 'chain'); }
     const zig = [pts[0]];
     for (let i = 1; i < pts.length; i++){
       const a = pts[i - 1], q = pts[i];
@@ -632,7 +687,7 @@ function fireTower(t){
     // мортира стреляет с упреждением: снаряд летит долго, и без прогноза
     // по быстрым целям она не попадала бы никогда
     const flight = Math.hypot(best.p.x - tx, best.p.y - ty) / 7.5;
-    const lead = atDist(G.path, best.f.d + best.f.sp * (1 - best.f.slow) * flight);
+    const lead = best.f.siege ? best.p : atDist(G.path, best.f.d + best.f.sp * (1 - best.f.slow) * flight);
     G.shots.push({ kind:'shell', x: tx, y: ty, from:{ x: tx, y: ty }, to: lead,
                    t: 0, life: flight, dmg: st.dmg, splash: b.splash, color: b.color });
     G.fx.push({ kind:'smoke', x: tx + Math.cos(t.aim) * 0.3, y: ty + Math.sin(t.aim) * 0.3, t: 0, life: 0.5,
@@ -664,13 +719,22 @@ function update(dt){
     if (f.dead) continue;
     if (f.slowT > 0){ f.slowT -= dt; if (f.slowT <= 0) f.slow = 0; }
     if (f.hit > 0) f.hit -= dt;
-    f.d += f.sp * (1 - f.slow) * dt;
-    if (f.d >= G.path.len){
-      f.dead = true; f.leaked = true;
-      G.lives -= f.lives; G.leaked += f.lives;
+    if (!f.siege){
+      f.d += f.sp * (1 - f.slow) * dt;
+      if (f.d >= G.path.len) startSiege(f);
+      continue;
+    }
+    // осада: мороз замедляет и удары тоже
+    if (f.lunge > 0) f.lunge -= dt * 5;
+    f.atk -= dt * (1 - f.slow);
+    if (f.atk <= 0){
+      const b = FOES[f.type];
+      f.atk = b.atk; f.lunge = 1;
+      G.lives -= b.hit; G.dmgTaken += b.hit;
       flash('#stLives', 'hurt');
       sndLeak();
-      G.fx.push({ kind:'leak', x: G.path.pts[G.path.pts.length - 1].x, y: G.path.pts[G.path.pts.length - 1].y, t: 0, life: 0.5 });
+      const gate = siegeFrame().b;
+      G.fx.push({ kind:'leak', x: gate.x, y: gate.y, t: 0, life: 0.4, parts: parts(5, 0.7, (G.t * 997) | 0) });
     }
   }
 
@@ -691,7 +755,7 @@ function update(dt){
         // взрыв по площади: бьёт всех в радиусе от точки падения
         for (const f of G.foes){
           if (f.dead) continue;
-          const p = atDist(G.path, f.d);
+          const p = foePos(f);
           if (Math.hypot(p.x - s.to.x, p.y - s.to.y) <= s.splash + f.r) dmgFoe(f, s.dmg, 'splash');
         }
         G.fx.push({ kind:'boom', x: s.to.x, y: s.to.y, t: 0, life: 0.42, r: s.splash, parts: parts(6, 1.4, (s.to.x * 977 + s.to.y * 131) | 0) });
@@ -701,7 +765,7 @@ function update(dt){
     }
     // самонаводящийся: если цель умерла, снаряд гаснет
     if (!s.target || s.target.dead){ s.done = true; continue; }
-    const p = atDist(G.path, s.target.d);
+    const p = foePos(s.target);
     const dist = Math.hypot(p.x - s.x, p.y - s.y);
     const step = s.sp * dt;
     if (dist <= step + s.target.r){
@@ -1211,7 +1275,7 @@ const FOE_ART = {
 };
 
 function drawFoe(f){
-  const p = atDist(G.path, f.d), h = headingAt(G.path, f.d), cx = px(p.x), cy = py(p.y), r = f.r * CELL;
+  const p = foePos(f), h = foeHeading(f), cx = px(p.x), cy = py(p.y), r = f.r * CELL;
   softShadow(ctx, cx + r * 0.1, cy + r * 0.55, r * 1.15, r * 0.5, 0.45);
   ctx.save(); ctx.translate(cx, cy); ctx.rotate(h);
   FOE_ART[f.type](ctx, r, f);
@@ -1320,11 +1384,11 @@ function drawFx(e){
     return;
   }
   if (e.kind === 'leak'){
-    const g = ctx.createRadialGradient(px(e.x), py(e.y), 0, px(e.x), py(e.y), CELL * 0.9);
-    g.addColorStop(0, 'rgba(238,53,80,' + 0.5 * (1 - t) + ')'); g.addColorStop(1, 'rgba(238,53,80,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px(e.x), py(e.y), CELL * 0.9, 0, 7); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,120,140,' + (1 - t) + ')'; ctx.lineWidth = Math.max(1, CELL * 0.07 * (1 - t));
-    ctx.beginPath(); ctx.arc(px(e.x), py(e.y), CELL * (0.3 + t * 1.0), 0, 7); ctx.stroke();
+    const g = ctx.createRadialGradient(px(e.x), py(e.y), 0, px(e.x), py(e.y), CELL * 0.8);
+    g.addColorStop(0, 'rgba(255,120,140,' + 0.55 * (1 - t) + ')'); g.addColorStop(1, 'rgba(238,53,80,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px(e.x), py(e.y), CELL * 0.8, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(190,170,140,' + (1 - t) + ')';                                             // щепки от ворот
+    for (const p of e.parts){ ctx.beginPath(); ctx.arc(px(e.x + p.vx * k), py(e.y + p.vy * k + t * t * 0.4), CELL * 0.03, 0, 7); ctx.fill(); }
   }
 }
 
@@ -1438,8 +1502,8 @@ function refreshSel(){
 /* ============ ввод ============ */
 function cellAt(ev){
   const r = cv.getBoundingClientRect();
-  const x = Math.floor((ev.clientX - r.left) / CELL);
-  const y = Math.floor((ev.clientY - r.top) / CELL);
+  const x = Math.floor((ev.clientX - r.left) / (r.width / COLS));
+  const y = Math.floor((ev.clientY - r.top) / (r.height / ROWS));
   return { x, y };
 }
 
@@ -1524,13 +1588,13 @@ $('#btnSound').addEventListener('click', () => {
 /* ============ итоги уровня ============ */
 function levelWin(){
   G.over = true;
-  const stars = G.leaked === 0 ? 3 : G.leaked <= 3 ? 2 : 1;
+  const stars = G.dmgTaken === 0 ? 3 : G.dmgTaken <= 4 ? 2 : 1;
   if (!save.stars[G.lv] || save.stars[G.lv] < stars){ save.stars[G.lv] = stars; writeSave(); }
   $('#winStars').textContent = '★★★'.slice(0, stars) + '☆☆☆'.slice(0, 3 - stars);
   $('#winTitle').textContent = 'Уровень ' + (G.lv + 1) + ' пройден!';
-  $('#winSub').textContent = G.leaked === 0
-    ? 'Ни один враг не прошёл'
-    : 'Прорвалось: ' + G.leaked + ' ' + plural(G.leaked, 'враг', 'врага', 'врагов');
+  $('#winSub').textContent = G.dmgTaken === 0
+    ? (G.reached ? 'Дошли до ворот, но ударить не успели' : 'Ни один враг не дошёл до ворот')
+    : 'Замок получил ' + G.dmgTaken + ' ' + plural(G.dmgTaken, 'удар', 'удара', 'ударов');
   $('#btnNext').style.display = G.lv + 1 < MAPS.length ? '' : 'none';
   showOverlay('ovWin');
   sndWin();
@@ -1594,6 +1658,7 @@ $('#btnCloseHelp').addEventListener('click', () => showOverlay(null));
 /* ============ окружение ============ */
 addEventListener('resize', () => { layout(); });
 addEventListener('orientationchange', () => setTimeout(layout, 150));
+if (window.ResizeObserver) new ResizeObserver(() => layout()).observe(document.querySelector('main'));
 // Свёрнутая вкладка не должна «догонять» время: ставим на паузу,
 // иначе при возврате волна оказывается прошедшей без игрока.
 document.addEventListener('visibilitychange', () => {

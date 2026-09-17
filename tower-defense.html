@@ -1720,6 +1720,7 @@ function refreshHud(){
     go.textContent = 'Начать волну ' + (G.wave + 1);
   }
   refreshPalette();
+  refreshSel();
 }
 
 let paletteBuilt = false;
@@ -1747,11 +1748,20 @@ function refreshPalette(){
   }
 }
 
+let selSig = '';
 function refreshSel(){
   const t = G.selected;
   const box = $('#sel');
   box.classList.toggle('show', !!t);
-  if (!t) return;
+  if (!t){ selSig = ''; return; }
+  const uc0 = upCost(t);
+  /* Панель зовётся каждый кадр (иначе кнопка «Улучшить» не разблокируется сама,
+     когда золото накопилось во время волны), поэтому пишем в DOM только при
+     реальном изменении. Подпись покрывает всё, что панель показывает: имя, урон,
+     радиус, цена улучшения и продажи — всё выводится из типа и уровня. */
+  const sig = t.type + ':' + t.lvl + ':' + uc0 + ':' + (uc0 !== null && G.gold >= uc0);
+  if (sig === selSig) return;
+  selSig = sig;
   const b = TOWERS[t.type], st = towerStats(t);
   $('#selName').textContent = b.name + ' · ур. ' + t.lvl;
   $('#selStats').textContent = 'урон ' + Math.round(st.dmg) + ' · радиус ' +

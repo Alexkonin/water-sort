@@ -51,12 +51,19 @@
   }
 
   /* ---------- шапка ---------- */
-  header{display:flex;align-items:center;justify-content:space-between;gap:7px;flex:0 0 auto}
+  /* Три колонки: кнопки слева, заголовок, кнопки справа. Боковые колонки
+     равной ширины, поэтому заголовок стоит по центру ЭКРАНА, а не между
+     кнопками — с flex и space-between две кнопки слева против одной справа
+     сдвигали его вправо. Минимум колонки — две кнопки с зазором. */
+  header{
+    display:grid;grid-template-columns:minmax(87px,1fr) auto minmax(87px,1fr);
+    align-items:center;gap:7px;flex:0 0 auto;
+  }
+  .hdr-side{display:flex;gap:7px;align-items:center}
+  .hdr-side.right{justify-content:flex-end}
   /* ссылка в шапке ведёт себя как кнопка: снимаем подчёркивание и наследуем цвет */
   a.icon-btn{text-decoration:none;flex:0 0 auto}
-  /* Номер уровня — единственный тянущийся элемент, поэтому три кнопки
-     остаются на своих местах, а длинный номер («Уровень 1987») ужимает себя. */
-  .lvl{flex:1 1 auto;min-width:0}
+  .lvl{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .lvl{
     font-size:17px;font-weight:700;letter-spacing:.2px;opacity:.95;
     cursor:pointer;padding:4px 10px;border-radius:12px;text-align:center;
@@ -422,10 +429,14 @@
 <body>
 <div id="app">
   <header>
-    <a class="icon-btn" id="btnMenu" href="index.html" title="В меню">☰</a>
-    <button class="icon-btn" id="btnSound" title="Звук">🔊</button>
+    <div class="hdr-side">
+      <a class="icon-btn" id="btnMenu" href="index.html" title="В меню">☰</a>
+      <button class="icon-btn" id="btnSound" title="Звук">🔊</button>
+    </div>
     <div class="lvl" id="lvlBtn" role="button" tabindex="0" title="Выбрать уровень">Уровень <span id="lvlNum">1</span> <span class="caret">▾</span><small id="movesTxt">ходов: 0</small></div>
-    <button class="icon-btn" id="btnHelp" title="Как играть">?</button>
+    <div class="hdr-side right">
+      <button class="icon-btn" id="btnHelp" title="Как играть">?</button>
+    </div>
   </header>
 
   <div id="shelf"></div>

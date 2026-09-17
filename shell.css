@@ -31,8 +31,16 @@ body{
   html{min-height:calc(100% + env(safe-area-inset-top))}
 }
 
-/* ---------- шапка ---------- */
-header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:0 0 auto}
+/* ---------- шапка ----------
+   Три колонки: кнопки слева, заголовок, кнопки справа. Боковые колонки равной
+   ширины, поэтому заголовок стоит по центру экрана при любом числе кнопок. */
+header{
+  display:grid;grid-template-columns:minmax(87px,1fr) auto minmax(87px,1fr);
+  align-items:center;gap:7px;flex:0 0 auto;
+}
+.hdr-side{display:flex;gap:7px;align-items:center}
+.hdr-side.right{justify-content:flex-end}
+a.icon-btn{text-decoration:none}
 .icon-btn{
   width:40px;height:40px;flex:0 0 auto;border:0;border-radius:13px;
   background:rgba(255,255,255,.10);color:#fff;font-size:18px;line-height:1;
@@ -42,7 +50,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:8px;fle
 .icon-btn:active{transform:scale(.9)}
 .icon-btn[disabled]{opacity:.32;pointer-events:none}
 .hdr-title{
-  flex:1 1 auto;min-width:0;text-align:center;
+  min-width:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   font-size:17px;font-weight:700;letter-spacing:.2px;opacity:.95;
 }
 .hdr-title small{display:block;font-size:11px;font-weight:500;opacity:.5;letter-spacing:.4px;margin-top:2px}

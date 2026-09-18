@@ -104,7 +104,24 @@
   .sel .sell{background:rgba(255,255,255,.12);color:#ffd0d8}
 
   /* ---------- выбор уровня ---------- */
-  .mapGrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+  /* Поле перехода по номеру: при 120 картах листать сетку до нужной долго */
+  .lvlPick{display:flex;gap:8px;margin-bottom:12px}
+  .lvlPick input{
+    flex:1 1 auto;min-width:0;border:0;border-radius:14px;padding:0 14px;min-height:46px;
+    background:rgba(0,0,0,.28);color:#fff;font-size:16px;font-weight:700;text-align:center;
+  }
+  .lvlPick input::placeholder{color:rgba(255,255,255,.35);font-weight:500}
+  .lvlPick button{
+    flex:0 0 auto;border:0;border-radius:14px;padding:0 18px;min-height:46px;cursor:pointer;
+    background:rgba(255,255,255,.14);color:#fff;font-size:14px;font-weight:800;
+  }
+  .lvlPick button:active{transform:scale(.95)}
+  /* Сетка карт прокручивается сама: иначе 120 кнопок растягивают карточку,
+     и кнопка «Закрыть» уезжает за нижнюю кромку экрана. */
+  .mapGrid{
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;
+    max-height:46dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2px;
+  }
   .mapGrid button{
     border:0;border-radius:15px;cursor:pointer;padding:9px 4px 7px;
     background:rgba(255,255,255,.12);color:#fff;
@@ -186,7 +203,11 @@
   <div class="card">
     <div class="big">🗺️</div>
     <h2>Выбор уровня</h2>
-    <p>Уровень открывается, когда пройден предыдущий</p>
+    <p>Все уровни открыты. Чем дальше номер, тем длиннее дорога и злее волны</p>
+    <div class="lvlPick">
+      <input id="lvInput" type="number" min="1" inputmode="numeric" placeholder="номер">
+      <button id="btnGoLv">Перейти</button>
+    </div>
     <div class="mapGrid" id="mapGrid"></div>
     <button class="ghost" id="btnCloseMaps">Закрыть</button>
   </div>
@@ -329,7 +350,19 @@ const START_LIVES = 20;             // прочность замка
    первую волну пятью пушками против втрое более крепких врагов —
    не сложность, а заведомый проигрыш. Растёт медленнее здоровья
    (2.8x против 3.9x к последней карте), поэтому кривая всё равно вверх. */
-const startGold = L => 240 + 40 * L;
+/* Кривая сложности выходит на полку. За 12-й картой числа растут вдвое медленнее
+   (дальше сложность добирается механиками), а с RAMP_CAP перестают расти вовсе:
+   поле конечно, свободных клеток около семидесяти, и башен на них помещается
+   столько же — расти бесконечно врагам просто не во что упереться. Дальше уровни
+   отличаются раскладкой, а не числами; ровно так же устроен потолок в «Разлей». */
+const RAMP_CAP = 20;
+const lvlRamp = L => Math.min(L <= 11 ? L : 11 + (L - 11) * 0.5, RAMP_CAP);
+/* Стартовое золото на СВОЁЙ полке, не на общей. Первая версия считала его от
+   lvlRamp — и вся вторая дюжина обеднела: на 24-м уровне игрок начинал с 880
+   вместо 1160, здоровье врагов при этом почти не упало, и выверенная карта стала
+   проваливаться. Золото растёт по номеру уровня до конца рукотворных карт (их
+   баланс проверен прогонами) и дальше стоит: за ними и сложность стоит. */
+const startGold = L => 240 + 40 * Math.min(L, HAND_MAPS - 1);
 const WAVE_BONUS  = 35;          // за зачищенную волну
 const SAVE_KEY    = 'towerdef.v1';
 
@@ -372,8 +405,7 @@ const hpScale = (L, W, k) => {
   // За первой дюжиной числа растут вдвое медленнее: дальше сложность добирается
   // механиками — притоками, призраками, големами. Линейное продолжение роняло
   // всю вторую дюжину у симуляции: формула была подобрана под 12 карт.
-  const Lc = L <= 11 ? L : 11 + (L - 11) * 0.5;
-  return 1 + (0.25 * W + 0.21 * Lc + 0.55 * Lc * late) * (k || 1);
+  return 1 + (0.25 * W + 0.21 * lvlRamp(L) + 0.55 * lvlRamp(L) * late) * (k || 1);
 };
 /* Поправка на длину дорог. Длина решает больше, чем номер уровня: на короткой
    дороге врагу негде получить урон, и одна и та же волна на 22 клетках вдвое
@@ -399,9 +431,12 @@ function writeSave(){
 }
 loadSave();
 // открыт уровень 0 и каждый следующий за пройденным
-const unlocked = i => i === 0 || save.stars[i - 1] > 0 || save.stars[i] > 0;
+/* Замков нет: любой уровень открыт сразу. Запирать 120 карт за прохождением
+   предыдущей — значит заставлять переигрывать, чтобы добраться до интересной;
+   звёзды и так показывают, что пройдено. */
+const unlocked = () => true;
 function firstUnfinished(){
-  for (let i = 0; i < MAPS.length; i++) if (!save.stars[i]) return unlocked(i) ? i : Math.max(0, i - 1);
+  for (let i = 0; i < MAPS.length; i++) if (!save.stars[i]) return i;
   return MAPS.length - 1;
 }
 
@@ -473,6 +508,146 @@ function atDist(path, d){
   }
   return path.pts[path.pts.length - 1];
 }
+
+/* ============ генератор карт ============
+   Двадцать четыре карты нарисованы руками — у них характер и имена. Сто с лишним
+   руками не нарисовать, поэтому дальше работает генератор: раскладка по сиду от
+   номера уровня, у всех игроков карта N одинаковая. Тот же приём, что в «Разлей».
+
+   Ключевое решение — РЕШЁТКА С ШАГОМ 2. Узлы стоят на чётных координатах
+   (x = 0,2,4,6,8; y = 0,2,4,6,8,10,12), путь идёт только по рёбрам между
+   соседними узлами. Тогда:
+     • любые два узла отстоят минимум на 2 клетки;
+     • у каждой клетки пути хотя бы одна координата чётная, поэтому клетка
+       с двумя нечётными координатами дорогой быть не может.
+   Отсюда самонепересекающийся обход по решётке НЕ МОЖЕТ дать ни самопересечения,
+   ни касания — а для касания нужны клетки на расстоянии 1. То есть кривая карта
+   здесь невозможна по построению, а не отбраковывается проверкой. Валидатор всё
+   равно прогоняется на старте: он страхует от опечаток в рукотворных картах и
+   поймал бы ошибку в самом генераторе. */
+const LX = 5, LY = 7;                       // узлов по горизонтали и вертикали
+const nk = n => n[0] + ',' + n[1];
+const latticeEdge = n => n[0] === 0 || n[1] === 0 || n[0] === LX - 1 || n[1] === LY - 1;
+
+function walkPath(rnd, want, blockSet){
+  const start = [];
+  for (let i = 0; i < LX; i++) for (const j of [0, LY - 1]) start.push([i, j]);
+  for (let j = 1; j < LY - 1; j++) for (const i of [0, LX - 1]) start.push([i, j]);
+  const free = start.filter(n => !blockSet || !blockSet.has(nk(n)));
+  if (!free.length) return null;
+  let cur = free[Math.floor(rnd() * free.length)];
+  const seen = new Set([nk(cur)]), nodes = [cur];
+  let dir = null;
+  for (let step = 0; step < want; step++){
+    const opts = [];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]){
+      const n = [cur[0] + dx, cur[1] + dy];
+      if (n[0] < 0 || n[1] < 0 || n[0] >= LX || n[1] >= LY) continue;
+      if (seen.has(nk(n)) || (blockSet && blockSet.has(nk(n)))) continue;
+      opts.push({ n, d: [dx, dy] });
+    }
+    if (!opts.length) break;
+    /* Смотрим на шаг вперёд: у каждого кандидата считаем, сколько у НЕГО останется
+       свободных соседей, и ходим в самые «просторные». Без этого обход загонял себя
+       в угол через десяток шагов, и дорога занимала половину поля — башни в пустой
+       половине оказывались бесполезны. Правило известно как обход Варнсдорфа. */
+    for (const o of opts){
+      o.room = 0;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]){
+        const n = [o.n[0] + dx, o.n[1] + dy];
+        if (n[0] < 0 || n[1] < 0 || n[0] >= LX || n[1] >= LY) continue;
+        if (seen.has(nk(n)) || (blockSet && blockSet.has(nk(n)))) continue;
+        o.room++;
+      }
+    }
+    const best = Math.max(...opts.map(o => o.room));
+    const roomy = opts.filter(o => o.room === best);
+    // среди просторных чаще идём прямо: иначе путь вырождается в мелкую пилу
+    const straight = dir ? roomy.filter(o => o.d[0] === dir[0] && o.d[1] === dir[1]) : [];
+    const pick = (straight.length && rnd() < 0.55) ? straight[0] : roomy[Math.floor(rnd() * roomy.length)];
+    cur = pick.n; dir = pick.d;
+    nodes.push(cur); seen.add(nk(cur));
+  }
+  return nodes;
+}
+// узлы решётки -> путевые точки поля, слитые по прямым участкам
+function nodesToWp(nodes){
+  const wp = [];
+  for (let i = 0; i < nodes.length; i++){
+    const p = nodes[i - 1], c = nodes[i], n = nodes[i + 1];
+    if (!p || !n){ wp.push([c[0] * 2, c[1] * 2]); continue; }
+    if (c[0] - p[0] !== n[0] - c[0] || c[1] - p[1] !== n[1] - c[1]) wp.push([c[0] * 2, c[1] * 2]);
+  }
+  return wp;
+}
+/* Приток: обходит ВСЕ занятые узлы (главную дорогу и уже готовые притоки) и
+   заканчивается шагом в узел ГЛАВНОЙ дороги. Вливаться в другой приток нельзя:
+   стык считается по отрезкам главной, и такой приток просто не был бы построен.
+   Блокировать надо именно все узлы, а не углы: первая версия передавала сюда
+   путевые точки готовых притоков, то есть только повороты, и второй приток
+   спокойно пересекал первый между поворотами. */
+function walkBranch(rnd, main, busy){
+  const mainSet = new Set(main.map(nk)), castle = nk(main[main.length - 1]);
+  const blockSet = new Set(busy.map(nk));
+  for (let attempt = 0; attempt < 12; attempt++){
+    const nodes = walkPath(rnd, 3 + Math.floor(rnd() * 4), blockSet);
+    if (!nodes || nodes.length < 2) continue;
+    const tail = nodes[nodes.length - 1];
+    const join = [];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]){
+      const n = [tail[0] + dx, tail[1] + dy];
+      if (n[0] < 0 || n[1] < 0 || n[0] >= LX || n[1] >= LY) continue;
+      if (mainSet.has(nk(n)) && nk(n) !== castle) join.push(n);
+    }
+    if (!join.length) continue;
+    const j = join[Math.floor(rnd() * join.length)];
+    return { wp: nodesToWp(nodes.concat([j])), nodes };
+  }
+  return null;
+}
+
+/* Имена: прилагательное + существительное, оба мужского рода, пара выбирается
+   по номеру уровня — значит не повторяются и у всех игроков одинаковы. */
+const NAME_A = ['Тихий','Мшистый','Дальний','Старый','Туманный','Гулкий','Кривой','Сонный','Ветреный','Глухой','Росистый','Тёплый'];
+const NAME_B = ['лог','брод','овраг','увал','ручей','распадок','перевал','затон','кряж','ельник','склон','раздол'];
+
+function generateMap(lv){                    // lv — индекс уровня, с нуля
+  const k = lv - HAND_MAPS;
+  const name = NAME_A[k % NAME_A.length] + ' ' + NAME_B[Math.floor(k / NAME_A.length) % NAME_B.length];
+  for (let attempt = 0; attempt < 60; attempt++){
+    const rnd = mulberry32((Math.imul(lv + 1, 2654435761) ^ (attempt * 7919)) >>> 0);
+    // длина растёт с номером и упирается в потолок: поле конечное
+    const want = Math.min(26, 9 + Math.floor(k / 6) + Math.floor(rnd() * 6));
+    const nodes = walkPath(rnd, want);
+    if (!nodes || nodes.length < 8) continue;
+    const wp = nodesToWp(nodes);
+    if (wp.length < 4) continue;
+    const m = { name, wp };
+    // притоки: с ростом номера чаще, но не в ущерб месту под башни
+    const nBr = k < 6 ? 0 : rnd() < (k < 30 ? 0.4 : 0.65) ? (rnd() < 0.25 ? 2 : 1) : 0;
+    const br = [], busy = nodes.slice();
+    for (let i = 0; i < nBr; i++){
+      const b = walkBranch(rnd, nodes, busy);
+      if (!b) break;
+      br.push(b.wp);
+      busy.push(...b.nodes);
+    }
+    if (br.length) m.branches = br;
+    // место под башни: меньше 55 свободных клеток — поле тесное, отбраковываем
+    const keys = new Set();
+    for (const p of buildPaths(m)) for (const key of p.cellKey) keys.add(key);
+    if (COLS * ROWS - keys.size < 55) continue;
+    // чем дальше уровень, тем длиннее требуем дорогу: короткая карта на позднем
+    // номере и играется скучно, и оставляет полполя мёртвым
+    if (buildPath(m.wp).len < Math.min(30, 19 + Math.floor(k / 7))) continue;
+    return m;
+  }
+  return { name, wp: [[0, 2], [6, 2], [6, 8], [2, 8], [2, 12]] };   // страховка
+}
+
+const HAND_MAPS = MAPS.length;               // сколько карт нарисовано руками
+const TOTAL_LEVELS = 120;
+for (let lv = HAND_MAPS; lv < TOTAL_LEVELS; lv++) MAPS.push(generateMap(lv));
 
 /* ============ состояние ============ */
 const G = {
@@ -2000,23 +2175,32 @@ function openMaps(){
   MAPS.forEach((m, i) => {
     const b = document.createElement('button');
     const st = save.stars[i] || 0;
-    b.disabled = !unlocked(i);
     b.className = (i === G.lv ? 'cur' : st ? 'done' : '');
     b.innerHTML = '<span class="n"></span><span class="nm"></span><span class="st"></span>';
-    b.querySelector('.n').textContent = unlocked(i) ? (i + 1) : '🔒';
+    b.querySelector('.n').textContent = i + 1;
     b.querySelector('.nm').textContent = m.name;
     b.querySelector('.st').textContent = st ? '★★★'.slice(0, st) : '';
     b.addEventListener('click', () => { startLevel(i); });
     grid.appendChild(b);
   });
+  $('#lvInput').value = G.lv + 1;
   showOverlay('ovMaps');
   sndTap();
+  // при 120 картах листать до текущей неудобно — подводим её под глаза сами
+  const cur = grid.children[G.lv];
+  if (cur) cur.scrollIntoView({ block: 'center' });
 }
 $('#title').addEventListener('click', openMaps);
 $('#title').addEventListener('keydown', e => {
   if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openMaps(); }
 });
 const closeMaps = () => showOverlay(prevOv);
+function goToTypedLevel(){
+  const n = clamp(Math.round(+$('#lvInput').value || 1), 1, MAPS.length);
+  startLevel(n - 1);
+}
+$('#btnGoLv').addEventListener('click', goToTypedLevel);
+$('#lvInput').addEventListener('keydown', e => { if (e.key === 'Enter') goToTypedLevel(); });
 $('#btnCloseMaps').addEventListener('click', closeMaps);
 $('#ovMaps').addEventListener('click', e => { if (e.target.id === 'ovMaps') closeMaps(); });
 $('#btnWinMaps').addEventListener('click', openMaps);

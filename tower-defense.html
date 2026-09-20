@@ -79,6 +79,8 @@
   }
   .spd:active{transform:scale(.94)}
   .spd.on{background:rgba(255,210,63,.28);color:#ffd23f}
+  .spd[disabled]{opacity:.32;pointer-events:none}
+  .undo:not([disabled]){background:rgba(255,210,63,.18);color:#ffd23f}
 
   /* ---------- панель выбранной башни ---------- */
   /* Панель занимает место ВСЕГДА, показываясь и пряча содержимое через visibility.
@@ -136,6 +138,23 @@
   .mapGrid .nm{font-size:9.5px;opacity:.7;line-height:1.1;text-align:center}
   .mapGrid .st{font-size:10px;letter-spacing:-1px;color:#ffd23f;height:12px}
   .stars-big{font-size:30px;letter-spacing:2px;color:#ffd23f;margin-bottom:10px}
+  /* ---------- бестиарий ---------- */
+  /* Список прокручивается сам, как сетка карт: два десятка строк иначе уводят
+     кнопку «Закрыть» за нижнюю кромку. Портрет — живой canvas. */
+  #ovBook .card{height:min(86dvh,720px);display:flex;flex-direction:column;overflow:hidden}
+  .book{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 -8px 12px;padding:2px 8px}
+  #ovBook .ghost{flex:0 0 auto;margin-top:0}
+  .beast{
+    display:flex;gap:10px;align-items:center;text-align:left;
+    padding:7px 8px;border-radius:16px;background:rgba(255,255,255,.07);margin-bottom:7px;
+  }
+  .beast canvas{flex:0 0 auto;border-radius:14px;background:rgba(0,0,0,.2)}
+  .beast .bt{min-width:0;flex:1 1 auto}
+  .beast b{font-size:14px}
+  .beast small{font-size:10.5px;opacity:.55;margin-left:6px}
+  .beast p{margin:2px 0 0;font-size:11.5px;line-height:1.35;opacity:.75}
+  .beast p.tr{color:#ffd98a;opacity:.95}
+  .beast p.st{opacity:.5;font-size:10.5px}
 </style>
 </head>
 <body>
@@ -171,6 +190,7 @@
     <div class="palette" id="palette"></div>
     <div class="row2">
       <button class="go" id="btnGo">Начать волну</button>
+      <button class="spd undo" id="btnUndo" title="Нечего отменять" aria-label="Нечего отменять" disabled>↶</button>
       <button class="spd" id="btnSpd">×1</button>
     </div>
   </footer>
@@ -222,14 +242,26 @@
       <li>Нажми «Начать волну». Враги пойдут от портала по дороге к твоей базе.</li>
       <li>За каждого убитого дают золото. На него строй и улучшай башни.</li>
       <li>Коснись поставленной башни — её можно улучшить или продать (вернётся 60%).</li>
+      <li>Кнопка ↶ отменяет последнюю постройку, улучшение или продажу. Если башня уже успела выстрелить после постройки или улучшения, откат отключается.</li>
       <li>Разряд башни растёт до 3-го, с 25-го уровня до 4-го, с 60-го до 5-го: враги крепнут, и башням есть чем ответить.</li>
       <li>Дошедший до ворот враг не исчезает: он бьёт замок, пока жив, и убить его могут только башни. Зато у ворот он открытая мишень — броня не спасает, урон двойной. Держи оборону у ворот.</li>
       <li>Замок выдерживает 20 ударов. Кончилась прочность — база прорвана.</li>
       <li><b>Камнеспины</b> гасят слабые удары: по ним бьёт пушка и мортира, а молния почти бесполезна.</li>
-      <li>На поздних картах к замку ведёт несколько дорог, а среди врагов появляются <b>туманники</b> (не мёрзнут) и <b>древни</b> (пробивает только тяжёлое).</li>
+      <li>На поздних картах к замку ведёт несколько дорог, а у врагов появляются повадки: одни не мёрзнут, другие уходят под землю, лечат соседей или рассыпаются спорами. При первой встрече игра подскажет, чем брать; все вместе — в бестиарии.</li>
       <li>Три звезды дают, если замок не получил ни одного удара.</li>
     </ol>
+    <button class="ghost" id="btnBook">Бестиарий</button>
     <button class="cta" id="btnCloseHelp">Понятно</button>
+  </div>
+</div>
+
+<div class="overlay" id="ovBook">
+  <div class="card">
+    <div class="big">📖</div>
+    <h2>Бестиарий</h2>
+    <p>Кто ходит по дорогам и с какого уровня. У поздних свои повадки — они в подписи.</p>
+    <div class="book" id="book"></div>
+    <button class="ghost" id="btnCloseBook">Закрыть</button>
   </div>
 </div>
 
@@ -290,7 +322,7 @@ const MAPS = [
 /* ============ башни ============
    Роли разведены не числами, а тем, ПО КОМУ башня работает.
    Ключ к этому — броня: она вычитается из КАЖДОГО попадания,
-   поэтому частые слабые удары (молния) по броневику почти бесполезны,
+   поэтому частые слабые удары (молния) по каменному духу почти бесполезны,
    а редкие тяжёлые (мортира, пушка) проходят. Без этого правила
    все башни сводились бы к «урон в секунду за золото». */
 const TOWERS = {
@@ -328,29 +360,13 @@ const MAX_TW_LVL = 5;
 const tierCap = L => L < HAND_MAPS ? 3 : L < 59 ? 4 : 5;   // 4-й разряд с 25-го уровня, 5-й с 60-го
 const SELL_BACK = 0.6;
 
-/* ============ враги ============ */
-/* hit — урон замку за удар, atk — секунд между ударами. Дошедший враг не исчезает,
-   а осаждает: встаёт у ворот и бьёт, пока его не убьют. Башни в радиусе продолжают
-   по нему стрелять, и стоящая цель — лёгкая. Отсюда стратегия: у ворот нужна оборона. */
-const FOES = {
-  grunt:  { name:'Уголёк',   hp:36,  sp:1.35, armor:0, bounty:8,  hit:1, atk:1.6, r:0.30, color:'#6b6070' },
-  runner: { name:'Вихрёк',   hp:26,  sp:2.60, armor:0, bounty:7,  hit:1, atk:1.2, r:0.26, color:'#a8d84a' },
-  tank:   { name:'Камнеспин',hp:95,  sp:0.95, armor:5, bounty:15, hit:2, atk:2.2, r:0.34, color:'#8b8472' },
-  swarm:  { name:'Пушинка',  hp:14,  sp:1.90, armor:0, bounty:4,  hit:1, atk:1.3, r:0.20, color:'#e8e0c8' },
-  /* Босс у ворот бьёт как ползун — по одному, — но живёт долго; его цена
-     набирается временем, а не силой удара. При трёх за две секунды дошедший
-     босс на поздней карте был автоматическим проигрышем.
-     Когда босс был вдвое крепче и снимал 5 жизней разом, вся сложность поздних
-     карт сводилась к нему одному: симуляция теряла ровно 10 жизней и на 5-м
-     уровне, и на 12-м — звёзды перестали различать карты. */
-  boss:   { name:'Босс',     hp:430, sp:0.80, armor:6, bounty:70, hit:1, atk:2.0, r:0.44, color:'#ee3550' },
-  /* Двое только для поздних карт. Туманник не мёрзнет — мороз против него пуст,
-     нужны пушка и молния. Древень в броне 9: пушка первого уровня (13) оставляет
-     ему 4 за попадание, молния (8) — единицу; его берут мортира и прокачка. */
-  ghost:  { name:'Туманник', hp:30,  sp:2.00, armor:0, bounty:9,  hit:1, atk:1.2, r:0.28, color:'#cfd8e8', noSlow:true },
-  golem:  { name:'Древень',  hp:260, sp:0.70, armor:9, bounty:30, hit:3, atk:2.6, r:0.40, color:'#a8825a' }
-};
-const GHOST_FROM = 8, GOLEM_FROM = 14;        // индексы уровней (с 9-го и с 15-го)
+/* ============ враги ============
+   Карточки существ — в разделе «Бестиарий» ниже, рядом с их рисунками: числа,
+   с какого уровня, сколько в волне, особенности, походка. Здесь только общее
+   для всех: осада и сборка волн. hit — урон замку за удар, atk — секунд между
+   ударами. Дошедший враг не исчезает, а осаждает: встаёт у ворот и бьёт, пока
+   его не убьют. Башни в радиусе продолжают по нему стрелять, и стоящая цель —
+   лёгкая. Отсюда стратегия: у ворот нужна оборона. */
 
 const START_LIVES = 20;             // прочность замка
 /* Замок сам не воюет. Была мысль дать ему лучников, чтобы осада имела предел
@@ -369,7 +385,7 @@ const START_LIVES = 20;             // прочность замка
    прогонами значения, и трогать их нельзя. Расти до 120-го можно только потому,
    что вместе с врагами растёт и потолок башни (см. tierCap): без этого числа
    упёрлись бы в размер поля. */
-const lvlRamp = L => L <= 11 ? L : L <= HAND_MAPS - 1 ? 11 + (L - 11) * 0.5 : 17 + (L - HAND_MAPS + 1) * 0.24;
+const lvlRamp = L => L <= 11 ? L : L <= HAND_MAPS - 1 ? 11 + (L - 11) * 0.5 : 17 + (L - HAND_MAPS + 1) * 0.21;
 /* Часть роста, которая чувствуется С ПЕРВОЙ ВОЛНЫ, выходит на полку, и только
    концовка уровня растёт дальше. Иначе на сотом уровне первая волна встречала
    игрока при семи башнях: множитель уровня умножал и её тоже, а заработать он
@@ -392,24 +408,41 @@ const SAVE_KEY    = 'towerdef.v1';
    Карты при этом рукотворные — именно они задают характер уровня. */
 const waveCount = L => Math.min(14, 8 + Math.floor(L / 2));
 
+/* Правило у каждого существа своё — wave(L, W, late, nW, final) в его карточке —
+   и уровень from, с которого оно встречается. Порядок групп — порядок карточек.
+   Пока правила лежали здесь одним списком if-ов, каждое новое существо было
+   правкой движка, а не карточки. */
 function waveGroups(L, W){
   const g = [];
-  const late = W / Math.max(1, waveCount(L) - 1);       // 0..1 — насколько волна поздняя
-  const boss = W === waveCount(L) - 1;
-  const midBoss = L >= 5 && W === Math.floor(waveCount(L) / 2);
-
-  g.push({ type:'grunt', n: 4 + Math.round(W * 0.6 + L * 0.2), gap: 0.62 });
-  if (W >= 2 || L >= 1)  g.push({ type:'runner', n: 2 + Math.round(W * 0.35 + L * 0.15), gap: 0.42 });
-  if (W >= 4 || L >= 2)  g.push({ type:'tank',   n: 1 + Math.round(late * (1 + L * 0.22)), gap: 1.15 });
-  if (W >= 5 || L >= 3)  g.push({ type:'swarm',  n: 5 + Math.round(late * (4 + L * 0.5)), gap: 0.25 });
-  if (L >= GHOST_FROM && W >= 3) g.push({ type:'ghost', n: 3 + Math.round(late * (3 + L * 0.3)), gap: 0.5 });
-  if (L >= GOLEM_FROM && W >= 5) g.push({ type:'golem', n: 1 + Math.round(late * (1 + L * 0.15)), gap: 2.5 });
-  if (midBoss)           g.push({ type:'boss',   n: 1, gap: 1 });
-  // Боссов в финале не больше трёх: их здоровье и так растёт с уровнем, а четыре
-  // по 7000 HP в финале второй дюжины были стеной — симуляция теряла там по 13–16
-  // прочности при чистых предыдущих волнах.
-  if (boss)              g.push({ type:'boss',   n: 1 + Math.min(2, Math.floor(L / 4)), gap: 2.2 });
-  return g;
+  const nW = waveCount(L), late = W / Math.max(1, nW - 1);      // late 0..1 — насколько волна поздняя
+  const final = W === nW - 1;
+  for (const type of FOE_ORDER){
+    const b = FOES[type];
+    if (!b.wave || L < (b.from || 0)) continue;
+    const w = b.wave(L, W, late, nW, final);
+    const n = typeof w === 'number' ? w : w.n;
+    if (n > 0) g.push({ type, n, gap: typeof w === 'number' ? b.gap : w.gap });
+  }
+  // Новые существа не прибавляются к поголовью, а вытесняют старых: базовые
+  // группы ужимаются на столько здоровья, сколько угрозы пришло с новыми. Правило
+  // «расти должно здоровье, а не поголовье» иначе ломалось: прогон 90-й карты
+  // проваливался даже с выключенными повадками, от одних лишних тел.
+  // Угроза — здоровье вместе с тем, что выходит из существа, помноженное на
+  // threat: крот, невидимый 40% пути, стоит башням дороже своего здоровья.
+  // Ужимаются ВСЕ базовые группы пропорционально, а не одна «замещаемая»:
+  // первая версия вычитала дождевиков из угольков, к 5-й волне угольки кончались,
+  // и излишек угрозы шёл сверху — чем выше множитель, тем раньше рушился уровень.
+  // Волна не тяжелеет числами — она меняется повадками.
+  const threat = b => (b.hp + (b.traits && b.traits.split ? b.traits.split.n * FOES[b.traits.split.type].hp : 0)
+                            + (b.traits && b.traits.spawner ? b.traits.spawner.max * FOES[b.traits.spawner.type].hp : 0)) * (b.threat || 1);
+  const base = g.filter(gr => !FOES[gr.type].threat && !FOES[gr.type].skins);
+  const baseHp = base.reduce((sum, gr) => sum + gr.n * FOES[gr.type].hp, 0);
+  const newHp = g.reduce((sum, gr) => sum + (FOES[gr.type].threat ? gr.n * threat(FOES[gr.type]) : 0), 0);
+  if (newHp > 0 && baseHp > 0){
+    const k = Math.max(0.35, 1 - newHp / baseHp);
+    for (const gr of base) gr.n = Math.round(gr.n * k);
+  }
+  return g.filter(gr => gr.n > 0);
 }
 /* Здоровье врагов. Слагаемые, а не произведение, и это главное решение:
    произведение (1+aL)(1+bW) множит и ПЕРВУЮ волну уровня, из-за чего на
@@ -443,10 +476,11 @@ function loadSave(){
   let d = null;
   try { d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch { d = null; }
   save.stars = (d && d.stars) || {};
+  save.seen = (d && d.seen) || {};        // кого уже встречали: подсказка о повадке показывается раз
   if (d && typeof d.sound === 'boolean') soundOn = d.sound;
 }
 function writeSave(){
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ stars: save.stars, sound: soundOn })); }
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ stars: save.stars, seen: save.seen, sound: soundOn })); }
   catch {}
 }
 loadSave();
@@ -769,12 +803,69 @@ const sndLose    = () => [300, 240, 180].forEach((f, i) => tone(f, 0.35, 0.09, i
 
 /* ============ подсказка ============ */
 let hintT = 0;
-function showHint(text){
+function showHint(text, ms){
   const h = $('#hint');
   h.textContent = text;
   h.classList.add('show');
   clearTimeout(hintT);
-  hintT = setTimeout(() => h.classList.remove('show'), 1900);
+  hintT = setTimeout(() => h.classList.remove('show'), ms || 1900);
+}
+
+/* ============ отмена действия ============
+   Откатываем только последнее денежное решение игрока — постройку, улучшение
+   или продажу. Это обратная команда, а не снимок всего уровня: враги, снаряды и
+   время не прыгают назад. Постройку и улучшение уже нельзя отменить после того,
+   как эта башня выстрелила, иначе её урон доставался бы бесплатно. */
+let undoAction = null;
+function refreshUndo(){
+  const btn = $('#btnUndo');
+  if (!btn) return;
+  btn.disabled = !undoAction;
+  const label = undoAction ? 'Отменить: ' + undoAction.label : 'Нечего отменять';
+  btn.title = label;
+  btn.setAttribute('aria-label', label);
+}
+function setUndo(action){ undoAction = action; refreshUndo(); }
+function clearUndo(){ undoAction = null; refreshUndo(); }
+function lockUndoForTower(t){
+  if (undoAction && undoAction.tower === t && undoAction.kind !== 'sell') clearUndo();
+}
+function undoLastAction(){
+  const a = undoAction;
+  if (!a || G.over || G.paused) return;
+  undoAction = null;                         // одна ступень: повторный тап ничего не откатывает
+
+  if (a.kind === 'build'){
+    const i = G.towers.indexOf(a.tower);
+    if (i < 0){ refreshUndo(); return; }
+    G.towers.splice(i, 1);
+    G.gold += a.cost;
+    if (G.selected === a.tower) G.selected = null;
+    G.armed = a.tower.type;                  // можно сразу поставить её в правильное место
+    showHint('Постройка отменена · выбери другое место');
+  } else if (a.kind === 'upgrade'){
+    if (!G.towers.includes(a.tower) || a.tower.lvl !== a.from + 1){ refreshUndo(); return; }
+    a.tower.lvl = a.from;
+    G.gold += a.cost;
+    G.armed = null;
+    G.selected = a.tower;
+    showHint('Улучшение отменено');
+  } else if (a.kind === 'sell'){
+    if (G.gold < a.gold || !cellFree(a.tower.x, a.tower.y)){
+      refreshUndo();
+      showHint('Продажу уже нельзя отменить');
+      return;
+    }
+    const restored = { ...a.tower };
+    G.gold -= a.gold;
+    G.towers.splice(Math.min(a.index, G.towers.length), 0, restored);
+    G.armed = null;
+    G.selected = restored;
+    showHint('Продажа отменена');
+  }
+  sndTap();
+  refreshHud();
+  refreshUndo();
 }
 
 /* ============ старт уровня ============ */
@@ -793,6 +884,7 @@ function startLevel(i){
   G.foes = []; G.towers = []; G.shots = []; G.fx = [];
   G.armed = null; G.selected = null;
   G.speed = 1; G.over = false; G.paused = false;
+  clearUndo();
   $('#btnSpd').textContent = '×1';
   $('#btnSpd').classList.remove('on');
   $('#lvNum').textContent = G.lv + 1;
@@ -813,11 +905,21 @@ function startWave(){
   G.queue = [];
   let t = 0;
   for (const gr of groups){
+    if (FOES[gr.type].mix) continue;
     for (let k = 0; k < gr.n; k++){
       G.queue.push({ type: gr.type, at: t, scale });
       t += gr.gap;
     }
     t += 0.7;                                  // пауза между группами
+  }
+  // носители аур идут не своей группой в хвосте, а вразброс по всей волне:
+  // фонарь и барабан нужны посреди толпы, а не позади неё. Отдельной группой
+  // они ещё и растягивали волну — поздние уровни от этого становились легче
+  let m = 0;
+  for (const gr of groups){
+    if (!FOES[gr.type].mix) continue;
+    for (let k = 0; k < gr.n; k++) G.queue.push({ type: gr.type, at: t * (k + 0.5 + (m % 3) * 0.17) / gr.n, scale });
+    m++;
   }
   G.queue.sort((a, b) => a.at - b.at);
   G.spawnT = 0;
@@ -827,16 +929,26 @@ function startWave(){
   sndWave();
 }
 
-function spawn(type, scale){
-  const f = FOES[type];
-  const hp = Math.round(f.hp * scale);
-  const skin = type === 'boss' ? bossSkin(G.lv) : 0;
-  G.foes.push({
-    type, d: 0, pi: G.spawnIdx++ % G.paths.length, hp, hpMax: hp, sp: f.sp, armor: f.armor,
-    slow: 0, slowT: 0, r: f.r, color: type === 'boss' ? BOSS_SKINS[skin].color : f.color, bounty: f.bounty, skin, step: 0,
+/* opts — для существ, которых выпускает другое существо: своя дорога и место
+   на ней вместо портала. scale запоминается: спорки должны быть той же волны,
+   что и дождевик, из которого вышли. */
+function spawn(type, scale, opts){
+  const b = FOES[type], o = opts || {};
+  const hp = Math.round(b.hp * scale);
+  const skin = b.skins ? bossSkin(G.lv) : 0;
+  const f = {
+    type, d: o.d || 0, pi: o.pi !== undefined ? o.pi : G.spawnIdx++ % G.paths.length, hp, hpMax: hp, sp: b.sp, armor: b.armor, scale,
+    slow: 0, slowT: 0, r: b.r, color: b.skins ? b.skins[skin].color : b.color, bounty: b.bounty, skin, step: 0,
     hit: 0, ph: Math.random() * 6.283,
-    siege: false, slot: -1, atk: 0, lunge: 0
-  });
+    siege: false, slot: -1, atk: 0, lunge: 0,
+    hidden: false, buff: { sp: 1, armor: 0, heal: 0, hold: false }, pos: null
+  };
+  f.pos = foePos(f);
+  for (const [k, p] of b.tr) if (TRAITS[k].init) TRAITS[k].init(f, p);
+  G.foes.push(f);
+  // первая встреча: одна подсказка на существо за всю игру — чем его брать
+  if (b.intro && !save.seen[type]){ save.seen[type] = 1; writeSave(); showHint(b.name + ': ' + b.intro, 3400); }
+  return f;
 }
 
 /* ============ осада ============
@@ -870,19 +982,24 @@ function startSiege(f){
   const used = new Set(G.foes.filter(x => x.siege && !x.dead && x !== f).map(x => x.slot));
   let k = 0; while (used.has(k)) k++;
   f.slot = k;
+  f.hidden = false;                        // у ворот всех видно: крот вылезает, тень выходит из-за спин
+  for (const [tk, p] of FOES[f.type].tr) if (TRAITS[tk].siege) TRAITS[tk].siege(f, p);
   f.atk = FOES[f.type].atk * 0.6;          // первый удар — чуть раньше, чем обычный интервал
   G.reached++;
 }
 
 /* ============ бой ============ */
 function dmgFoe(f, dmg, kind){
+  const b = FOES[f.type];
+  // особенности правят урон до брони: солома глотает пули и рвётся от взрыва
+  for (const [k, p] of b.tr) if (TRAITS[k].hurt) dmg = TRAITS[k].hurt(f, p, dmg, kind);
   // Броня вычитается из каждого попадания, но хотя бы 1 проходит всегда:
   // иначе слабая башня против брони давала бы ноль и выглядела сломанной.
   // У ворот враг стоит и бьёт — открытая мишень: броня не работает, урон
   // удвоен. Без этого дошедший босс был проигрышем: две пушки у ворот пилили
   // его под минуту, а он за это время сносил замок вдвое. Теперь прорыв босса
   // стоит около десяти прочности — больно (одна звезда), но не конец.
-  const real = f.siege ? Math.max(1, dmg * 2) : Math.max(1, dmg - f.armor);
+  const real = f.siege ? Math.max(1, dmg * 2) : Math.max(1, dmg - f.armor - f.buff.armor);
   f.hp -= real;
   f.hit = 0.12;
   if (f.hp <= 0){
@@ -890,6 +1007,7 @@ function dmgFoe(f, dmg, kind){
     G.gold += f.bounty;
     const p = foePos(f);
     G.fx.push({ kind:'puff', x: p.x, y: p.y, t: 0, life: 0.45, color: f.color, parts: parts(7, 0.9, (f.d * 1000) | 0) });
+    for (const [k, q] of b.tr) if (TRAITS[k].death) TRAITS[k].death(f, q, p);   // дождевик рассыпается спорами
     sndKill();
     flash('#stGold', 'gain');
   }
@@ -920,12 +1038,13 @@ function fireTower(t){
   // так башни не добивают тех, кто уже позади, пока вперёд рвутся новые
   let best = null;
   for (const f of G.foes){
-    if (f.dead) continue;
+    if (f.dead || f.hidden) continue;                    // под землёй и в тени толпы — не цель
     const p = foePos(f);
     if (Math.hypot(p.x - tx, p.y - ty) > st.range + f.r) continue;
     if (!best || f.d > best.f.d) best = { f, p };
   }
   if (!best) return;
+  lockUndoForTower(t);                       // действие уже повлияло на бой — бесплатно не откатываем
   t.aim = Math.atan2(best.p.y - ty, best.p.x - tx);
   t.cool = 1 / st.rate;
   t.flash = 0.07; t.recoil = 1;
@@ -938,7 +1057,7 @@ function fireTower(t){
     while (chain.length < b.chain){
       let nx = null;
       for (const f of G.foes){
-        if (f.dead || chain.includes(f)) continue;
+        if (f.dead || f.hidden || chain.includes(f)) continue;
         const p = foePos(f);
         const dist = Math.hypot(p.x - from.x, p.y - from.y);
         if (dist > 1.9) continue;
@@ -997,15 +1116,26 @@ function update(dt){
     }
   }
 
-  // враги
-  for (const f of G.foes){
-    if (f.dead) continue;
+  // враги. Три прохода, а не один: позиции и чистые бафы для всех, потом
+  // особенности (ауры пишут бафы соседям), потом движение. В одном проходе
+  // сосед, стоящий в списке раньше фонарника, двигался бы до его хода и не
+  // получал бы света никогда.
+  const live = G.foes.filter(f => !f.dead);
+  for (const f of live){ f.pos = foePos(f); f.buff.sp = 1; f.buff.armor = 0; f.buff.heal = 0; f.buff.hold = false; }
+  for (const f of live){
+    if (f.siege) continue;
+    const b = FOES[f.type];
+    for (const [k, p] of b.tr) if (TRAITS[k].tick) TRAITS[k].tick(f, p, dt);
+    f.hidden = b.tr.some(([k, p]) => TRAITS[k].hidden && TRAITS[k].hidden(f, p));
+  }
+  for (const f of live){
     if (f.slowT > 0){ f.slowT -= dt; if (f.slowT <= 0) f.slow = 0; }
     if (f.hit > 0) f.hit -= dt;
     if (!f.siege){
-      f.d += f.sp * (1 - f.slow) * dt;
-      // тяжёлая поступь: облачко пыли на каждом шаге босса и голема
-      if (f.type === 'boss' || f.type === 'golem'){
+      if (f.buff.heal > 0 && f.hp < f.hpMax) f.hp = Math.min(f.hpMax, f.hp + f.hpMax * f.buff.heal * dt);
+      if (!f.buff.hold) f.d += f.sp * f.buff.sp * (1 - f.slow) * dt;
+      // тяжёлая поступь: облачко пыли на каждом шаге
+      if (FOES[f.type].dust){
         const st = Math.floor(stepPhase(f));
         if (st !== f.step){ f.step = st; const q = foePos(f); G.fx.push({ kind:'dust', x: q.x, y: q.y + f.r * 0.5, t: 0, life: 0.5, parts: parts(4, 0.5, (f.d * 733) | 0) }); }
       }
@@ -1044,7 +1174,7 @@ function update(dt){
         s.done = true;
         // взрыв по площади: бьёт всех в радиусе от точки падения
         for (const f of G.foes){
-          if (f.dead) continue;
+          if (f.dead || f.hidden) continue;
           const p = foePos(f);
           if (Math.hypot(p.x - s.to.x, p.y - s.to.y) <= s.splash + f.r) dmgFoe(f, s.dmg, 'splash');
         }
@@ -1054,7 +1184,7 @@ function update(dt){
       continue;
     }
     // самонаводящийся: если цель умерла, снаряд гаснет
-    if (!s.target || s.target.dead){ s.done = true; continue; }
+    if (!s.target || s.target.dead || s.target.hidden){ s.done = true; continue; }   // нырнул под землю — снаряд гаснет
     const p = foePos(s.target);
     const dist = Math.hypot(p.x - s.x, p.y - s.y);
     const step = s.sp * dt;
@@ -1062,7 +1192,9 @@ function update(dt){
       s.done = true;
       dmgFoe(s.target, s.dmg, s.kind);
       if (s.kind === 'ice'){
-        if (!s.target.dead && !FOES[s.target.type].noSlow){ s.target.slow = s.slow; s.target.slowT = s.slowT; }
+        let k = s.slow;                                          // туманник не мёрзнет: особенность гасит замедление
+        for (const [tk, p] of FOES[s.target.type].tr) if (TRAITS[tk].slow) k = TRAITS[tk].slow(s.target, p, k);
+        if (!s.target.dead && k > 0){ s.target.slow = k; s.target.slowT = s.slowT; }
         G.fx.push({ kind:'frost', x: p.x, y: p.y, t: 0, life: 0.35, seed: G.t });
       }
     } else {
@@ -1506,22 +1638,51 @@ function drawTower(t){
   ctx.restore();
 }
 
-/* ---- враги: у каждого свой силуэт, все смотрят по ходу движения ----
-   Рисуются в локальных координатах, где +x — вперёд по дороге: одна функция
-   даёт правильный разворот на любом повороте, а градиенты кэшируются.
-   Походка (GAIT) привязана к ПРОЙДЕННОМУ ПУТИ, а не ко времени: шаг совпадает
-   со скоростью, и замедленный морозом враг и шагает реже. Тень на земле сжимается
-   и бледнеет, когда тело в верхней точке, — без этого всё «плыло по воздуху». */
-const GAIT = {
-  grunt(f){ const ph = (f.d * 1.8) % 1; return { bob: Math.sin(ph * Math.PI) * f.r * CELL * 0.5, sq: -Math.sin(ph * 6.283) * 0.09 }; },
-  runner(f){ const ph = (f.d * 4) % 1; return { bob: Math.abs(Math.sin(ph * Math.PI)) * f.r * CELL * 0.12, sq: 0 }; },
-  tank(f){ const ph = (f.d * 2.2) % 1; return { bob: 0, sq: 0, roll: Math.sin(ph * 6.283) * 0.09 }; },
-  swarm(f){ return { bob: (0.5 + 0.5 * Math.sin(G.t * 14 + f.ph)) * f.r * CELL * 0.35, sq: 0 }; },
-  ghost(f){ return { bob: (0.5 + 0.5 * Math.sin(G.t * 2 + f.ph)) * f.r * CELL * 0.5, sq: 0 }; },
-  golem(f){ const ph = (f.d * 2) % 1; return { bob: Math.abs(Math.sin(ph * Math.PI)) * f.r * CELL * 0.1, sq: 0 }; },
-  boss(f){ const ph = (f.d * 1.5) % 1; return { bob: Math.abs(Math.sin(ph * Math.PI)) * f.r * CELL * 0.12, sq: 0 }; }
-};
-const stepPhase = f => f.type === 'boss' ? f.d * 1.5 : f.type === 'golem' ? f.d * 2 : f.type === 'runner' ? f.d * 4 : f.d * 1.8;
+/* ============ бестиарий ============
+   Каждое существо — ОДНА карточка: числа, с какого уровня и сколько в волне,
+   особенности, походка и рисунок. Добавить существо — дописать карточку сюда и
+   больше ничего: состав волн, походка, отрисовка, книга бестиария и подсказка
+   при первой встрече собираются из карточек сами. Раньше это было размазано по
+   пяти местам (таблица чисел, waveGroups, GAIT, stepPhase, FOE_ART) плюс
+   проверки вида «если тип — голем» по движку, и каждое новое существо означало
+   правку всех пяти и риск забыть одно.
+
+   Порядок карточек — порядок групп в волне; босс идёт последним, потому что
+   финальная группа волны — его.
+
+   Поля карточки:
+     name, about   — имя и строка характера для книги; acc — винительный падеж
+                     (одна, две-четыре, пять) там, где имя склоняют особенности
+     hp sp armor   — здоровье, скорость (клеток/с), броня: вычитается из КАЖДОГО
+                     попадания, поэтому частые слабые удары о неё гаснут
+     bounty        — золото за убийство
+     hit, atk      — урон замку за удар и секунд между ударами на осаде
+     r, color      — радиус в клетках; цвет облачка при гибели
+     from          — индекс уровня, с которого встречается (0 — с первого)
+     wave(L, W, late, nW, final) — сколько в волне, 0 — группы нет; может вернуть
+                     { n, gap }. gap — секунд между двумя подряд. wave:null —
+                     в волнах не бывает, только выходит из другого существа
+     mix           — не своей группой в хвосте волны, а вразброс по всей: так
+                     ходят носители аур, им нужна толпа вокруг, а не позади
+     threat        — во сколько раз повадка делает существо опаснее его здоровья:
+                     крот под землёй 40% пути и стоит башням как два крота. По угрозе
+                     новые существа вытесняют старых из волны (см. waveGroups)
+     traits        — особенности: { имя: параметры }, см. TRAITS
+     step, dust    — множитель фазы шага; пыль на каждом шаге (тяжёлая поступь)
+     gait(f)       — походка: { bob, sq, roll }
+     art(c, r, f)  — рисунок в локальных координатах: +x — вперёд по дороге,
+                     r — радиус в пикселях. Вид СВЕРХУ, у существа нет «верха»
+     intro         — подсказка при первой встрече (по желанию)
+
+   Стиль — духи природы: мягкие округлые силуэты, простые круглые глаза,
+   приглушённые природные цвета, у каждого одна узнаваемая вещь в лапах или на
+   спине (уголёк, фонарь, барабан). Существа собственные, а не срисованные с
+   чужих фильмов: узнаваемые персонажи чужих студий на публичной странице — это
+   чужая интеллектуальная собственность, а настроение — ничьё.
+
+   Особенность у существа одна. Две и больше не читаются на 30 пикселях: игрок
+   должен по силуэту понимать, чем это существо отличается и какой башней его
+   брать. Числа у первых шести карточек ровно те, что были выверены прогонами. */
 
 function eyes(c, fx, dy, r){
   for (const s of [-1, 1]){
@@ -1539,14 +1700,6 @@ function legs(c, r, ph, n, len, col, w, spread){
     }
   }
 }
-
-/* ---- бестиарий ----
-   Духи природы вместо машин и слизней: мягкие округлые силуэты, простые
-   круглые глаза, приглушённые природные цвета. Существа собственные, а не
-   срисованные с чужих: узнаваемые персонажи чужих фильмов на публичной
-   странице — это чужая интеллектуальная собственность, а настроение —
-   ничьё. Игровые роли и все числа при этом те же, что были: облик не должен
-   трогать выверенный баланс. */
 
 // пушистая кромка: короткие иголки по кругу, детерминированно от фазы
 function fur(c, r, n, len, col, w, seed){
@@ -1690,140 +1843,719 @@ const BOSS_ART = [
   }
 ];
 
-const FOE_ART = {
+// фаза шага: по пройденному пути, множитель — из карточки (частый шаг у бегунов)
+function stepPhase(f){ return f.d * (FOES[f.type].step || 1.8); }
+
+// живые враги на дороге в R клетках от f, кроме него самого. Позиции берутся
+// из f.pos — они считаются один раз за шаг мира, до особенностей, чтобы аура
+// с двадцатью носителями на двухстах врагах не пересчитывала ломаную каждому.
+function nearFoes(f, R){
+  const out = [];
+  for (const o of G.foes){
+    if (o === f || o.dead || o.siege || !o.pos) continue;
+    if (Math.hypot(o.pos.x - f.pos.x, o.pos.y - f.pos.y) <= R) out.push(o);
+  }
+  return out;
+}
+const KIND_NAME = { shot:'пушка', frost:'мороз', chain:'молния', splash:'мортира' };
+const fmtN = v => String(Math.round(v * 10) / 10).replace('.', ',');
+
+/* ---- особенности ----
+   У каждой — набор крючков; движок дёргает те, что есть:
+     init(f, p)              при появлении
+     tick(f, p, dt)          каждый шаг мира, пока враг идёт по дороге (не на осаде);
+                             идёт ДО движения, поэтому может ставить бафы соседям
+     hurt(f, p, dmg, kind)   → урон до вычета брони (kind: shot | frost | chain | splash)
+     slow(f, p, k)           → сила замедления морозом (0 — не мёрзнет)
+     death(f, p, pos)        при гибели
+     hidden(f, p)            → true, если башни его сейчас не видят
+     siege(f, p)             дошёл до ворот: сбросить всё, что прячет или двигает
+     under / over(f, p, c, r, cell)  рисунок под телом и поверх него, в локальных
+                             координатах; under может вернуть true — тело не рисуется
+     about(p)                строка для книги
+   Бафы f.buff сбрасываются каждый шаг и заново собираются аурами соседей:
+   sp — множитель скорости, armor — прибавка к броне, heal — доля здоровья в
+   секунду, hold — этим шагом не двигать (сам прыгает). Ауры не складываются —
+   берётся сильнейшая: два фонаря рядом не делают толпу вдвое быстрее. */
+const TRAITS = {
+  noSlow: {
+    about: () => 'не мёрзнет: мороз его не замедляет',
+    slow: () => 0
+  },
+  // при гибели из него выходят p.n существ типа p.type — с того же места, чуть
+  // позади, чтобы у ворот они ещё сделали шаг под огнём
+  split: {
+    about: p => 'при гибели рассыпается на ' + p.n + ' ' + plural(p.n, ...FOES[p.type].acc),
+    death(f, p){
+      for (let i = 0; i < p.n; i++) spawn(p.type, f.scale, { pi: f.pi, d: Math.max(0, f.d - 0.35 - i * 0.12) });
+    }
+  },
+  // свет фонаря: соседи в p.r клетках идут на p.k быстрее
+  haste: {
+    about: p => 'свет фонаря: враги рядом идут на ' + Math.round(p.k * 100) + '% быстрее',
+    tick(f, p){ for (const o of nearFoes(f, p.r)) o.buff.sp = Math.max(o.buff.sp, 1 + p.k); },
+    under(f, p, c, r, cell){
+      const R = p.r * cell, g = c.createRadialGradient(0, 0, R * 0.25, 0, 0, R);
+      g.addColorStop(0, 'rgba(255,190,80,.17)'); g.addColorStop(1, 'rgba(255,190,80,0)');
+      c.fillStyle = g; c.beginPath(); c.arc(0, 0, R, 0, 7); c.fill();
+    }
+  },
+  // роса: соседи в p.r клетках лечатся на p.k здоровья в секунду (сам — нет)
+  heal: {
+    about: p => 'роса: лечит врагов рядом на ' + Math.round(p.k * 100) + '% здоровья в секунду',
+    tick(f, p){ for (const o of nearFoes(f, p.r)) o.buff.heal = Math.max(o.buff.heal, p.k); },
+    under(f, p, c, r, cell){
+      const R = p.r * cell;
+      c.strokeStyle = 'rgba(170,245,225,.28)'; c.lineWidth = Math.max(1, cell * 0.03);
+      c.beginPath(); c.arc(0, 0, R, 0, 7); c.stroke();
+      for (let i = 0; i < 4; i++){
+        const t = (G.t * 0.5 + f.ph + i / 4) % 1, a = i * 1.57 + f.ph;
+        c.fillStyle = 'rgba(190,255,235,' + (0.6 * (1 - t)) + ')';
+        c.beginPath(); c.arc(Math.cos(a) * R * t, Math.sin(a) * R * t, cell * 0.04, 0, 7); c.fill();
+      }
+    }
+  },
+  // барабан: соседи в p.r клетках получают +p.armor к броне
+  drum: {
+    about: p => 'барабан: враги рядом получают +' + p.armor + ' к броне',
+    tick(f, p){ for (const o of nearFoes(f, p.r)) o.buff.armor = Math.max(o.buff.armor, p.armor); },
+    under(f, p, c, r, cell){
+      const R = p.r * cell;
+      for (const k of [0, 0.5]){
+        const t = (G.t * 1.3 + f.ph + k) % 1;
+        c.strokeStyle = 'rgba(200,230,160,' + (0.35 * (1 - t)) + ')'; c.lineWidth = Math.max(1, cell * 0.05 * (1 - t));
+        c.beginPath(); c.arc(0, 0, R * (0.2 + t * 0.8), 0, 7); c.stroke();
+      }
+    }
+  },
+  // норы: p.over секунд на поверхности, p.under под землёй — там его не достать.
+  // Снаряд, летевший в нырнувшего, гаснет: пушка по нему честно промахивается
+  burrow: {
+    about: p => 'ныряет под землю на ' + fmtN(p.under) + ' с из каждых ' + fmtN(p.over + p.under) + ': под землёй его не достать',
+    init(f, p){ f.burrowT = p.over; f.under = false; f.dirtT = 0; },
+    tick(f, p, dt){
+      f.burrowT -= dt;
+      if (f.under && (f.dirtT -= dt) <= 0){
+        f.dirtT = 0.22;
+        G.fx.push({ kind:'dust', x: f.pos.x, y: f.pos.y, t: 0, life: 0.45, parts: parts(3, 0.4, (f.d * 733) | 0) });
+      }
+      if (f.burrowT > 0) return;
+      f.under = !f.under; f.burrowT = f.under ? p.under : p.over;
+      G.fx.push({ kind:'puff', x: f.pos.x, y: f.pos.y, t: 0, life: 0.5, color:'#6b5238', parts: parts(8, 1.0, (f.d * 733) | 0) });
+    },
+    hidden: f => f.under,
+    siege(f){ f.under = false; },
+    under(f, p, c, r){
+      if (!f.under) return false;
+      // земляной холмик ползёт по дороге: тела не видно, но где он — понятно
+      c.fillStyle = '#4e3a28'; c.beginPath(); c.ellipse(0, 0, r * 1.15, r * 0.85, 0, 0, 7); c.fill();
+      c.fillStyle = '#6e563d'; c.beginPath(); c.ellipse(-r * 0.15, -r * 0.15, r * 0.75, r * 0.5, 0, 0, 7); c.fill();
+      c.fillStyle = '#8a7055'; c.beginPath(); c.ellipse(-r * 0.3, -r * 0.3, r * 0.3, r * 0.18, 0, 0, 7); c.fill();
+      c.fillStyle = '#3a2a1c';
+      for (const [dx, dy] of [[0.5, 0.3], [-0.6, 0.4], [0.2, -0.5]]) { c.beginPath(); c.arc(dx * r, dy * r, r * 0.09, 0, 7); c.fill(); }
+      return true;
+    }
+  },
+  // уязвимости и стойкости по видам урона: { shot:0.5, splash:2 }
+  weak: {
+    about: p => Object.entries(p).map(([k, v]) => KIND_NAME[k] + ' ×' + fmtN(v)).join(', '),
+    hurt: (f, p, dmg, kind) => dmg * (p[kind] !== undefined ? p[kind] : 1)
+  },
+  // прыжок: раз в p.every секунд перелетает p.dist клеток за p.air секунд.
+  // Мортира стреляет с упреждением по РОВНОМУ ходу — и по прыгуну мажет
+  leap: {
+    about: p => 'каждые ' + fmtN(p.every) + ' с прыгает на ' + fmtN(p.dist) + ' клетки вперёд; мортира по нему промахивается',
+    init(f, p){ f.leapT = p.every * 0.6; f.air = 0; f.airMax = p.air; },
+    tick(f, p, dt){
+      if (f.air > 0){
+        f.air -= dt;
+        const k = 1 - Math.max(0, f.air) / p.air;
+        f.d = f.leapFrom + (f.leapTo - f.leapFrom) * k;
+        f.buff.hold = true;
+        if (f.air <= 0){
+          f.d = f.leapTo;
+          const q = foePos(f);
+          G.fx.push({ kind:'dust', x: q.x, y: q.y + f.r * 0.5, t: 0, life: 0.4, parts: parts(4, 0.5, (f.d * 733) | 0) });
+        }
+        return;
+      }
+      f.leapT -= dt * (1 - f.slow);                     // замёрзший прыгает реже
+      if (f.leapT > 0) return;
+      f.leapT = p.every; f.air = p.air; f.leapFrom = f.d;
+      f.leapTo = Math.min(G.paths[f.pi].len, f.d + p.dist);
+      f.buff.hold = true;
+    },
+    siege(f){ f.air = 0; }
+  },
+  // сеятель: раз в p.every секунд выпускает позади себя p.type, не больше p.max
+  spawner: {
+    about: p => 'каждые ' + fmtN(p.every) + ' с выпускает ' + FOES[p.type].acc[0] + ', не больше ' + p.max + ' за жизнь',
+    init(f, p){ f.seedT = p.every; f.seeded = 0; },
+    tick(f, p, dt){
+      if (f.seeded >= p.max) return;
+      f.seedT -= dt * (1 - f.slow);
+      if (f.seedT > 0) return;
+      f.seedT = p.every; f.seeded++;
+      const c = spawn(p.type, f.scale, { pi: f.pi, d: Math.max(0, f.d - f.r - 0.15) });
+      G.fx.push({ kind:'puff', x: c.pos.x, y: c.pos.y, t: 0, life: 0.4, color: FOES[p.type].color, parts: parts(4, 0.5, (f.d * 577) | 0) });
+    }
+  },
+  // скорлупа: пока здоровья больше p.at, броня из карточки; треснул — броня
+  // p.armor и скорость в p.sp раз. Толстый и медленный становится голым и быстрым
+  crack: {
+    about: p => 'скорлупа держит, пока цел; ниже половины здоровья трескается — броня спадает, зато бежит в ' + fmtN(p.sp) + ' раза быстрее',
+    init(f){ f.cracked = false; },
+    tick(f, p){
+      if (f.cracked || f.hp > f.hpMax * p.at) return;
+      f.cracked = true; f.armor = p.armor; f.sp *= p.sp;
+      G.fx.push({ kind:'puff', x: f.pos.x, y: f.pos.y, t: 0, life: 0.5, color:'#4e3218', parts: parts(8, 1.1, (f.d * 991) | 0) });
+    },
+    over(f, p, c, r){
+      if (!f.cracked) return;
+      c.fillStyle = 'rgba(240,215,170,.6)';                                                           // из трещины видно светлое ядро
+      c.beginPath(); c.moveTo(r * 0.55, r * 0.05); c.lineTo(r * 0.3, -r * 0.4); c.lineTo(-r * 0.1, -r * 0.1); c.closePath(); c.fill();
+      c.strokeStyle = '#2a1a0c'; c.lineWidth = Math.max(1, r * 0.07); c.lineJoin = 'round'; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(r * 0.95, -r * 0.2); c.lineTo(r * 0.55, r * 0.05); c.lineTo(r * 0.3, -r * 0.4); c.lineTo(-r * 0.1, -r * 0.1); c.lineTo(-r * 0.3, -r * 0.55); c.stroke();
+      c.beginPath(); c.moveTo(r * 0.45, r * 0.65); c.lineTo(r * 0.15, r * 0.25); c.lineTo(-r * 0.25, r * 0.45); c.stroke();
+    }
+  },
+  // тень: башни не видят его, пока в p.r клетках идёт кто-то другой
+  veil: {
+    about: () => 'тень: башни не видят его, пока рядом идёт другой враг',
+    init(f){ f.veiled = false; },
+    tick(f, p){ f.veiled = nearFoes(f, p.r).some(o => o.type !== f.type); },
+    hidden: f => f.veiled,
+    siege(f){ f.veiled = false; },
+    under(f, p, c){ if (f.veiled) c.globalAlpha = 0.3; return false; },
+    over(f, p, c){ c.globalAlpha = 1; }
+  }
+};
+
+const FOES = {
   // Уголёк: пушистый тёмный дух с круглыми глазами, несёт тлеющий уголь
-  grunt(c, r, f){
-    const glow = 0.5 + 0.5 * Math.sin(G.t * 4 + f.ph);
-    legs(c, r, stepPhase(f), 2, 0.5, '#15111e', 0.09, 0.45);
-    fur(c, r * 0.92, 22, r * 0.42, '#171320', 0.11, f.ph);
-    c.fillStyle = grad(c, 'grunt', r, () => { const g = c.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.1, 0, 0, r);
-      g.addColorStop(0, '#4a4358'); g.addColorStop(0.55, '#26212f'); g.addColorStop(1, '#120f19'); return g; });
-    c.beginPath(); c.arc(0, 0, r * 0.88, 0, 7); c.fill();
-    roundEyes(c, r * 0.24, r * 0.34, r * 0.28);
-    // уголёк в лапках — из-за него силуэт узнаётся даже в толпе
-    c.fillStyle = 'rgba(255,150,40,' + (0.35 + glow * 0.35) + ')';
-    c.beginPath(); c.arc(r * 0.95, r * 0.15, r * 0.3, 0, 7); c.fill();
-    c.fillStyle = '#ffb347'; c.beginPath(); c.arc(r * 0.95, r * 0.15, r * 0.13, 0, 7); c.fill();
-    c.fillStyle = '#fff0b0'; c.beginPath(); c.arc(r * 0.92, r * 0.12, r * 0.06, 0, 7); c.fill();
+  grunt: {
+    name:'Уголёк', about:'пушистый дух из-под печки, несёт свой уголёк и никому не отдаст',
+    hp:36, sp:1.35, armor:0, bounty:8, hit:1, atk:1.6, r:0.30, color:'#6b6070',
+    gap:0.62, wave:(L, W) => 4 + Math.round(W * 0.6 + L * 0.2),
+    gait(f){ const ph = (f.d * 1.8) % 1; return { bob: Math.sin(ph * Math.PI) * f.r * CELL * 0.5, sq: -Math.sin(ph * 6.283) * 0.09 }; },
+    art(c, r, f){
+      const glow = 0.5 + 0.5 * Math.sin(G.t * 4 + f.ph);
+      legs(c, r, stepPhase(f), 2, 0.5, '#15111e', 0.09, 0.45);
+      fur(c, r * 0.92, 22, r * 0.42, '#171320', 0.11, f.ph);
+      c.fillStyle = grad(c, 'grunt', r, () => { const g = c.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.1, 0, 0, r);
+        g.addColorStop(0, '#4a4358'); g.addColorStop(0.55, '#26212f'); g.addColorStop(1, '#120f19'); return g; });
+      c.beginPath(); c.arc(0, 0, r * 0.88, 0, 7); c.fill();
+      roundEyes(c, r * 0.24, r * 0.34, r * 0.28);
+      // уголёк в лапках — из-за него силуэт узнаётся даже в толпе
+      c.fillStyle = 'rgba(255,150,40,' + (0.35 + glow * 0.35) + ')';
+      c.beginPath(); c.arc(r * 0.95, r * 0.15, r * 0.3, 0, 7); c.fill();
+      c.fillStyle = '#ffb347'; c.beginPath(); c.arc(r * 0.95, r * 0.15, r * 0.13, 0, 7); c.fill();
+      c.fillStyle = '#fff0b0'; c.beginPath(); c.arc(r * 0.92, r * 0.12, r * 0.06, 0, 7); c.fill();
+    }
   },
   // Вихрёк: лист на крошечном смерче
-  runner(c, r, f){
-    const sp = G.t * 9 + f.ph;
-    c.strokeStyle = 'rgba(200,230,255,.3)'; c.lineWidth = Math.max(1, r * 0.1); c.lineCap = 'round';
-    for (let i = 0; i < 3; i++){                                                                    // завитки смерча
-      const y = r * (0.25 + i * 0.28), w = r * (0.9 - i * 0.22);
-      c.beginPath(); c.ellipse(-r * 0.15, y - r * 0.35, w, r * 0.16, Math.sin(sp + i) * 0.2, 0, 7); c.stroke();
+  runner: {
+    name:'Вихрёк', about:'сухой лист, подхваченный крошечным смерчем; быстрый, но хлипкий',
+    hp:26, sp:2.60, armor:0, bounty:7, hit:1, atk:1.2, r:0.26, color:'#a8d84a',
+    gap:0.42, wave:(L, W) => (W >= 2 || L >= 1) ? 2 + Math.round(W * 0.35 + L * 0.15) : 0,
+    step:4,
+    gait(f){ const ph = (f.d * 4) % 1; return { bob: Math.abs(Math.sin(ph * Math.PI)) * f.r * CELL * 0.12, sq: 0 }; },
+    art(c, r, f){
+      const sp = G.t * 9 + f.ph;
+      c.strokeStyle = 'rgba(200,230,255,.3)'; c.lineWidth = Math.max(1, r * 0.1); c.lineCap = 'round';
+      for (let i = 0; i < 3; i++){                                                                    // завитки смерча
+        const y = r * (0.25 + i * 0.28), w = r * (0.9 - i * 0.22);
+        c.beginPath(); c.ellipse(-r * 0.15, y - r * 0.35, w, r * 0.16, Math.sin(sp + i) * 0.2, 0, 7); c.stroke();
+      }
+      c.strokeStyle = 'rgba(168,216,74,.35)'; c.lineWidth = Math.max(1, r * 0.14);                    // шлейф
+      c.beginPath(); c.moveTo(-r * 1.0, 0); c.lineTo(-r * 2.0, -r * 0.15); c.stroke();
+      c.save(); c.rotate(Math.sin(sp * 0.5) * 0.25);
+      c.fillStyle = grad(c, 'runner', r, () => { const g = c.createLinearGradient(-r, -r * 0.6, r, r * 0.6);
+        g.addColorStop(0, '#dff5a8'); g.addColorStop(0.5, '#a8d84a'); g.addColorStop(1, '#4e7a1c'); return g; });
+      c.beginPath();                                                                                  // лист
+      c.moveTo(r * 1.2, 0); c.quadraticCurveTo(r * 0.1, -r * 0.9, -r * 0.95, -r * 0.12);
+      c.quadraticCurveTo(r * 0.1, r * 0.9, r * 1.2, 0); c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(40,70,15,.45)'; c.lineWidth = Math.max(1, r * 0.06);                      // прожилка
+      c.beginPath(); c.moveTo(-r * 0.85, -r * 0.08); c.lineTo(r * 1.1, 0); c.stroke();
+      roundEyes(c, r * 0.35, r * 0.2, r * 0.16);
+      c.restore();
     }
-    c.strokeStyle = 'rgba(168,216,74,.35)'; c.lineWidth = Math.max(1, r * 0.14);                    // шлейф
-    c.beginPath(); c.moveTo(-r * 1.0, 0); c.lineTo(-r * 2.0, -r * 0.15); c.stroke();
-    c.save(); c.rotate(Math.sin(sp * 0.5) * 0.25);
-    c.fillStyle = grad(c, 'runner', r, () => { const g = c.createLinearGradient(-r, -r * 0.6, r, r * 0.6);
-      g.addColorStop(0, '#dff5a8'); g.addColorStop(0.5, '#a8d84a'); g.addColorStop(1, '#4e7a1c'); return g; });
-    c.beginPath();                                                                                  // лист
-    c.moveTo(r * 1.2, 0); c.quadraticCurveTo(r * 0.1, -r * 0.9, -r * 0.95, -r * 0.12);
-    c.quadraticCurveTo(r * 0.1, r * 0.9, r * 1.2, 0); c.closePath(); c.fill();
-    c.strokeStyle = 'rgba(40,70,15,.45)'; c.lineWidth = Math.max(1, r * 0.06);                      // прожилка
-    c.beginPath(); c.moveTo(-r * 0.85, -r * 0.08); c.lineTo(r * 1.1, 0); c.stroke();
-    roundEyes(c, r * 0.35, r * 0.2, r * 0.16);
-    c.restore();
   },
   // Камнеспин: замшелый валун на коротких лапах
-  tank(c, r, f){
-    const W = r * 2.0, H = r * 1.5;
-    legs(c, r * 0.9, stepPhase(f), 2, 0.28, '#5f5a4a', 0.2, 0.55);
-    c.fillStyle = grad(c, 'tank', r, () => { const g = c.createLinearGradient(-W / 2, -H / 2, W / 2, H / 2);
-      g.addColorStop(0, '#cfc7b0'); g.addColorStop(0.45, '#8b8472'); g.addColorStop(1, '#3d3a30'); return g; });
-    c.beginPath();                                                                                  // панцирь-валун
-    for (let i = 0; i < 9; i++){ const a = i / 9 * 6.283, rr2 = r * (0.95 + 0.12 * Math.sin(i * 3.1)); c.lineTo(Math.cos(a) * rr2 * 1.05, Math.sin(a) * rr2 * 0.82); }
-    c.closePath(); c.fill();
-    c.fillStyle = 'rgba(90,140,70,.55)';                                                            // мох сверху
-    for (const [dx, dy, rr2] of [[-0.45, -0.5, 0.32], [0.05, -0.62, 0.24], [-0.75, -0.2, 0.2], [0.45, -0.45, 0.18]]) { c.beginPath(); c.ellipse(dx * r, dy * r, rr2 * r, rr2 * r * 0.65, 0, 0, 7); c.fill(); }
-    c.fillStyle = 'rgba(255,255,255,.22)';                                                          // лишайник
-    for (const [dx, dy] of [[-0.2, 0.35], [0.4, 0.2], [-0.6, 0.15]]) { c.beginPath(); c.arc(dx * r, dy * r, r * 0.11, 0, 7); c.fill(); }
-    c.strokeStyle = 'rgba(30,26,18,.45)'; c.lineWidth = Math.max(1, r * 0.06); c.lineCap = 'round';  // скол
-    c.beginPath(); c.moveTo(-r * 0.5, r * 0.1); c.lineTo(-r * 0.15, -r * 0.15); c.stroke();
-    c.fillStyle = '#b8ae96'; c.beginPath(); c.ellipse(r * 0.85, r * 0.05, r * 0.42, r * 0.34, 0, 0, 7); c.fill();  // голова
-    roundEyes(c, r * 0.95, r * 0.17, r * 0.14, '#2c2a20');
+  tank: {
+    name:'Камнеспин', about:'валун, поросший мхом, на коротких лапах; слабые удары о него гаснут',
+    hp:95, sp:0.95, armor:5, bounty:15, hit:2, atk:2.2, r:0.34, color:'#8b8472',
+    gap:1.15, wave:(L, W, late) => (W >= 4 || L >= 2) ? 1 + Math.round(late * (1 + L * 0.22)) : 0,
+    intro:'в броне — слабые удары гаснут, бей пушкой и мортирой',
+    step:2.2,
+    gait(f){ const ph = (f.d * 2.2) % 1; return { bob: 0, sq: 0, roll: Math.sin(ph * 6.283) * 0.09 }; },
+    art(c, r, f){
+      const W = r * 2.0, H = r * 1.5;
+      legs(c, r * 0.9, stepPhase(f), 2, 0.28, '#5f5a4a', 0.2, 0.55);
+      c.fillStyle = grad(c, 'tank', r, () => { const g = c.createLinearGradient(-W / 2, -H / 2, W / 2, H / 2);
+        g.addColorStop(0, '#cfc7b0'); g.addColorStop(0.45, '#8b8472'); g.addColorStop(1, '#3d3a30'); return g; });
+      c.beginPath();                                                                                  // панцирь-валун
+      for (let i = 0; i < 9; i++){ const a = i / 9 * 6.283, rr2 = r * (0.95 + 0.12 * Math.sin(i * 3.1)); c.lineTo(Math.cos(a) * rr2 * 1.05, Math.sin(a) * rr2 * 0.82); }
+      c.closePath(); c.fill();
+      c.fillStyle = 'rgba(90,140,70,.55)';                                                            // мох сверху
+      for (const [dx, dy, rr2] of [[-0.45, -0.5, 0.32], [0.05, -0.62, 0.24], [-0.75, -0.2, 0.2], [0.45, -0.45, 0.18]]) { c.beginPath(); c.ellipse(dx * r, dy * r, rr2 * r, rr2 * r * 0.65, 0, 0, 7); c.fill(); }
+      c.fillStyle = 'rgba(255,255,255,.22)';                                                          // лишайник
+      for (const [dx, dy] of [[-0.2, 0.35], [0.4, 0.2], [-0.6, 0.15]]) { c.beginPath(); c.arc(dx * r, dy * r, r * 0.11, 0, 7); c.fill(); }
+      c.strokeStyle = 'rgba(30,26,18,.45)'; c.lineWidth = Math.max(1, r * 0.06); c.lineCap = 'round';  // скол
+      c.beginPath(); c.moveTo(-r * 0.5, r * 0.1); c.lineTo(-r * 0.15, -r * 0.15); c.stroke();
+      c.fillStyle = '#b8ae96'; c.beginPath(); c.ellipse(r * 0.85, r * 0.05, r * 0.42, r * 0.34, 0, 0, 7); c.fill();  // голова
+      roundEyes(c, r * 0.95, r * 0.17, r * 0.14, '#2c2a20');
+    }
   },
   // Пушинка: семечко-одуванчик с личиком, летит роем
-  swarm(c, r, f){
-    const bob = Math.sin(G.t * 6 + f.ph);
-    c.strokeStyle = 'rgba(245,240,220,.7)'; c.lineWidth = Math.max(1, r * 0.09); c.lineCap = 'round';
-    for (let i = 0; i < 9; i++){                                                                    // зонтик
-      const a = -2.4 + i * 0.6 + bob * 0.08;
-      c.beginPath(); c.moveTo(-r * 0.15, 0); c.lineTo(-r * 0.15 + Math.cos(a) * r * 1.15, Math.sin(a) * r * 1.15); c.stroke();
+  swarm: {
+    name:'Пушинка', about:'семечко одуванчика с личиком; одна ничего не стоит, но они не ходят по одной',
+    acc:['пушинку', 'пушинки', 'пушинок'],
+    hp:14, sp:1.90, armor:0, bounty:4, hit:1, atk:1.3, r:0.20, color:'#e8e0c8',
+    gap:0.25, wave:(L, W, late) => (W >= 5 || L >= 3) ? 5 + Math.round(late * (4 + L * 0.5)) : 0,
+    gait(f){ return { bob: (0.5 + 0.5 * Math.sin(G.t * 14 + f.ph)) * f.r * CELL * 0.35, sq: 0 }; },
+    art(c, r, f){
+      const bob = Math.sin(G.t * 6 + f.ph);
+      c.strokeStyle = 'rgba(245,240,220,.7)'; c.lineWidth = Math.max(1, r * 0.09); c.lineCap = 'round';
+      for (let i = 0; i < 9; i++){                                                                    // зонтик
+        const a = -2.4 + i * 0.6 + bob * 0.08;
+        c.beginPath(); c.moveTo(-r * 0.15, 0); c.lineTo(-r * 0.15 + Math.cos(a) * r * 1.15, Math.sin(a) * r * 1.15); c.stroke();
+      }
+      c.fillStyle = 'rgba(250,246,230,.35)'; c.beginPath(); c.arc(-r * 0.35, 0, r * 0.75, 0, 7); c.fill();
+      c.fillStyle = grad(c, 'swarm', r, () => { const g = c.createRadialGradient(-r * 0.1, -r * 0.2, r * 0.05, r * 0.3, 0, r * 0.8);
+        g.addColorStop(0, '#fff6d8'); g.addColorStop(0.6, '#d9c48a'); g.addColorStop(1, '#8a723c'); return g; });
+      c.beginPath(); c.ellipse(r * 0.4, 0, r * 0.62, r * 0.4, 0, 0, 7); c.fill();                     // семечко
+      roundEyes(c, r * 0.6, r * 0.17, r * 0.15);
     }
-    c.fillStyle = 'rgba(250,246,230,.35)'; c.beginPath(); c.arc(-r * 0.35, 0, r * 0.75, 0, 7); c.fill();
-    c.fillStyle = grad(c, 'swarm', r, () => { const g = c.createRadialGradient(-r * 0.1, -r * 0.2, r * 0.05, r * 0.3, 0, r * 0.8);
-      g.addColorStop(0, '#fff6d8'); g.addColorStop(0.6, '#d9c48a'); g.addColorStop(1, '#8a723c'); return g; });
-    c.beginPath(); c.ellipse(r * 0.4, 0, r * 0.62, r * 0.4, 0, 0, 7); c.fill();                     // семечко
-    roundEyes(c, r * 0.6, r * 0.17, r * 0.15);
   },
-  // Туманник: полупрозрачный дух в маске, стелется над землёй
-  ghost(c, r, f){
-    const w = Math.sin(G.t * 3 + f.ph);
-    c.globalAlpha = 0.66;
-    let g = c.createRadialGradient(-r * 0.2, -r * 0.2, r * 0.1, 0, 0, r * 1.5);
-    g.addColorStop(0, 'rgba(225,235,250,.55)'); g.addColorStop(1, 'rgba(180,200,235,0)');
-    c.fillStyle = g; c.beginPath(); c.arc(0, 0, r * 1.5, 0, 7); c.fill();
-    c.fillStyle = grad(c, 'ghost', r, () => { const g = c.createLinearGradient(0, -r, 0, r);
-      g.addColorStop(0, '#f2f6ff'); g.addColorStop(0.6, '#c3d2e8'); g.addColorStop(1, '#7f92b5'); return g; });
-    c.beginPath();                                                                                  // тело клубами тумана
-    c.moveTo(r * 0.85, 0); c.quadraticCurveTo(r * 0.8, -r * 0.85, 0, -r * 0.8);
-    for (let i = 0; i < 3; i++){ const x = -r * (0.5 + i * 0.5), y = -r * 0.5 + i * r * 0.1 + Math.sin(w * 2 + i) * r * 0.18; c.quadraticCurveTo(x, y, x - r * 0.35, y + r * 0.45); }
-    c.quadraticCurveTo(-r * 1.2, r * 0.6, 0, r * 0.8);
-    c.quadraticCurveTo(r * 0.8, r * 0.85, r * 0.85, 0); c.closePath(); c.fill();
-    c.globalAlpha = 1;
-    c.fillStyle = '#efe9db'; c.beginPath(); c.ellipse(r * 0.5, 0, r * 0.36, r * 0.44, 0, 0, 7); c.fill();   // маска
-    c.fillStyle = '#39415a';
-    for (const s of [-1, 1]){ c.beginPath(); c.ellipse(r * 0.56, s * r * 0.16, r * 0.075, r * 0.11, 0, 0, 7); c.fill(); }
-    c.fillStyle = 'rgba(90,110,150,.7)'; c.beginPath(); c.ellipse(r * 0.62, 0, r * 0.05, r * 0.1, 0, 0, 7); c.fill();
+  // Туманник: полупрозрачный дух в маске, стелется над землёй. Не мёрзнет —
+  // мороз против него пуст, нужны пушка и молния
+  ghost: {
+    name:'Туманник', about:'клок тумана в белой маске; стелется над дорогой и не чувствует холода',
+    hp:30, sp:2.00, armor:0, bounty:9, hit:1, atk:1.2, r:0.28, color:'#cfd8e8',
+    from:8, gap:0.5, wave:(L, W, late) => W >= 3 ? 3 + Math.round(late * (3 + L * 0.3)) : 0,
+    traits:{ noSlow:{} },
+    intro:'не мёрзнет — мороз против него пуст, нужны пушка и молния',
+    gait(f){ return { bob: (0.5 + 0.5 * Math.sin(G.t * 2 + f.ph)) * f.r * CELL * 0.5, sq: 0 }; },
+    art(c, r, f){
+      const w = Math.sin(G.t * 3 + f.ph);
+      c.globalAlpha = 0.66;
+      let g = c.createRadialGradient(-r * 0.2, -r * 0.2, r * 0.1, 0, 0, r * 1.5);
+      g.addColorStop(0, 'rgba(225,235,250,.55)'); g.addColorStop(1, 'rgba(180,200,235,0)');
+      c.fillStyle = g; c.beginPath(); c.arc(0, 0, r * 1.5, 0, 7); c.fill();
+      c.fillStyle = grad(c, 'ghost', r, () => { const g = c.createLinearGradient(0, -r, 0, r);
+        g.addColorStop(0, '#f2f6ff'); g.addColorStop(0.6, '#c3d2e8'); g.addColorStop(1, '#7f92b5'); return g; });
+      c.beginPath();                                                                                  // тело клубами тумана
+      c.moveTo(r * 0.85, 0); c.quadraticCurveTo(r * 0.8, -r * 0.85, 0, -r * 0.8);
+      for (let i = 0; i < 3; i++){ const x = -r * (0.5 + i * 0.5), y = -r * 0.5 + i * r * 0.1 + Math.sin(w * 2 + i) * r * 0.18; c.quadraticCurveTo(x, y, x - r * 0.35, y + r * 0.45); }
+      c.quadraticCurveTo(-r * 1.2, r * 0.6, 0, r * 0.8);
+      c.quadraticCurveTo(r * 0.8, r * 0.85, r * 0.85, 0); c.closePath(); c.fill();
+      c.globalAlpha = 1;
+      c.fillStyle = '#efe9db'; c.beginPath(); c.ellipse(r * 0.5, 0, r * 0.36, r * 0.44, 0, 0, 7); c.fill();   // маска
+      c.fillStyle = '#39415a';
+      for (const s of [-1, 1]){ c.beginPath(); c.ellipse(r * 0.56, s * r * 0.16, r * 0.075, r * 0.11, 0, 0, 7); c.fill(); }
+      c.fillStyle = 'rgba(90,110,150,.7)'; c.beginPath(); c.ellipse(r * 0.62, 0, r * 0.05, r * 0.1, 0, 0, 7); c.fill();
+    }
   },
   /* Древень: ходячий пень, вид СВЕРХУ — как и всё поле. Первая версия рисовала
      мшистую шапку «над» стволом, но силуэт разворачивается по ходу движения, и
      при ходьбе влево шапка оказывалась под пнём. Сверху же у пня нет верха и низа:
-     годовые кольца, мох по кромке, светящееся дупло в середине, корни во все стороны. */
-  golem(c, r, f){
-    const glow = 0.5 + 0.5 * Math.sin(G.t * 2.5 + f.ph);
-    // корни-лапы торчат по кругу и переступают
-    c.strokeStyle = '#4a3520'; c.lineWidth = Math.max(1, r * 0.2); c.lineCap = 'round';
-    for (let i = 0; i < 6; i++){
-      const a = i / 6 * 6.283 + 0.5, k = 1 + Math.sin(stepPhase(f) * 6.283 + i) * 0.14;
-      c.beginPath(); c.moveTo(Math.cos(a) * r * 0.75, Math.sin(a) * r * 0.75);
-      c.lineTo(Math.cos(a) * r * 1.15 * k, Math.sin(a) * r * 1.15 * k); c.stroke();
+     годовые кольца, мох по кромке, светящееся дупло в середине, корни во все стороны.
+     В броне 9: пушка первого уровня (13) оставляет ему 4 за попадание, молния (8) —
+     единицу; его берут мортира и прокачка. */
+  golem: {
+    name:'Древень', about:'старый пень, который решил дойти до замка; в дупле тлеет огонёк',
+    hp:260, sp:0.70, armor:9, bounty:30, hit:3, atk:2.6, r:0.40, color:'#a8825a',
+    from:14, gap:2.5, wave:(L, W, late) => W >= 5 ? 1 + Math.round(late * (1 + L * 0.15)) : 0,
+    intro:'в броне 9 — пробьёт только мортира или прокачанная пушка',
+    step:2, dust:true,
+    gait(f){ const ph = (f.d * 2) % 1; return { bob: Math.abs(Math.sin(ph * Math.PI)) * f.r * CELL * 0.1, sq: 0 }; },
+    art(c, r, f){
+      const glow = 0.5 + 0.5 * Math.sin(G.t * 2.5 + f.ph);
+      // корни-лапы торчат по кругу и переступают
+      c.strokeStyle = '#4a3520'; c.lineWidth = Math.max(1, r * 0.2); c.lineCap = 'round';
+      for (let i = 0; i < 6; i++){
+        const a = i / 6 * 6.283 + 0.5, k = 1 + Math.sin(stepPhase(f) * 6.283 + i) * 0.14;
+        c.beginPath(); c.moveTo(Math.cos(a) * r * 0.75, Math.sin(a) * r * 0.75);
+        c.lineTo(Math.cos(a) * r * 1.15 * k, Math.sin(a) * r * 1.15 * k); c.stroke();
+      }
+      c.fillStyle = grad(c, 'golem', r, () => { const g = c.createRadialGradient(-r * 0.25, -r * 0.3, r * 0.1, 0, 0, r);
+        g.addColorStop(0, '#d8b98c'); g.addColorStop(0.55, '#9a7648'); g.addColorStop(1, '#4a3520'); return g; });
+      c.beginPath();                                                                                  // спил, слегка неровный
+      for (let i = 0; i < 11; i++){ const a = i / 11 * 6.283, rr2 = r * (0.95 + 0.07 * Math.sin(i * 2.7)); c.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2); }
+      c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(70,48,26,.45)'; c.lineWidth = Math.max(1, r * 0.05);                      // годовые кольца
+      for (const k of [0.78, 0.58, 0.4]) { c.beginPath(); c.ellipse(-r * 0.04, r * 0.02, r * k, r * k * 0.94, 0, 0, 7); c.stroke(); }
+      c.fillStyle = 'rgba(95,150,70,.8)';                                                             // мох по кромке
+      for (let i = 0; i < 7; i++){
+        const a = i / 7 * 6.283 + 1.1, d = r * 0.82;
+        c.beginPath(); c.arc(Math.cos(a) * d, Math.sin(a) * d, r * (0.16 + 0.07 * Math.sin(i * 3.3)), 0, 7); c.fill();
+      }
+      c.fillStyle = 'rgba(255,150,40,' + (0.28 + glow * 0.3) + ')';                                   // дупло светится
+      c.beginPath(); c.arc(-r * 0.04, r * 0.02, r * 0.45, 0, 7); c.fill();
+      c.fillStyle = '#2a1a0c'; c.beginPath(); c.ellipse(-r * 0.04, r * 0.02, r * 0.26, r * 0.24, 0, 0, 7); c.fill();
+      c.fillStyle = '#ffb347'; c.beginPath(); c.arc(-r * 0.04, r * 0.02, r * 0.13, 0, 7); c.fill();
+      roundEyes(c, r * 0.5, r * 0.34, r * 0.16, '#2c1d0e');
     }
-    c.fillStyle = grad(c, 'golem', r, () => { const g = c.createRadialGradient(-r * 0.25, -r * 0.3, r * 0.1, 0, 0, r);
-      g.addColorStop(0, '#d8b98c'); g.addColorStop(0.55, '#9a7648'); g.addColorStop(1, '#4a3520'); return g; });
-    c.beginPath();                                                                                  // спил, слегка неровный
-    for (let i = 0; i < 11; i++){ const a = i / 11 * 6.283, rr2 = r * (0.95 + 0.07 * Math.sin(i * 2.7)); c.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2); }
-    c.closePath(); c.fill();
-    c.strokeStyle = 'rgba(70,48,26,.45)'; c.lineWidth = Math.max(1, r * 0.05);                      // годовые кольца
-    for (const k of [0.78, 0.58, 0.4]) { c.beginPath(); c.ellipse(-r * 0.04, r * 0.02, r * k, r * k * 0.94, 0, 0, 7); c.stroke(); }
-    c.fillStyle = 'rgba(95,150,70,.8)';                                                             // мох по кромке
-    for (let i = 0; i < 7; i++){
-      const a = i / 7 * 6.283 + 1.1, d = r * 0.82;
-      c.beginPath(); c.arc(Math.cos(a) * d, Math.sin(a) * d, r * (0.16 + 0.07 * Math.sin(i * 3.3)), 0, 7); c.fill();
-    }
-    c.fillStyle = 'rgba(255,150,40,' + (0.28 + glow * 0.3) + ')';                                   // дупло светится
-    c.beginPath(); c.arc(-r * 0.04, r * 0.02, r * 0.45, 0, 7); c.fill();
-    c.fillStyle = '#2a1a0c'; c.beginPath(); c.ellipse(-r * 0.04, r * 0.02, r * 0.26, r * 0.24, 0, 0, 7); c.fill();
-    c.fillStyle = '#ffb347'; c.beginPath(); c.arc(-r * 0.04, r * 0.02, r * 0.13, 0, 7); c.fill();
-    roundEyes(c, r * 0.5, r * 0.34, r * 0.16, '#2c1d0e');
   },
-  boss(c, r, f){ BOSS_ART[f.skin || 0](c, r, f); }
-};
 
+  /* ---- поздние существа: по одному новому на каждую дюжину карт ----
+     Все с 25-й карты и дальше: первые двадцать четыре выверены прогонами, и их
+     волны не тронуты. Золото за голову — угроза по курсу того, кого существо
+     замещает (bounty/hp: уголёк 0,22, вихрёк 0,27, камнеспин 0,16, туманник 0,3,
+     древень 0,12): первая версия платила вдвое меньше, доход проседал, и к шестой
+     волне у игрока стояло 27 башен вместо 40 — уровни рушились не от повадок,
+     а от бедности.
+     Носителей аур (фонарь, роса, барабан) не больше двух на волну, и угроза у них
+     выше всех: их сила не в своём здоровье, а в чужом — барабан рядом с восемью
+     древнями делает каждого на треть крепче, и тело в 150 здоровья этого не
+     отражает. При трёх-четырёх на волну 90-я карта проваливалась при любом
+     наклоне. Каждое следующее вводит одну новую повадку и один новый ответ:
+     мортира по дождевику, снять фонарь первым, ждать крота на поверхности.
+     Числа в группах скромные — пара-тройка на волну: поздние волны и так по
+     полторы сотни голов, и новое существо должно менять расклад повадкой, а не
+     поголовьем. */
+
+  // Дождевик: гриб на ножках; при гибели рассыпается спорами
+  puffball: {
+    name:'Дождевик', about:'гриб-дождевик на коротких ножках; тронешь — лопнет, и разбегутся споры',
+    acc:['дождевика', 'дождевика', 'дождевиков'],
+    hp:60, sp:1.0, armor:0, bounty:16, hit:1, atk:1.8, r:0.34, color:'#e6dcc2',
+    from:24, threat:1.2, gap:0.8, wave:(L, W, late) => W >= 3 ? 1 + Math.round(late * (1 + (L - 24) * 0.02)) : 0,
+    traits:{ split:{ type:'spore', n:4 } },
+    intro:'при гибели рассыпается спорами — добивай его там, где стоит мортира',
+    step:1.6,
+    gait(f){ const ph = (f.d * 1.6) % 1; return { bob: Math.sin(ph * Math.PI) * f.r * CELL * 0.25, sq: -Math.sin(ph * 6.283) * 0.07 }; },
+    art(c, r, f){
+      legs(c, r, stepPhase(f), 2, 0.4, '#8a7d62', 0.14, 0.5);
+      c.fillStyle = grad(c, 'puffball', r, () => { const g = c.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.1, 0, 0, r);
+        g.addColorStop(0, '#fbf4e2'); g.addColorStop(0.6, '#e0d3b4'); g.addColorStop(1, '#9c8c68'); return g; });
+      c.beginPath(); c.ellipse(0, 0, r * 0.95, r * 0.88, 0, 0, 7); c.fill();
+      c.fillStyle = 'rgba(120,100,70,.35)';                                                           // веснушки-чешуйки
+      for (const [dx, dy, k] of [[-0.45, -0.35, 0.11], [0.1, -0.55, 0.09], [-0.15, 0.1, 0.1], [-0.6, 0.3, 0.08], [0.3, 0.4, 0.09], [0.45, -0.15, 0.07]]) { c.beginPath(); c.arc(dx * r, dy * r, k * r, 0, 7); c.fill(); }
+      const t = (G.t * 0.7 + f.ph) % 1;                                                               // спора-другая всё время выпархивает
+      c.fillStyle = 'rgba(200,215,140,' + (0.7 * (1 - t)) + ')';
+      c.beginPath(); c.arc(-r * 0.2 - t * r * 0.8, -r * 0.1 + Math.sin(t * 9) * r * 0.15, r * 0.08, 0, 7); c.fill();
+      roundEyes(c, r * 0.45, r * 0.28, r * 0.17);
+    }
+  },
+  // Спорка: то, на что рассыпается дождевик. В волнах сама не ходит
+  spore: {
+    name:'Спорка', about:'крошечная спора дождевика; одна — пустяк, четыре — уже толпа',
+    acc:['спорку', 'спорки', 'спорок'],
+    hp:8, sp:2.4, armor:0, bounty:2, hit:1, atk:1.0, r:0.16, color:'#c9d98a',
+    from:24, origin:'выходит из дождевика', wave:null,
+    gait(f){ return { bob: (0.5 + 0.5 * Math.sin(G.t * 12 + f.ph)) * f.r * CELL * 0.4, sq: 0 }; },
+    art(c, r, f){
+      c.strokeStyle = 'rgba(200,220,140,.5)'; c.lineWidth = Math.max(1, r * 0.25); c.lineCap = 'round';
+      c.beginPath(); c.moveTo(-r * 0.6, 0); c.quadraticCurveTo(-r * 1.4, Math.sin(G.t * 10 + f.ph) * r * 0.5, -r * 2.0, 0); c.stroke();   // хвостик
+      c.fillStyle = grad(c, 'spore', r, () => { const g = c.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
+        g.addColorStop(0, '#eef5c8'); g.addColorStop(1, '#8fa650'); return g; });
+      c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill();
+      roundEyes(c, r * 0.35, r * 0.35, r * 0.22);
+    }
+  },
+  // Фонарник: ночной мотылёк с бумажным фонарём; на свет тянутся остальные
+  lantern: {
+    name:'Фонарник', about:'ночной мотылёк-дух с бумажным фонарём; на его свет тянутся все, кто идёт рядом',
+    hp:34, sp:1.5, armor:0, bounty:20, hit:1, atk:1.4, r:0.28, color:'#ffcf7a',
+    from:31, threat:2.2, mix:true, gap:1.6, wave:(L, W, late) => W >= 3 ? (late < 0.6 ? 1 : 2) : 0,
+    traits:{ haste:{ r:1.2, k:0.25 } },
+    intro:'фонарь подгоняет всех вокруг — сними его первым',
+    gait(f){ return { bob: (0.5 + 0.5 * Math.sin(G.t * 5 + f.ph)) * f.r * CELL * 0.5, sq: 0 }; },
+    art(c, r, f){
+      const fl = Math.sin(G.t * 16 + f.ph), gl = 0.55 + 0.25 * Math.sin(G.t * 3 + f.ph);
+      c.fillStyle = 'rgba(225,228,245,.55)';                                                          // крылья
+      for (const s of [-1, 1]){ c.beginPath(); c.ellipse(-r * 0.25, s * r * 0.75, r * 0.7, r * 0.42, s * (0.5 + fl * 0.15), 0, 7); c.fill(); }
+      fur(c, r * 0.6, 14, r * 0.22, '#7d84a8', 0.1, f.ph);
+      c.fillStyle = grad(c, 'lantern', r, () => { const g = c.createRadialGradient(-r * 0.2, -r * 0.2, r * 0.05, 0, 0, r * 0.7);
+        g.addColorStop(0, '#c3c8e2'); g.addColorStop(1, '#5e6488'); return g; });
+      c.beginPath(); c.ellipse(-r * 0.1, 0, r * 0.65, r * 0.55, 0, 0, 7); c.fill();
+      roundEyes(c, r * 0.25, r * 0.22, r * 0.14);
+      // фонарь впереди на верёвочке: круглый, тёплый, дышит
+      c.strokeStyle = '#3a3040'; c.lineWidth = Math.max(1, r * 0.06); c.beginPath(); c.moveTo(r * 0.45, 0); c.lineTo(r * 0.85, 0); c.stroke();
+      const g = c.createRadialGradient(r * 1.15, 0, 0, r * 1.15, 0, r * 0.75);
+      g.addColorStop(0, 'rgba(255,200,90,' + gl + ')'); g.addColorStop(1, 'rgba(255,170,60,0)');
+      c.fillStyle = g; c.beginPath(); c.arc(r * 1.15, 0, r * 0.75, 0, 7); c.fill();
+      c.fillStyle = '#ffd98a'; c.beginPath(); c.ellipse(r * 1.15, 0, r * 0.32, r * 0.38, 0, 0, 7); c.fill();
+      c.strokeStyle = '#a8522a'; c.lineWidth = Math.max(1, r * 0.07);
+      c.beginPath(); c.ellipse(r * 1.15, 0, r * 0.32, r * 0.38, 0, 0, 7); c.stroke();
+      c.beginPath(); c.moveTo(r * 0.95, 0); c.lineTo(r * 1.35, 0); c.stroke();                       // ребро фонаря
+    }
+  },
+  // Росник: капля росы, в которой кто-то живёт; лечит соседей
+  dew: {
+    name:'Росник', about:'капля росы, в которой живёт кто-то маленький и добрый; лечит всех, кто идёт рядом',
+    hp:80, sp:1.1, armor:0, bounty:42, hit:1, atk:1.8, r:0.32, color:'#8fd8c8',
+    from:39, threat:2.4, mix:true, gap:1.8, wave:(L, W, late) => W >= 3 ? (late < 0.6 ? 1 : 2) : 0,
+    traits:{ heal:{ r:1.2, k:0.02 } },
+    intro:'лечит соседей — добивай его первым',
+    gait(f){ const ph = (f.d * 1.8) % 1; return { bob: Math.sin(ph * Math.PI) * f.r * CELL * 0.3, sq: -Math.sin(ph * 6.283) * 0.1 }; },
+    art(c, r, f){
+      // капля: круглая спереди, хвостик назад; полупрозрачная, с бликом
+      c.fillStyle = grad(c, 'dew', r, () => { const g = c.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.1, 0, 0, r * 1.1);
+        g.addColorStop(0, 'rgba(225,255,245,.95)'); g.addColorStop(0.5, 'rgba(130,215,195,.9)'); g.addColorStop(1, 'rgba(40,130,120,.9)'); return g; });
+      c.beginPath(); c.moveTo(r * 0.95, 0); c.quadraticCurveTo(r * 0.9, -r * 0.95, -r * 0.2, -r * 0.8); c.quadraticCurveTo(-r * 1.1, -r * 0.5, -r * 1.35, 0);
+      c.quadraticCurveTo(-r * 1.1, r * 0.5, -r * 0.2, r * 0.8); c.quadraticCurveTo(r * 0.9, r * 0.95, r * 0.95, 0); c.closePath(); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.ellipse(-r * 0.15, -r * 0.42, r * 0.32, r * 0.14, -0.3, 0, 7); c.fill();   // блик
+      c.fillStyle = '#7fb85a';                                                                        // листок на спине
+      c.beginPath(); c.moveTo(-r * 0.6, r * 0.1); c.quadraticCurveTo(-r * 1.2, r * 0.6, -r * 1.7, r * 0.35); c.quadraticCurveTo(-r * 1.2, r * 0.2, -r * 0.6, r * 0.1); c.fill();
+      roundEyes(c, r * 0.4, r * 0.26, r * 0.17, '#1f3a3a');
+      for (let i = 0; i < 3; i++){                                                                    // капельки-искры — то, что лечит
+        const t = (G.t * 0.8 + f.ph + i / 3) % 1, a = i * 2.1 + f.ph;
+        c.fillStyle = 'rgba(200,255,240,' + (0.8 * (1 - t)) + ')';
+        c.beginPath(); c.arc(Math.cos(a) * r * (0.9 + t * 0.6), Math.sin(a) * r * (0.9 + t * 0.6), r * 0.09, 0, 7); c.fill();
+      }
+    }
+  },
+  // Кротень: подземный дух; больше под землёй, чем над ней
+  mole: {
+    name:'Кротень', about:'подслеповатый подземный дух с розовым носом; под землёй ему спокойнее, чем наверху',
+    hp:120, sp:1.05, armor:2, bounty:38, hit:1, atk:1.6, r:0.33, color:'#5a4634',
+    from:47, threat:2.0, gap:1.0, wave:(L, W, late) => W >= 3 ? 1 + Math.round(late * (1 + (L - 47) * 0.02)) : 0,
+    traits:{ burrow:{ over:3.0, under:2.0 } },
+    intro:'уходит под землю — там его не достать; лови на поверхности',
+    step:2.4,
+    gait(f){ const ph = (f.d * 2.4) % 1; return { bob: 0, sq: Math.sin(ph * 6.283) * 0.05 }; },
+    art(c, r, f){
+      c.fillStyle = '#d8b9a0';                                                                        // лапы-лопаты гребут
+      for (const s of [-1, 1]){ const k = Math.sin(stepPhase(f) * 6.283 + (s > 0 ? 0 : 3.14)) * 0.2; c.beginPath(); c.ellipse(r * (0.35 + k), s * r * 0.75, r * 0.3, r * 0.2, s * 0.6, 0, 7); c.fill(); }
+      fur(c, r * 0.75, 18, r * 0.22, '#3a2c20', 0.08, f.ph);
+      c.fillStyle = grad(c, 'mole', r, () => { const g = c.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r * 1.1);
+        g.addColorStop(0, '#7a6350'); g.addColorStop(0.6, '#4e3c2c'); g.addColorStop(1, '#2a1f16'); return g; });
+      c.beginPath(); c.ellipse(-r * 0.1, 0, r * 1.05, r * 0.8, 0, 0, 7); c.fill();
+      c.fillStyle = '#f2a0b0'; c.beginPath(); c.arc(r * 1.0, 0, r * 0.2, 0, 7); c.fill();            // нос
+      c.fillStyle = '#ffd0da'; c.beginPath(); c.arc(r * 0.95, -r * 0.06, r * 0.07, 0, 7); c.fill();
+      c.strokeStyle = 'rgba(240,230,220,.6)'; c.lineWidth = Math.max(1, r * 0.05);                    // усы
+      for (const s of [-1, 1]) for (const k of [0.1, 0.35]){ c.beginPath(); c.moveTo(r * 0.85, s * r * k); c.lineTo(r * 1.3, s * r * (k + 0.35)); c.stroke(); }
+      roundEyes(c, r * 0.5, r * 0.3, r * 0.1, '#111');                                                 // подслеповатые глазки
+    }
+  },
+  // Соломенник: сноп соломы, который встал и пошёл. Пули вязнут, взрыв разносит
+  straw: {
+    name:'Соломенник', about:'сноп соломы, который однажды встал и пошёл; подпоясан верёвкой, глаза-угольки',
+    hp:110, sp:1.2, armor:0, bounty:39, hit:1, atk:1.5, r:0.32, color:'#d9b95a',
+    from:55, threat:1.6, gap:0.7, wave:(L, W, late) => W >= 2 ? 2 + Math.round(late * (1.5 + (L - 55) * 0.02)) : 0,
+    traits:{ weak:{ shot:0.5, splash:2 } },
+    intro:'пули вязнут в соломе, зато мортира разносит его в клочья',
+    step:2.0,
+    gait(f){ const ph = (f.d * 2.0) % 1; return { bob: Math.abs(Math.sin(ph * Math.PI)) * f.r * CELL * 0.15, sq: 0, roll: Math.sin(ph * 6.283) * 0.12 }; },
+    art(c, r, f){
+      fur(c, r * 0.55, 26, r * 0.7, '#b8912e', 0.09, f.ph);                                            // солома: два слоя иголок
+      fur(c, r * 0.55, 20, r * 0.62, '#e8c65a', 0.06, f.ph + 0.13);
+      c.fillStyle = grad(c, 'straw', r, () => { const g = c.createRadialGradient(-r * 0.25, -r * 0.3, r * 0.05, 0, 0, r * 0.8);
+        g.addColorStop(0, '#f1d67e'); g.addColorStop(1, '#a67c25'); return g; });
+      c.beginPath(); c.arc(0, 0, r * 0.7, 0, 7); c.fill();
+      c.strokeStyle = '#7a4a22'; c.lineWidth = Math.max(1, r * 0.12);                                 // верёвка-пояс
+      c.beginPath(); c.ellipse(-r * 0.05, 0, r * 0.62, r * 0.7, 0, 0, 7); c.stroke();
+      c.strokeStyle = '#8f5a2a'; c.lineWidth = Math.max(1, r * 0.07); c.lineCap = 'round';              // концы верёвки
+      c.beginPath(); c.moveTo(-r * 0.6, r * 0.2); c.lineTo(-r * 1.0, r * 0.55); c.moveTo(-r * 0.6, r * 0.2); c.lineTo(-r * 0.95, -r * 0.05); c.stroke();
+      c.fillStyle = '#2b2118'; for (const s of [-1, 1]){ c.beginPath(); c.arc(r * 0.4, s * r * 0.24, r * 0.09, 0, 7); c.fill(); }   // глаза-угольки
+    }
+  },
+  // Гулень: толстый лесной дух с полым бревном; под его гул соседи держат удар
+  drummer: {
+    name:'Гулень', about:'толстый лесной дух с полым бревном вместо барабана; под его гул соседи не чувствуют ударов',
+    hp:150, sp:0.9, armor:3, bounty:58, hit:2, atk:2.2, r:0.36, color:'#6f8f5a',
+    from:64, threat:2.4, mix:true, gap:2.0, wave:(L, W, late) => W >= 4 ? (late < 0.6 ? 1 : 2) : 0,
+    traits:{ drum:{ r:1.4, armor:3 } },
+    intro:'бьёт в барабан, и соседи под гул держат удар — глуши его мортирой',
+    step:1.7, dust:true,
+    gait(f){ const ph = (f.d * 1.7) % 1; return { bob: Math.abs(Math.sin(ph * Math.PI)) * f.r * CELL * 0.1, sq: 0, roll: Math.sin(ph * 6.283) * 0.06 }; },
+    art(c, r, f){
+      legs(c, r, stepPhase(f), 2, 0.35, '#3f5a30', 0.22, 0.55);
+      c.fillStyle = grad(c, 'drummer', r, () => { const g = c.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.1, 0, 0, r);
+        g.addColorStop(0, '#a9c48a'); g.addColorStop(0.55, '#6f8f5a'); g.addColorStop(1, '#32482a'); return g; });
+      c.beginPath(); c.ellipse(-r * 0.15, 0, r * 0.85, r * 0.9, 0, 0, 7); c.fill();
+      c.fillStyle = 'rgba(230,240,200,.5)'; c.beginPath(); c.ellipse(-r * 0.25, 0, r * 0.45, r * 0.55, 0, 0, 7); c.fill();   // светлое брюхо
+      roundEyes(c, r * 0.35, r * 0.3, r * 0.15);
+      c.fillStyle = '#7a5a3a'; rr(c, r * 0.55, -r * 0.7, r * 0.5, r * 1.4, r * 0.2); c.fill();         // бревно-барабан поперёк
+      c.fillStyle = '#a67c52'; for (const s of [-1, 1]){ c.beginPath(); c.ellipse(r * 0.8, s * r * 0.7, r * 0.22, r * 0.12, 0, 0, 7); c.fill(); }   // торцы
+      const beat = (G.t * 4 + f.ph) % 2;                                                              // лапы бьют по очереди
+      c.strokeStyle = '#3f5a30'; c.lineWidth = Math.max(1, r * 0.18); c.lineCap = 'round';
+      for (const s of [-1, 1]){ const up = ((beat < 1) === (s < 0)) ? 0.18 : 0; c.beginPath(); c.moveTo(r * 0.3, s * r * 0.45); c.lineTo(r * (0.75 - up), s * r * 0.35); c.stroke(); }
+    }
+  },
+  // Скакунок: зелёный дух-кузнечик; сидит, сидит — и вдруг уже далеко
+  leaper: {
+    name:'Скакунок', about:'зелёный дух-кузнечик: сидит, сидит — и вдруг уже далеко впереди',
+    hp:55, sp:1.3, armor:0, bounty:24, hit:1, atk:1.2, r:0.27, color:'#8fcf6a',
+    from:74, threat:1.6, gap:0.5, wave:(L, W, late) => W >= 2 ? 2 + Math.round(late * (2 + (L - 74) * 0.02)) : 0,
+    traits:{ leap:{ every:2.4, dist:1.5, air:0.3 } },
+    intro:'прыгает на полторы клетки разом — мортира с упреждением по нему мажет',
+    step:3,
+    gait(f){
+      if (f.air > 0){ const k = 1 - f.air / f.airMax; return { bob: Math.sin(k * Math.PI) * f.r * CELL * 1.6, sq: 0.15 }; }
+      const ph = (f.d * 3) % 1; return { bob: Math.abs(Math.sin(ph * Math.PI)) * f.r * CELL * 0.08, sq: 0 };
+    },
+    art(c, r, f){
+      const jump = f.air > 0;
+      c.strokeStyle = '#5a8f3a'; c.lineWidth = Math.max(1, r * 0.14); c.lineCap = 'round'; c.lineJoin = 'round';   // задние ноги: сложены углом, в прыжке вытянуты
+      for (const s of [-1, 1]){ c.beginPath(); c.moveTo(-r * 0.3, s * r * 0.4); if (jump){ c.lineTo(-r * 1.2, s * r * 0.6); c.lineTo(-r * 1.9, s * r * 0.5); } else { c.lineTo(-r * 0.9, s * r * 0.95); c.lineTo(-r * 0.2, s * r * 1.05); } c.stroke(); }
+      c.lineWidth = Math.max(1, r * 0.09);                                                            // передние
+      for (const s of [-1, 1]){ c.beginPath(); c.moveTo(r * 0.3, s * r * 0.35); c.lineTo(r * 0.7, s * r * 0.7); c.stroke(); }
+      c.fillStyle = grad(c, 'leaper', r, () => { const g = c.createLinearGradient(0, -r, 0, r);
+        g.addColorStop(0, '#c6ec9a'); g.addColorStop(0.5, '#8fcf6a'); g.addColorStop(1, '#4f8a34'); return g; });
+      c.beginPath(); c.ellipse(0, 0, r * 1.05, r * 0.6, 0, 0, 7); c.fill();
+      c.strokeStyle = 'rgba(60,110,40,.5)'; c.lineWidth = Math.max(1, r * 0.05); c.beginPath(); c.moveTo(-r * 0.9, 0); c.lineTo(r * 0.6, 0); c.stroke();   // спинка
+      roundEyes(c, r * 0.55, r * 0.42, r * 0.2);
+      c.strokeStyle = '#5a8f3a'; c.lineWidth = Math.max(1, r * 0.05);                                 // усики
+      for (const s of [-1, 1]){ c.beginPath(); c.moveTo(r * 0.8, s * r * 0.2); c.quadraticCurveTo(r * 1.3, s * r * 0.3, r * 1.5, s * r * 0.7); c.stroke(); }
+    }
+  },
+  // Семянница: старый одуванчик с лицом; куда ни пойдёт — сеет пушинок
+  seedmother: {
+    name:'Семянница', about:'старый одуванчик с лицом; куда ни пойдёт — сеет за собой пушинок',
+    hp:220, sp:0.75, armor:2, bounty:48, hit:2, atk:2.4, r:0.40, color:'#e8e8d0',
+    from:85, threat:2.0, gap:2.0, wave:(L, W, late) => W >= 5 ? 1 + Math.round(late * (0.5 + (L - 85) * 0.02)) : 0,
+    traits:{ spawner:{ type:'swarm', every:2.2, max:8 } },
+    intro:'на ходу выпускает пушинок — чем дольше живёт, тем больше их',
+    step:1.5, dust:true,
+    gait(f){ const ph = (f.d * 1.5) % 1; return { bob: Math.abs(Math.sin(ph * Math.PI)) * f.r * CELL * 0.08, sq: 0, roll: Math.sin(ph * 6.283) * 0.05 }; },
+    art(c, r, f){
+      legs(c, r, stepPhase(f), 2, 0.35, '#6a8a3a', 0.16, 0.5);                                         // корешки
+      const n = 24;
+      c.strokeStyle = 'rgba(250,248,240,.55)'; c.lineWidth = Math.max(1, r * 0.04);                   // пух: тонкие лучи с точками на концах
+      for (let i = 0; i < n; i++){ const a = i / n * 6.283 + f.ph, k = 1.05 + 0.15 * Math.sin(i * 2.3 + G.t * 1.5); c.beginPath(); c.moveTo(Math.cos(a) * r * 0.3, Math.sin(a) * r * 0.3); c.lineTo(Math.cos(a) * r * k, Math.sin(a) * r * k); c.stroke(); }
+      c.fillStyle = 'rgba(250,248,240,.85)';
+      for (let i = 0; i < n; i++){ const a = i / n * 6.283 + f.ph, k = 1.05 + 0.15 * Math.sin(i * 2.3 + G.t * 1.5); c.beginPath(); c.arc(Math.cos(a) * r * k, Math.sin(a) * r * k, r * 0.07, 0, 7); c.fill(); }
+      c.fillStyle = 'rgba(250,248,240,.35)'; c.beginPath(); c.arc(0, 0, r * 0.85, 0, 7); c.fill();
+      c.fillStyle = grad(c, 'seedmother', r, () => { const g = c.createRadialGradient(-r * 0.15, -r * 0.2, r * 0.05, 0, 0, r * 0.5);
+        g.addColorStop(0, '#eef0c0'); g.addColorStop(1, '#a8ad6a'); return g; });
+      c.beginPath(); c.arc(0, 0, r * 0.48, 0, 7); c.fill();
+      roundEyes(c, r * 0.18, r * 0.2, r * 0.13, '#3a3a22');
+      c.strokeStyle = '#5a5a30'; c.lineWidth = Math.max(1, r * 0.04); c.beginPath(); c.arc(r * 0.22, 0, r * 0.13, -0.7, 0.7); c.stroke();   // улыбка
+    }
+  },
+  // Желудник: жёлудь в толстой скорлупе; треснет — побежит
+  acorn: {
+    name:'Желудник', about:'жёлудь-крепыш в толстой скорлупе; пока цел — неспешен, треснет — побежит',
+    hp:200, sp:0.85, armor:14, bounty:34, hit:2, atk:2.2, r:0.36, color:'#9a6a3a',
+    from:97, threat:1.4, gap:1.2, wave:(L, W, late) => W >= 4 ? 1 + Math.round(late * (1.5 + (L - 97) * 0.02)) : 0,
+    traits:{ crack:{ at:0.5, armor:0, sp:1.7 } },
+    intro:'скорлупу берёт только мортира; треснувший теряет броню, но бежит',
+    step:2.0, dust:true,
+    gait(f){ const ph = (f.d * 2.0) % 1; return { bob: Math.abs(Math.sin(ph * Math.PI)) * f.r * CELL * (f.cracked ? 0.2 : 0.06), sq: 0, roll: Math.sin(ph * 6.283) * 0.08 }; },
+    art(c, r, f){
+      legs(c, r, stepPhase(f), 2, 0.32, '#4a3018', 0.2, 0.55);
+      c.fillStyle = grad(c, 'acorn', r, () => { const g = c.createRadialGradient(-r * 0.2, -r * 0.3, r * 0.1, 0, 0, r);
+        g.addColorStop(0, '#d8a86a'); g.addColorStop(0.6, '#9a6a3a'); g.addColorStop(1, '#4e3218'); return g; });
+      c.beginPath(); c.ellipse(0.1 * r, 0, r * 1.0, r * 0.82, 0, 0, 7); c.fill();                    // гладкий орех
+      c.fillStyle = grad(c, 'acorncap', r, () => { const g = c.createRadialGradient(-r * 0.5, -r * 0.3, r * 0.1, -r * 0.4, 0, r * 0.9);
+        g.addColorStop(0, '#8a6a48'); g.addColorStop(1, '#3e2a14'); return g; });
+      c.beginPath(); c.ellipse(-r * 0.45, 0, r * 0.62, r * 0.86, 0, 0, 7); c.fill();                  // шапочка сзади
+      c.fillStyle = 'rgba(255,230,190,.25)';                                                          // крапинки шапочки
+      for (let i = 0; i < 10; i++){ const a = i * 2.4, d = r * (0.2 + (i % 3) * 0.18); c.beginPath(); c.arc(-r * 0.45 + Math.cos(a) * d * 0.7, Math.sin(a) * d, r * 0.07, 0, 7); c.fill(); }
+      c.strokeStyle = '#3e2a14'; c.lineWidth = Math.max(1, r * 0.14); c.lineCap = 'round';             // черешок
+      c.beginPath(); c.moveTo(-r * 1.0, 0); c.lineTo(-r * 1.3, 0); c.stroke();
+      roundEyes(c, r * 0.5, r * 0.28, r * 0.14, '#2a1a0c');
+    }
+  },
+  // Тенник: тень без хозяина; в толпе её не видно
+  shade: {
+    name:'Тенник', about:'тень без хозяина; в толпе её не разглядеть, а одна она робеет',
+    hp:60, sp:1.6, armor:0, bounty:36, hit:1, atk:1.3, r:0.28, color:'#4a3a66',
+    from:109, threat:2.0, gap:0.5, wave:(L, W, late) => W >= 3 ? 2 + Math.round(late * (2 + (L - 109) * 0.02)) : 0,
+    traits:{ veil:{ r:0.9 } },
+    intro:'прячется за спинами — башни не видят его, пока рядом кто-то ещё',
+    gait(f){ return { bob: (0.5 + 0.5 * Math.sin(G.t * 2.5 + f.ph)) * f.r * CELL * 0.4, sq: 0 }; },
+    art(c, r, f){
+      const w = Math.sin(G.t * 3 + f.ph);
+      let g = c.createRadialGradient(0, 0, r * 0.2, 0, 0, r * 1.5); g.addColorStop(0, 'rgba(60,40,90,.5)'); g.addColorStop(1, 'rgba(60,40,90,0)');
+      c.fillStyle = g; c.beginPath(); c.arc(0, 0, r * 1.5, 0, 7); c.fill();
+      c.fillStyle = grad(c, 'shade', r, () => { const g = c.createRadialGradient(-r * 0.2, -r * 0.2, r * 0.05, 0, 0, r);
+        g.addColorStop(0, '#6a5590'); g.addColorStop(0.6, '#3b2b55'); g.addColorStop(1, '#1e1430'); return g; });
+      c.beginPath();                                                                                  // клубящийся край
+      for (let i = 0; i < 12; i++){ const a = i / 12 * 6.283, k = 0.85 + 0.15 * Math.sin(i * 2.9 + w * 2); c.lineTo(Math.cos(a) * r * k, Math.sin(a) * r * k); }
+      c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(40,25,60,.6)'; c.lineWidth = Math.max(1, r * 0.1); c.lineCap = 'round';     // шлейф
+      c.beginPath(); c.moveTo(-r * 0.8, 0); c.quadraticCurveTo(-r * 1.4, w * r * 0.4, -r * 1.9, 0); c.stroke();
+      c.fillStyle = '#e8e0ff';                                                                        // глаза — два бледных огонька без белков
+      for (const s of [-1, 1]){ c.beginPath(); c.ellipse(r * 0.4, s * r * 0.3, r * 0.14, r * 0.1, 0, 0, 7); c.fill(); }
+    }
+  },
+
+  /* Босс: один тип в правилах, четыре облика на экране — меняется каждые три
+     карты (skins, BOSS_ART). Числа у всех одинаковые: облик не должен ломать
+     выверенный баланс. У ворот бьёт как уголёк — по одному, — но живёт долго;
+     его цена набирается временем, а не силой удара. При трёх за две секунды
+     дошедший босс на поздней карте был автоматическим проигрышем.
+     Когда босс был вдвое крепче и снимал 5 жизней разом, вся сложность поздних
+     карт сводилась к нему одному: симуляция теряла ровно 10 жизней и на 5-м
+     уровне, и на 12-м — звёзды перестали различать карты.
+     Боссов в финале не больше трёх: их здоровье и так растёт с уровнем, а четыре
+     по 7000 HP в финале второй дюжины были стеной — симуляция теряла там по
+     13–16 прочности при чистых предыдущих волнах. */
+  boss: {
+    name:'Хранитель', about:'дух-хранитель этих мест; в финале карты выходит сам, а с 5-й — ещё и в середине',
+    hp:430, sp:0.80, armor:6, bounty:70, hit:1, atk:2.0, r:0.44, color:'#ee3550',
+    skins: BOSS_SKINS,
+    gap:2.2, wave:(L, W, late, nW, final) => final ? { n: 1 + Math.min(2, Math.floor(L / 4)), gap: 2.2 }
+                                          : (L >= 5 && W === Math.floor(nW / 2)) ? { n: 1, gap: 1 } : 0,
+    step:1.5, dust:true,
+    gait(f){ const ph = (f.d * 1.5) % 1; return { bob: Math.abs(Math.sin(ph * Math.PI)) * f.r * CELL * 0.12, sq: 0 }; },
+    art(c, r, f){ BOSS_ART[f.skin || 0](c, r, f); }
+  }
+};
+const FOE_ORDER = Object.keys(FOES);
+// список особенностей карточки — один раз, а не Object.entries на каждое попадание
+for (const k of FOE_ORDER) FOES[k].tr = Object.entries(FOES[k].traits || {});
+
+/* Карточка — публичный договор бестиария. Опечатка в названии повадки или
+   порождаемого существа иначе всплывёт только на поздней карте посреди волны.
+   Проверяем и схему, и все 120×14 результатов wave сразу при загрузке. */
+function validateFoes(){
+  let errors = 0;
+  const fail = (type, text) => { errors++; console.error('Бестиарий · ' + type + ': ' + text); };
+  for (const type of FOE_ORDER){
+    const b = FOES[type];
+    for (const key of ['name','about','hp','sp','armor','bounty','hit','atk','r','art']){
+      if (b[key] === undefined || b[key] === null) fail(type, 'нет поля ' + key);
+    }
+    for (const key of ['hp','sp','bounty','hit','atk','r']) if (!(b[key] > 0)) fail(type, key + ' должно быть больше нуля');
+    if (!(b.armor >= 0)) fail(type, 'armor не может быть отрицательной');
+    if (typeof b.art !== 'function') fail(type, 'art должна быть функцией');
+    if (b.wave !== null && b.wave !== undefined && typeof b.wave !== 'function') fail(type, 'wave должна быть функцией или null');
+    if (b.from !== undefined && (!Number.isInteger(b.from) || b.from < 0 || b.from >= TOTAL_LEVELS)) fail(type, 'from вне диапазона уровней');
+    for (const [trait, p] of b.tr){
+      if (!TRAITS[trait]){ fail(type, 'неизвестная повадка ' + trait); continue; }
+      for (const ref of ['type']) if (p && p[ref] && !FOES[p[ref]]) fail(type, trait + ' ссылается на неизвестное существо ' + p[ref]);
+      if (p && p.type && !FOES[p.type].acc) fail(type, p.type + ' не умеет склоняться: нет acc');
+    }
+    if (!b.wave) continue;
+    for (let L = Math.max(0, b.from || 0); L < TOTAL_LEVELS; L++) for (let W = 0; W < waveCount(L); W++){
+      const late = W / Math.max(1, waveCount(L) - 1), raw = b.wave(L, W, late, waveCount(L), W === waveCount(L) - 1);
+      const n = typeof raw === 'number' ? raw : raw && raw.n;
+      const gap = typeof raw === 'number' ? b.gap : raw && raw.gap;
+      if (!Number.isFinite(n) || n < 0 || Math.floor(n) !== n) fail(type, 'wave вернула неверное количество на уровне ' + (L + 1) + ', волна ' + (W + 1));
+      if (n > 0 && !(gap > 0)) fail(type, 'нет положительного gap на уровне ' + (L + 1) + ', волна ' + (W + 1));
+    }
+  }
+  return errors;
+}
+validateFoes();
+
+/* Враги рисуются в локальных координатах, где +x — вперёд по дороге: одна
+   функция даёт правильный разворот на любом повороте, а градиенты кэшируются.
+   Походка привязана к ПРОЙДЕННОМУ ПУТИ, а не ко времени: шаг совпадает со
+   скоростью, и замедленный морозом враг и шагает реже. Тень на земле сжимается
+   и бледнеет, когда тело в верхней точке, — без этого всё «плыло по воздуху». */
 function drawFoe(f){
+  const b = FOES[f.type];
   const p = foePos(f), h = foeHeading(f), cx = px(p.x), cy = py(p.y), r = f.r * CELL;
-  const gait = GAIT[f.type](f);
-  const up = gait.bob / (r * 0.5);                                                                  // 0 на земле, ~1 в прыжке
-  // тень остаётся на земле: сжимается и бледнеет, когда тело поднято
-  softShadow(ctx, cx + r * 0.1, cy + r * 0.55, r * 1.15 * (1 - up * 0.3), r * 0.5 * (1 - up * 0.3), 0.45 * (1 - up * 0.4));
+  const gait = b.gait ? b.gait(f) : { bob: 0, sq: 0 };
+  const up = Math.min(1, gait.bob / (r * 0.5));                                                     // 0 на земле, 1 в прыжке
+  // спрятанный (под землёй, в тени толпы) тени не отбрасывает
+  if (!f.hidden) softShadow(ctx, cx + r * 0.1, cy + r * 0.55, r * 1.15 * (1 - up * 0.3), r * 0.5 * (1 - up * 0.3), 0.45 * (1 - up * 0.4));
   ctx.save(); ctx.translate(cx, cy - gait.bob); ctx.rotate(h + (gait.roll || 0)); ctx.scale(1 + gait.sq, 1 - gait.sq);
   if (f.siege && f.lunge > 0){                                                                      // замах при ударе
     ctx.rotate(-f.lunge * 0.25);
   }
-  FOE_ART[f.type](ctx, r, f);
+  // особенности рисуют под телом (ауры, холмик крота) и поверх него (трещины)
+  let body = false;
+  for (const [k, q] of b.tr) if (TRAITS[k].under && TRAITS[k].under(f, q, ctx, r, CELL)) body = true;
+  if (!body) b.art(ctx, r, f);
+  for (const [k, q] of b.tr) if (TRAITS[k].over) TRAITS[k].over(f, q, ctx, r, CELL);
   if (f.hit > 0){
     ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,255,255,.5)';
     ctx.beginPath(); ctx.ellipse(0, 0, r * 1.15, r * 1.05, 0, 0, 7); ctx.fill();
@@ -1838,7 +2570,7 @@ function drawFoe(f){
       ctx.fillStyle = '#c8fbff'; poly(ctx, [[ix, iy - CELL * 0.05], [ix + CELL * 0.03, iy], [ix, iy + CELL * 0.05], [ix - CELL * 0.03, iy]]); ctx.fill();
     }
   }
-  if (f.hp < f.hpMax){
+  if (f.hp < f.hpMax && !f.hidden){
     const w = Math.max(r * 2.1, CELL * 0.5), hh = Math.max(3, CELL * 0.08), y = cy - gait.bob - r - hh * 2.2;
     ctx.fillStyle = 'rgba(0,0,0,.6)'; rr(ctx, cx - w / 2 - 1, y - 1, w + 2, hh + 2, hh / 2); ctx.fill();
     ctx.fillStyle = f.hp / f.hpMax > 0.4 ? '#9bc800' : '#ee3550'; rr(ctx, cx - w / 2, y, w * (f.hp / f.hpMax), hh, hh / 2); ctx.fill();
@@ -2002,6 +2734,7 @@ function frame(now){
     if (dt > 0) update(dt);
   }
   draw();
+  if (bookRows) for (const row of bookRows) drawPortrait(row);   // живые портреты, пока книга открыта
 }
 
 /* ============ показатели и панели ============ */
@@ -2107,6 +2840,7 @@ cv.addEventListener('pointerdown', ev => {
     G.gold -= b.cost;
     const t = { type: G.armed, x, y, lvl: 1, cool: 0, aim: null };
     G.towers.push(t);
+    setUndo({ kind:'build', tower:t, cost:b.cost, label:'постройку «' + b.name + '»' });
     G.armed = null;
     G.selected = t;
     sndBuild();
@@ -2136,13 +2870,17 @@ $('#btnUp').addEventListener('click', () => {
   const t = G.selected; if (!t) return;
   const c = upCost(t);
   if (c === null || G.gold < c){ sndNope(); return; }
+  const from = t.lvl;
   G.gold -= c; t.lvl++;
+  setUndo({ kind:'upgrade', tower:t, from, cost:c, label:'улучшение «' + TOWERS[t.type].name + '»' });
   sndBuild();
   refreshHud(); refreshSel();
 });
 $('#btnSell').addEventListener('click', () => {
   const t = G.selected; if (!t) return;
-  G.gold += sellSum(t);
+  const gold = sellSum(t), index = G.towers.indexOf(t);
+  setUndo({ kind:'sell', tower:{ ...t }, index, gold, label:'продажу «' + TOWERS[t.type].name + '»' });
+  G.gold += gold;
   G.towers = G.towers.filter(x => x !== t);
   G.selected = null;
   sndSell();
@@ -2150,6 +2888,7 @@ $('#btnSell').addEventListener('click', () => {
 });
 
 $('#btnGo').addEventListener('click', () => { startWave(); });
+$('#btnUndo').addEventListener('click', undoLastAction);
 $('#btnSpd').addEventListener('click', () => {
   G.speed = G.speed === 1 ? 2 : 1;
   $('#btnSpd').textContent = '×' + G.speed;
@@ -2157,6 +2896,13 @@ $('#btnSpd').addEventListener('click', () => {
   sndTap();
 });
 $('#btnRestart').addEventListener('click', () => { startLevel(G.lv); showHint('Уровень начат заново'); });
+document.addEventListener('keydown', e => {
+  const typing = e.target && e.target.matches && e.target.matches('input,textarea,[contenteditable]');
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !typing){
+    e.preventDefault();
+    undoLastAction();
+  }
+});
 $('#btnSound').addEventListener('click', () => {
   soundOn = !soundOn;
   $('#btnSound').textContent = soundOn ? '🔊' : '🔇';
@@ -2167,6 +2913,7 @@ $('#btnSound').addEventListener('click', () => {
 /* ============ итоги уровня ============ */
 function levelWin(){
   G.over = true;
+  clearUndo();
   const stars = G.dmgTaken === 0 ? 3 : G.dmgTaken <= 4 ? 2 : 1;
   if (!save.stars[G.lv] || save.stars[G.lv] < stars){ save.stars[G.lv] = stars; writeSave(); }
   $('#winStars').textContent = '★★★'.slice(0, stars) + '☆☆☆'.slice(0, 3 - stars);
@@ -2180,6 +2927,7 @@ function levelWin(){
 }
 function levelLose(){
   G.over = true;
+  clearUndo();
   $('#loseSub').textContent = 'Отбито волн: ' + Math.max(0, G.wave - 1) + ' из ' + waveCount(G.lv);
   showOverlay('ovLose');
   sndLose();
@@ -2190,7 +2938,7 @@ function levelLose(){
    победы открывало сетку карт ПОВЕРХ карточки победы: два размытых фона,
    два диалога, и закрыть сетку значило потерять карточку победы насовсем.
    prevOv помнит, откуда пришли, чтобы «Закрыть» возвращало туда же. */
-const OVERLAYS = ['ovWin','ovLose','ovMaps','ovHelp'];
+const OVERLAYS = ['ovWin','ovLose','ovMaps','ovHelp','ovBook'];
 let prevOv = null;
 function showOverlay(id){
   for (const k of OVERLAYS) $('#' + k).classList.toggle('show', k === id);
@@ -2242,6 +2990,70 @@ $('#btnNext').addEventListener('click', () => startLevel(G.lv + 1));
 $('#btnRetry').addEventListener('click', () => startLevel(G.lv));
 $('#btnHelp').addEventListener('click', () => { showOverlay('ovHelp'); sndTap(); });
 $('#btnCloseHelp').addEventListener('click', () => showOverlay(null));
+
+/* ============ книга бестиария ============
+   Строки собираются из карточек FOES: портрет — та же функция art, что и на
+   поле, только на маленьком canvas; подпись повадки — из TRAITS. Новое существо
+   попадает в книгу само. Портреты живые — перерисовываются каждый кадр, пока
+   книга открыта: пух дышит, фонарь мигает, и на поле существо потом узнаётся. */
+let bookRows = null, prevBook = null;
+function bookList(){
+  const rows = [];
+  FOE_ORDER.forEach((type, order) => {
+    const b = FOES[type];
+    if (b.skins) b.skins.forEach((s, k) => rows.push({ type, skin: k, name: s.name, from: k * 3, order, b,
+      when: 'карты ' + (k * 3 + 1) + '–' + (k * 3 + 3) + ', дальше по кругу' }));
+    else rows.push({ type, skin: 0, name: b.name, from: b.from || 0, order, b,
+      when: b.origin || 'с ' + ((b.from || 0) + 1) + '-го уровня' });
+  });
+  return rows.sort((a, b) => a.from - b.from || a.order - b.order);
+}
+function drawPortrait(row){
+  const c = row.ctx, S = row.size, b = row.b, f = row.f;
+  const r = Math.max(11, Math.min(30, 21 * b.r / 0.3)), cell = r / b.r * 0.35;   // ауры в книге ужаты, чтобы влезть в портрет
+  c.setTransform(DPR, 0, 0, DPR, 0, 0); c.clearRect(0, 0, S, S);
+  softShadow(c, S / 2 + r * 0.1, S / 2 + r * 0.55, r * 1.15, r * 0.5, 0.35);
+  c.save(); c.translate(S / 2, S / 2);
+  let body = false;
+  for (const [k, p] of b.tr) if (TRAITS[k].under && TRAITS[k].under(f, p, c, r, cell)) body = true;
+  if (!body) b.art(c, r, f);
+  for (const [k, p] of b.tr) if (TRAITS[k].over) TRAITS[k].over(f, p, c, r, cell);
+  c.restore();
+}
+function openBook(){
+  prevBook = OVERLAYS.find(k => k !== 'ovBook' && $('#' + k).classList.contains('show')) || null;
+  const box = $('#book');
+  box.innerHTML = '';
+  const S = 66;
+  bookRows = bookList().map((row, i) => {
+    const b = row.b;
+    const el = document.createElement('div');
+    el.className = 'beast';
+    const cv = document.createElement('canvas');
+    cv.width = S * DPR; cv.height = S * DPR; cv.style.width = cv.style.height = S + 'px';
+    el.appendChild(cv);
+    const traits = b.tr.map(([k, p]) => TRAITS[k].about(p));
+    const info = document.createElement('div');
+    info.className = 'bt';
+    info.innerHTML = '<b></b><small></small><p class="ab"></p>' + (traits.length ? '<p class="tr"></p>' : '') + '<p class="st"></p>';
+    info.querySelector('b').textContent = row.name;
+    info.querySelector('small').textContent = row.when;
+    info.querySelector('.ab').textContent = b.about;
+    if (traits.length) info.querySelector('.tr').textContent = '✦ ' + traits.join('; ');
+    info.querySelector('.st').textContent = 'здоровье ' + b.hp + ' · броня ' + b.armor + ' · скорость ' + fmtN(b.sp) + (b.hit > 1 ? ' · удар ×' + b.hit : '');
+    el.appendChild(info);
+    box.appendChild(el);
+    return { ...row, cv, ctx: cv.getContext('2d'), size: S,
+             f: { type: row.type, d: 0.35 + i * 0.17, ph: 1.7 + i, skin: row.skin, r: b.r, hp: 1, hpMax: 1, sp: b.sp, armor: b.armor,
+                  air: 0, airMax: 1, cracked: false, under: false, veiled: false, slow: 0, hit: 0, siege: false, lunge: 0, pi: 0,
+                  buff: { sp: 1, armor: 0, heal: 0, hold: false }, pos: { x: 0, y: 0 } } };
+  });
+  showOverlay('ovBook');
+}
+function closeBook(){ bookRows = null; showOverlay(prevBook); }
+$('#btnBook').addEventListener('click', () => { openBook(); sndTap(); });
+$('#btnCloseBook').addEventListener('click', closeBook);
+$('#ovBook').addEventListener('click', e => { if (e.target.id === 'ovBook') closeBook(); });
 
 /* ============ окружение ============ */
 addEventListener('resize', () => { layout(); });

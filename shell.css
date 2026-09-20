@@ -94,7 +94,8 @@ a.icon-btn{text-decoration:none}
   position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + var(--hint-bottom, 96px));
   transform:translate(-50%,10px);z-index:90;
   padding:9px 16px;border-radius:14px;background:rgba(20,10,38,.92);
-  color:#fff;font-size:13px;font-weight:600;white-space:nowrap;
+  color:#fff;font-size:13px;font-weight:600;line-height:1.35;text-align:center;
+  width:max-content;max-width:min(92vw,440px);   /* подсказка о повадке — в две строки, а не за кромку */
   opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;
 }
 .hint.show{opacity:1;transform:translate(-50%,0)}

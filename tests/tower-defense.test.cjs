@@ -25,7 +25,7 @@ function setup(){
   vm.runInContext(section('const TOWERS =','/* ============ враги'),c);
   vm.runInContext(section('let undoAction =','/* ============ старт уровня'),c);
   vm.runInContext(section('function towerStats(t){','/* ============ шаг мира'),c);
-  vm.runInContext(section('function towerRole(t, st){','/* ============ ввод'),c);
+  vm.runInContext(section('function towerSummary(t, st, next){','/* ============ ввод'),c);
   vm.runInContext(section("$('#btnUp').addEventListener", "$('#btnGo').addEventListener"),c);
   const shots=section('  // снаряды\n','  // замок: тряска');
   vm.runInContext('function stepShots(dt){'+shots+'}',c);
@@ -43,13 +43,14 @@ test('all four types upgrade to 5 on every map; max cannot charge or upgrade aga
     assert.equal(h.eval('upCost(G.selected)'),null);const before=h.G.gold;h.$('#btnUp').click();
     assert.equal(t.lvl,5);assert.equal(h.G.gold,before);assert.equal(h.eval('sellSum(G.selected)'),Math.round(spent*.6));
     h.c.refreshSel();assert.equal(h.$('#btnUp').disabled,true);assert.equal(h.$('#upCost').textContent,'5 / 5');
+    assert.doesNotMatch(h.$('#selStats').textContent,/→|undefined|NaN/,'max tier shows only actual stats');
   }
 });
 test('insufficient gold, automatic affordability refresh, accurate preview, upgrade undo and sell undo',()=>{
   const h=setup(),t=h.tower('gun',3);h.G.gold=142;h.c.refreshSel();
   assert.equal(h.$('#btnUp').disabled,true);h.$('#btnUp').click();assert.equal(t.lvl,3);
   h.G.gold=143;h.c.refreshSel();assert.equal(h.$('#btnUp').disabled,false);
-  assert.match(h.$('#selNextStats').textContent,/33 → 48/);
+  assert.match(h.$('#selStats').textContent,/33 → 48/);
   h.$('#btnUp').click();assert.equal(t.lvl,4);assert.equal(h.G.gold,0);
   h.c.undoLastAction();assert.equal(t.lvl,3);assert.equal(h.G.gold,143);
   h.G.gold=1000;h.$('#btnUp').click();h.$('#btnUp').click();const before=h.G.gold;
@@ -177,4 +178,26 @@ test('castle gains modest ranged attacks only at tiers 4 and 5, targets nearest 
   }
   const h=setup();h.G.castle.lvl=5;h.foe(5);h.c.fireCastle();assert.equal(h.G.shots.length,0);
   h.foe(.8);h.G.lives=0;h.c.fireCastle();assert.equal(h.G.shots.length,0);
+});
+
+test('persistent inspection supports direct tower, castle and build selection without closing',()=>{
+  const h=setup();
+  const first=h.tower('gun'),second=h.tower('frost');
+  first.x=1;first.y=1;second.x=2;second.y=1;
+  h.G.selected=first;h.G.armed=null;
+  let pointer;
+  h.c.COLS=9;h.c.ROWS=13;
+  h.c.cv={getBoundingClientRect:()=>({left:0,top:0,width:90,height:130}),
+    addEventListener:(name,fn)=>{if(name==='pointerdown')pointer=fn;}};
+  vm.runInContext(section('function cellAt(ev){',"$('#btnUp').addEventListener"),h.c);
+  const tap=(x,y)=>pointer({clientX:x*10+5,clientY:y*10+5,preventDefault(){}});
+  tap(1,1);assert.equal(h.G.selected,first,'repeat tap preserves inspection');
+  tap(4,4);assert.equal(h.G.selected,first,'empty cell preserves inspection');
+  tap(2,1);assert.equal(h.G.selected,second,'another tower switches inspection directly');
+  h.c.selectCastle();h.c.selectCastle();
+  assert.equal(h.G.selected,h.G.castle,'repeat castle tap preserves inspection');
+  h.$('#palette').click({target:{closest:()=>({dataset:{t:'gun'}})}});
+  assert.equal(h.G.armed,'gun','construction remains available from the castle card');
+  assert.equal(h.G.selected,null);
+  tap(2,1);assert.equal(h.G.selected,second);assert.equal(h.G.armed,null,'inspection cancels placement');
 });

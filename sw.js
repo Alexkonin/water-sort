@@ -1,11 +1,11 @@
 // Офлайн-кэш. Меняй CACHE при каждом обновлении игры — старая версия сотрётся.
-const CACHE = 'games-v45';
+const CACHE = 'games-v46';
 /* Все страницы сборника кладём в кэш сразу при установке: переход из меню
    в игру должен работать офлайн с первого раза, а не после того, как игру
    один раз открыли онлайн. Добавляешь игру — дописываешь её сюда и в GAMES
    в index.html. */
 const ASSETS = [
-  './', './index.html', './shell.css', './icons.svg', './sound.js',
+  './', './index.html', './shell.css', './palette.css', './icons.svg', './sound.js',
   './water-sort.html', './tower-defense.html',
   './manifest.json', './icon-192.png', './icon-512.png', './icon-180.png'
 ];

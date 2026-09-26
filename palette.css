@@ -1,0 +1,45 @@
+/* Лесная палитра для всех трёх страниц. Только цвета, без общей вёрстки. */
+:root{
+  --forest:#102f2d;
+  --forest-top:#315649;
+  --forest-mid:#1c403b;
+  --cream:#f4efdb;
+  --paper:#e9e4cd;
+  --ink:#2e4437;
+  --sage:#bfd0a3;
+  --olive:#697c48;
+  --muted:#bdc9b2;
+  --line:rgba(202,216,179,.17);
+  --honey:#ead184;
+  --honey-dark:#d5b561;
+}
+html{background:var(--forest)}
+body{
+  color:var(--cream);
+  background:radial-gradient(70% 42% at 50% 46%,rgba(171,195,119,.10),rgba(171,195,119,0) 70%),
+    radial-gradient(125% 95% at 50% 8%,var(--forest-top) 0%,var(--forest-mid) 42%,var(--forest) 100%);
+}
+.icon-btn,.btn{color:var(--cream);background:rgba(191,208,163,.10)}
+.overlay{background:rgba(6,23,22,.76)}
+.card{color:var(--ink);background:linear-gradient(165deg,#faf6e7,var(--paper));box-shadow:0 24px 60px #061b1966}
+.card .big{color:#8b7032}
+#ovHelp .big,#ovBook .big{color:var(--olive)}
+#ovLose .big{color:#a45348}
+.card p{opacity:.85}
+.cta,.go,.lvlGrid button.cur,.mapGrid button.cur{
+  color:var(--ink);background:linear-gradient(180deg,var(--honey),var(--honey-dark));
+}
+.ghost{color:#556345}
+.lvlGrid button,.mapGrid button,.lvlPick button{color:var(--ink);background:#dce3c8}
+.lvlPick input{color:var(--ink);background:#fffbee;box-shadow:inset 0 0 0 1px #697c4840}
+.lvlPick input::placeholder{color:#6c765e}
+.mapGrid button.done{background:#c9d5b1}
+.mapGrid .st,.stars-big{color:#8b6829}
+.mapGrid button.cur .st{color:var(--ink)}
+.beast{background:#697c4810}
+.beast canvas{background:#24483f}
+.beast small,.beast p.st{opacity:.8}
+.beast p.tr{color:#7b5b24}
+.hint{background:rgba(10,35,32,.95);color:var(--cream)}
+button:focus-visible,a:focus-visible,[role="button"]:focus-visible{outline:2px solid var(--honey);outline-offset:4px}
+.card button:focus-visible,.card input:focus-visible{outline-color:var(--olive)}

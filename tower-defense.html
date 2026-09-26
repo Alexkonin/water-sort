@@ -3408,7 +3408,7 @@ requestAnimationFrame(now => { last = now; requestAnimationFrame(frame); });
 if (!Object.keys(save.stars).length) setTimeout(() => showHint('Выбери башню внизу и поставь у дороги'), 800);
 
 if ('serviceWorker' in navigator)
-  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {}));
 </script>
 </body>
 </html>

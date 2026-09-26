@@ -130,7 +130,7 @@ for (const g of GAMES){
 }
 
 if ('serviceWorker' in navigator)
-  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {}));
 </script>
 </body>
 </html>

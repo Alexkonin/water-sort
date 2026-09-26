@@ -55,3 +55,25 @@ test('installation bypasses HTTP cache and activation only removes older game ca
   assert.ok(h.installed.length>5 && h.installed.every(r=>r.cache==='reload'));
   assert.deepEqual(h.removed,['games-v1']);
 });
+
+test('new HTML cannot receive previous CSS, sound code or SVG while online',async()=>{
+  for(const path of ['shell.css','sound.js','icons.svg']){
+    const h=setup();h.entries.set(base+path,response('old asset'));
+    const res=await h.event('fetch',{url:base+path,method:'GET',mode:'cors'});
+    assert.equal(res.body,'fresh');assert.equal(h.calls[0].options.cache,'no-cache');
+    assert.equal(h.entries.get(base+path).body,'fresh');
+  }
+});
+test('versioned CSS, sound and icons resolve to the installed assets offline',async()=>{
+  for(const path of ['shell.css','sound.js','icons.svg']){
+    const h=setup({offline:true});h.entries.set(base+path,response('installed '+path));
+    const res=await h.event('fetch',{url:base+path+'?v=45',method:'GET',mode:'cors'});
+    assert.equal(res.body,'installed '+path);
+  }
+});
+test('versioned asset cache takes precedence over canonical offline fallback',async()=>{
+  const h=setup({offline:true});h.entries.set(base+'shell.css',response('canonical'));
+  h.entries.set(base+'shell.css?v=45',response('exact version'));
+  const res=await h.event('fetch',{url:base+'shell.css?v=45',method:'GET',mode:'cors'});
+  assert.equal(res.body,'exact version');
+});

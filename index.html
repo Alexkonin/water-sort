@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="shell.css">
+<link rel="stylesheet" href="shell.css?v=45">
 <style>
   #app{justify-content:center;gap:18px;max-width:520px;margin:0 auto;width:100%}
   .menu-head{text-align:center;flex:0 0 auto}
@@ -124,8 +124,8 @@ for (const g of GAMES){
     '<div class="ico"></div>' +
     '<div class="txt"><div class="nm"></div><div class="ds"></div>' +
     '<div class="pr ' + (pr ? '' : 'none') + '"></div></div>' +
-    '<div class="arr"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#chevron"/></svg></div>';
-  a.querySelector('.ico').innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#' + g.icon + '"/></svg>';
+    '<div class="arr"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=45#chevron"/></svg></div>';
+  a.querySelector('.ico').innerHTML = '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=45#' + g.icon + '"/></svg>';
   a.querySelector('.ico').classList.add(g.icon);
   a.querySelector('.nm').textContent = g.name;
   a.querySelector('.ds').textContent = g.desc;

@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync(require('node:path').join(__dirname,'../sw.js'),'utf8');
+const currentCache = source.match(/const CACHE = '([^']+)'/)[1];
 const base = 'https://example.com/water-sort/';
 const response = body => ({body,status:200,type:'basic',clone(){return response(body);}});
 function setup({offline=false,writeFails=false}={}){
@@ -17,7 +18,7 @@ function setup({offline=false,writeFails=false}={}){
     Request:class {constructor(url,options){this.url=key(url);Object.assign(this,options);}},
     self:{location:{origin:new URL(base).origin},addEventListener:(n,h)=>handlers[n]=h,
       skipWaiting:async()=>{},clients:{claim:async()=>{}}},
-    caches:{open:async()=>store,keys:async()=>['games-v1','games-v40','another-app'],delete:async k=>removed.push(k)},
+    caches:{open:async()=>store,keys:async()=>['games-v1',currentCache,'another-app'],delete:async k=>removed.push(k)},
     fetch:async(r,options)=>{calls.push({r,options});if(offline)throw Error('offline');return response('fresh');}
   });
   vm.runInContext(source,context);

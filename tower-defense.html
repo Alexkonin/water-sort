@@ -14,139 +14,153 @@
 <link rel="icon" href="icon-192.png">
 <link rel="stylesheet" href="shell.css">
 <style>
-  /* Поле получает всё свободное место; панели не резервируют пустую высоту. */
-  :root{--hint-bottom:110px}
-  #app{gap:4px;max-width:1100px;margin:0 auto;width:100%;
-    padding:calc(env(safe-area-inset-top) + 6px) 8px calc(env(safe-area-inset-bottom) + 6px)}
-  #app header{grid-template-columns:minmax(92px,1fr) auto minmax(92px,1fr);gap:4px}
+  :root{--hint-bottom:110px;--line:rgba(219,201,255,.12);--muted:#b7a9c9}
+  body{display:flex;align-items:center;background:radial-gradient(ellipse at 38% 25%,#423057 0%,#281c39 55%,#191222 100%)}
+  button,a,[role="button"]{-webkit-tap-highlight-color:transparent}
+  button{font-family:inherit}
+  button:focus-visible,a:focus-visible,[role="button"]:focus-visible{outline:2px solid #ffe296;outline-offset:3px}
+  #app{height:min(100dvh,calc((min(100vw,620px) - 20px)*13/9 + 222px + env(safe-area-inset-top) + env(safe-area-inset-bottom)));gap:8px;max-width:620px;margin:0 auto;width:100%;
+    padding:calc(env(safe-area-inset-top) + 8px) max(10px,env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 8px) max(10px,env(safe-area-inset-left))}
+  #app header{grid-template-columns:92px minmax(0,1fr) 92px;gap:6px;min-height:44px}
   #app .hdr-side{gap:4px}
-  #app .icon-btn{width:44px;height:44px;border-radius:12px}
-  #app .hdr-title{font-size:15px}
-  #app .hdr-title small{font-size:10px;margin-top:0}
-
-  /* ---------- полоса показателей ---------- */
-  .stats{
-    flex:0 0 auto;display:flex;gap:7px;
-  }
-  .stat{
-    flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:5px;
-    padding:3px 4px;border-radius:9px;background:rgba(255,255,255,.085);
-    font-size:12px;font-weight:800;white-space:nowrap;
-  }
-  button.stat{border:0;color:inherit;font-family:inherit;cursor:pointer}
-  #stLives{flex:1.65 1 0}
-  #stLives .castle-rank{font-size:10px;opacity:.7}
-  .sel.castle{grid-template-columns:minmax(0,1fr) auto}
-  .stat .ic{font-size:13px;opacity:.9}
+  #app .icon-btn{width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.055);border:1px solid var(--line)}
+  #app .hdr-title{font-size:16px;cursor:pointer}
+  #app .hdr-title small{font-size:10px;margin-top:2px;color:var(--muted);opacity:1}
+  .ui-icon{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .command-panel{display:contents}
+  .panel-heading,.build-heading,.build-tip,.wave-track{display:none}
+  .stats{flex:0 0 auto;display:flex;gap:6px;order:1}
+  .stat{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;
+    padding:6px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.045);font-size:13px;font-weight:750;white-space:nowrap}
+  button.stat{color:inherit;cursor:pointer}
+  .stat-copy{display:flex;align-items:center;gap:6px}
+  .stat-label{display:none}
+  #stLives{flex:1.6 1 0}
+  #stLives .castle-rank{font-size:10px;color:var(--muted);margin-left:auto}
+  .stat .ic{display:flex;color:#c6b6e3}
+  .stat .ui-icon{width:18px;height:18px}
+  #stGold .ic,#gold{color:#ffda79}
   .stat.hurt{animation:hurt .45s ease-out}
-  @keyframes hurt{
-    0%,100%{background:rgba(255,255,255,.085)}
-    35%    {background:rgba(238,53,80,.55)}
-  }
+  @keyframes hurt{35%{background:rgba(238,53,80,.55)}}
   .stat.gain{animation:gain .45s ease-out}
-  @keyframes gain{
-    0%,100%{background:rgba(255,255,255,.085)}
-    35%    {background:rgba(255,210,63,.4)}
-  }
-
-  /* ---------- поле ---------- */
-  main{flex:1 1 0;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center}
+  @keyframes gain{35%{background:rgba(255,210,63,.4)}}
+  main{order:2;flex:1 1 0;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center}
   canvas{display:block;max-width:100%;max-height:100%;border-radius:18px;background:rgba(10,4,24,.34);touch-action:none}
-
-  /* ---------- нижняя панель ---------- */
-  footer{flex:0 0 auto;min-width:0;display:flex;flex-direction:column;gap:4px}
-
-  .palette{display:flex;gap:7px}
-  .twr{
-    flex:1 1 0;min-width:0;min-height:44px;border:0;border-radius:12px;cursor:pointer;
-    padding:4px;background:rgba(255,255,255,.10);color:#fff;
+  #cv{box-shadow:0 0 0 1px var(--line),0 16px 50px #10091955}
+  footer{order:3;flex:0 0 auto;min-width:0;display:flex;flex-direction:column;gap:8px}
+  .palette{display:flex;gap:6px}
+  .twr{flex:1 1 0;min-width:0;min-height:52px;border:1px solid var(--line);border-radius:13px;cursor:pointer;
+    padding:6px 4px;background:rgba(255,255,255,.055);color:#fff;
     display:grid;grid-template-columns:auto auto;align-content:center;justify-content:center;align-items:center;column-gap:5px;
-    transition:transform .12s, background .2s, box-shadow .2s;
-  }
-  .twr:active{transform:scale(.94)}
-  .twr .em{grid-row:1/3;font-size:19px;line-height:1}
-  .twr .nm{font-size:10.5px;font-weight:700;opacity:.8;letter-spacing:.1px}
-  .twr .pc{font-size:11.5px;font-weight:800;color:#ffd23f}
-  .twr.on{background:linear-gradient(180deg,#ffd23f,#ffa41b);box-shadow:0 0 0 2px rgba(255,255,255,.35)}
-  .twr.on .nm{opacity:.85;color:#4a2600}
-  .twr.on .pc{color:#3a1d00}
-  /* Не хватает золота — кнопка гаснет, но остаётся нажимаемой: тап по ней
-     показывает цену подсказкой, иначе непонятно, почему ничего не происходит. */
+    transition:transform .12s,background .2s,box-shadow .2s}
+  .twr:active{transform:scale(.96)}
+  .twr .em{grid-row:1/3;display:flex;align-items:center;justify-content:center;color:var(--tower-color)}
+  .twr .em .ui-icon{width:24px;height:24px}
+  .twr .nm{font-size:10.5px;font-weight:650}
+  .twr .pc{font-size:12px;font-weight:750;color:#ffda79}
+  .twr.on{background:#58432b;border-color:#f4c76b;box-shadow:inset 0 0 0 1px #f4c76b}
   .twr.poor{opacity:.42}
-
-  .row2{display:flex;gap:7px}
-  .go{
-    flex:1 1 auto;min-width:0;min-height:44px;border:0;border-radius:12px;cursor:pointer;
-    background:linear-gradient(180deg,#ffd23f,#ffa41b);color:#3a1d00;
-    font-size:14px;font-weight:800;transition:transform .12s, filter .2s;
-  }
-  .go:active{transform:scale(.97)}
-  .go[disabled]{filter:grayscale(.75) brightness(.7);pointer-events:none}
-  .spd{
-    flex:0 0 auto;width:44px;min-height:44px;border:0;border-radius:12px;cursor:pointer;
-    background:rgba(255,255,255,.10);color:#fff;font-size:15px;font-weight:800;
-    transition:transform .12s, background .2s;
-  }
-  .spd:active{transform:scale(.94)}
-  .spd.on{background:rgba(255,210,63,.28);color:#ffd23f}
-  .spd[disabled]{opacity:.32;pointer-events:none}
-  .undo:not([disabled]){background:rgba(255,210,63,.18);color:#ffd23f}
-
-  /* ---------- панель выбранной башни ---------- */
-  /* Выбор башни заменяет палитру. ResizeObserver пересчитывает canvas,
-     когда панель открывается или закрывается, без пустой полосы под полем. */
-  .sel{
-    display:none;grid-template-columns:minmax(0,1fr) auto auto;
-    gap:4px;align-items:stretch;
-  }
+  .row2{display:flex;gap:6px}
+  .go{flex:1 1 auto;min-width:0;min-height:46px;border:1px solid #ffdd8b;border-radius:13px;cursor:pointer;
+    background:linear-gradient(180deg,#ffda79,#f2b744);color:#39270c;font-size:14px;font-weight:800;
+    box-shadow:0 4px 16px #f6b73e15;transition:transform .12s,filter .2s}
+  .go:active{transform:scale(.98)}
+  .go[disabled]{filter:grayscale(.55);opacity:.6;pointer-events:none}
+  .spd{flex:0 0 auto;width:46px;min-height:46px;border:1px solid var(--line);border-radius:13px;cursor:pointer;
+    background:rgba(255,255,255,.055);color:#ded3ec;font-size:14px;font-weight:750;display:flex;align-items:center;justify-content:center;gap:7px}
+  .spd:active{transform:scale(.96)}
+  .spd.on,.undo:not([disabled]){background:#ffcf6618;color:#ffda79}
+  .spd[disabled]{opacity:.3;pointer-events:none}
+  .control-label{display:none}
+  .sel{display:none;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:stretch}
   .sel.show{display:grid}
   .sel.show + .palette{display:none}
-  .sel .info{
-    grid-column:1/-1;min-width:0;padding:3px 4px 3px 8px;border-radius:12px;
-    background:rgba(255,255,255,.085);display:flex;align-items:center;justify-content:space-between;gap:8px;
-  }
-  .sel .info b{font-size:12px;font-weight:800}
+  .sel.castle{grid-template-columns:minmax(0,1fr) auto}
+  .sel .info{grid-column:1/-1;min-width:0;padding:5px 4px 5px 10px;border:1px solid var(--line);border-radius:13px;
+    background:rgba(255,255,255,.045);display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .sel .info b{font-size:12px;font-weight:750}
   .sel .info > div:first-child{flex:1;min-width:0}
-  .sel .info small{display:block;font-size:10px;opacity:.85;letter-spacing:0;line-height:1.4}
+  .sel .info small{display:block;font-size:10px;color:var(--muted);line-height:1.5}
   .tier-pips{display:flex;gap:3px;flex:0 0 auto}
-  .tier-pips i{width:7px;height:15px;border-radius:3px;background:rgba(255,255,255,.15)}
-  .tier-pips i.lit{background:#ffd23f;box-shadow:0 0 7px #ffd23f33}
-  .sel-next{min-width:0;align-self:center;font-size:10px;line-height:1.4;color:#d6efb1;padding-left:4px}
-  .sel-next b{display:block;color:#fff;font-size:10.5px}
-  .sel button{
-    flex:0 0 auto;border:0;border-radius:12px;cursor:pointer;padding:0 10px;min-height:44px;
-    font-size:11.5px;font-weight:800;transition:transform .12s;
+  .tier-pips i{width:6px;height:15px;border-radius:3px;background:#ffffff20}
+  .tier-pips i.lit{background:#ffda79}
+  .sel-next{min-width:0;align-self:center;font-size:10px;line-height:1.5;color:#c6dca8;padding-left:4px}
+  .sel-next b{display:block;color:#fff;font-size:11px}
+  .sel button{border:0;border-radius:12px;cursor:pointer;padding:0 10px;min-height:44px;font-size:11.5px;font-weight:750}
+  .sel .up{background:#bbd68c;color:#233016}
+  .sel .up[disabled]{filter:grayscale(.7);opacity:.5;pointer-events:none}
+  .sel .sell{background:#ffffff12;color:#ffc4c7}
+  .sel .close-sel{width:44px;padding:0;background:transparent;color:var(--muted);font-size:24px}
+  #hint{bottom:calc(100dvh - var(--controls-top,600px) + 8px);font-size:11px;padding:8px 12px}
+  @media(hover:hover){
+    #app .icon-btn:hover,.twr:hover,.spd:not([disabled]):hover,#stLives:hover{background-color:#ffffff16}
+    .go:not([disabled]):hover{filter:brightness(1.07)}
   }
-  .sel button:active{transform:scale(.94)}
-  .sel .up{background:linear-gradient(180deg,#9bc800,#6f9400);color:#16290b}
-  .sel .up[disabled]{filter:grayscale(.7) brightness(.72);pointer-events:none}
-  .sel .sell{background:rgba(255,255,255,.12);color:#ffd0d8}
-  .sel .close-sel{width:44px;padding:0;background:transparent;color:#fff;font-size:24px}
-  #hint{bottom:calc(100dvh - var(--controls-top, 600px) + 8px);font-size:11px;padding:7px 12px}
   @media(max-width:360px){
-    .tier-pips{display:none}
-    .sel-next{font-size:9.5px}
-    .twr{column-gap:3px}
-    .twr .em{font-size:16px}
-    .twr .nm{font-size:10px}
+    .tier-pips{display:none}.twr{column-gap:3px}.twr .em .ui-icon{width:19px;height:19px}.twr .nm{font-size:10px}
+    #app{gap:5px}footer{gap:5px}
   }
-  /* В широком окне управление справа: высота поля больше не зависит от панели. */
+  /* Ширина композиции следует за полем 9 × 13, а панель не растягивается по высоте. */
   @media(min-width:600px) and (min-aspect-ratio:1/1){
-    #app{display:grid;grid-template-columns:minmax(0,1fr) 212px;grid-template-rows:44px auto minmax(0,1fr);column-gap:10px}
+    #app{height:100dvh;--panel-width:280px;--board-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 100px);
+      display:grid;grid-template-columns:minmax(0,1fr) var(--panel-width);grid-template-rows:52px minmax(0,1fr);
+      gap:16px 24px;max-width:calc(var(--board-height)*9/13 + var(--panel-width) + 56px);
+      padding:calc(env(safe-area-inset-top) + 16px) max(16px,env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 16px) max(16px,env(safe-area-inset-left))}
     #app header{grid-column:1/-1;grid-row:1}
-    main{grid-column:1;grid-row:2/4}
-    .stats{grid-column:2;grid-row:2;display:grid;grid-template-columns:1fr 1fr;gap:4px}
-    #stLives{grid-column:1/-1;min-height:32px}
-    footer{grid-column:2;grid-row:3;align-self:end;max-height:100%;overflow-y:auto}
-    .palette{display:grid;grid-template-columns:1fr 1fr;gap:4px}
-    .row2{display:grid;grid-template-columns:1fr 1fr;gap:4px}
-    .go{grid-column:1/-1}
-    .spd{width:100%}
-    .sel{grid-template-columns:1fr 1fr}
-    .sel-next{grid-column:1/-1;padding:2px 4px}
-    .tier-pips{display:none}
-    #hint{bottom:calc(env(safe-area-inset-bottom) + 14px);left:calc((100% - 222px)/2);max-width:min(50vw,440px)}
+    #app .hdr-title{font-size:19px}#app .hdr-title small{font-size:12px}
+    main{grid-column:1;grid-row:2}
+    .command-panel{grid-column:2;grid-row:2;align-self:center;display:flex;flex-direction:column;gap:16px;
+      min-height:0;max-height:100%;overflow:auto;padding:18px;border:1px solid var(--line);border-radius:24px;
+      background:linear-gradient(145deg,#ffffff09,#ffffff03);box-shadow:0 18px 48px #100a231f}
+    .panel-heading{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .panel-heading b{font-size:15px;font-weight:650}
+    .phase{font-size:10px;color:#d8ddb8;background:#c5d78a12;border:1px solid #c5d78a22;padding:5px 7px;border-radius:7px;white-space:nowrap}
+    .stats{order:initial;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .stat{min-height:62px;padding:10px;justify-content:flex-start;gap:9px;font-size:18px}
+    .stat-copy{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+    .stat-label{display:block;font-size:10px;font-weight:500;color:var(--muted)}
+    #stLives{grid-column:1/-1}#stLives .castle-rank{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:4px 6px}
+    .stat .ui-icon{width:22px;height:22px}
+    .wave-track{display:block;height:3px;margin-top:-8px;background:#ffffff0c;border-radius:4px;overflow:hidden}
+    .wave-track span{display:block;height:100%;width:0;background:#c6b0eb;transition:width .3s}
+    footer{order:initial;gap:12px}
+    .build-heading{display:flex;justify-content:space-between;align-items:center;padding-top:4px;font-size:12px;font-weight:600}
+    .build-heading span{font-size:10px;color:var(--muted);font-weight:400}
+    .palette{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .twr{min-height:92px;padding:10px 8px;grid-template-columns:1fr auto;justify-content:stretch;row-gap:7px}
+    .twr .em{grid-row:1;grid-column:1/-1;justify-content:flex-start}
+    .twr .em .ui-icon{width:29px;height:29px}
+    .twr .nm{font-size:12px}.twr .pc{font-size:12px}
+    .build-tip{display:block;margin:0;color:var(--muted);font-size:11px;line-height:1.5;min-height:33px}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
+    .go{grid-column:1/-1;min-height:48px;font-size:14px}.spd{width:100%;min-height:44px;border-radius:11px}
+    .control-label{display:inline;font-size:11px;font-weight:500}
+    .sel,.sel.castle{grid-template-columns:1fr 1fr}.sel-next{grid-column:1/-1;padding:4px}
+    .sel .info{min-height:80px}.sel .info b{font-size:13px}.sel .info small{font-size:11px}
+    .sel button{min-height:46px}.sel.castle .up{grid-column:1/-1}.tier-pips{display:none}
+    #hint{bottom:calc(env(safe-area-inset-bottom) + 22px);left:var(--board-center,50%);max-width:min(48vw,440px)}
   }
+  @media(min-width:600px) and (min-aspect-ratio:1/1) and (max-height:740px){
+    #app{--panel-width:256px;--board-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 76px);gap:8px 16px;padding-top:calc(env(safe-area-inset-top) + 8px);padding-bottom:calc(env(safe-area-inset-bottom) + 8px)}
+    .command-panel{padding:12px;gap:10px;border-radius:18px}.panel-heading,.wave-track,.build-tip{display:none}
+    .stat{min-height:46px;padding:6px 8px;font-size:15px}.stat-label{font-size:9px}
+    .twr{min-height:62px;grid-template-columns:auto 1fr;padding:7px;column-gap:7px;row-gap:1px}
+    .twr .em{grid-column:1;grid-row:1/3}.twr .nm,.twr .pc{text-align:left;font-size:11px}
+    .twr .em .ui-icon{width:24px;height:24px}footer{gap:8px}.row2{padding-top:8px}.build-heading{padding-top:0}
+  }
+  @media(min-width:600px) and (min-aspect-ratio:1/1) and (max-height:500px){
+    #app{--panel-width:300px}
+    .command-panel{padding:10px;gap:8px}
+    .stats{grid-template-columns:1.25fr 1fr 1fr;gap:5px}
+    #stLives{grid-column:auto}#stLives .castle-rank,.stat-label,.build-heading{display:none}
+    .stat{min-height:36px;font-size:13px;padding:6px;justify-content:center;gap:5px}
+    .stat .ui-icon{width:16px;height:16px}
+    .twr{min-height:50px}.row2{grid-template-columns:minmax(0,1fr) 44px 44px;gap:5px}
+    .go{grid-column:auto;font-size:12px;min-height:44px}.spd{min-height:44px}.control-label{display:none}
+    .sel .info{min-height:58px}.sel .info small{font-size:10px}.sel .info b{font-size:12px}
+    .sel-next{padding:0 4px;font-size:10px}.sel{gap:4px}
+  }
+  @media(prefers-reduced-motion:reduce){.twr,.go,.wave-track span{transition:none}.stat.hurt,.stat.gain{animation:none}}
 
   /* ---------- выбор уровня ---------- */
   /* Поле перехода по номеру: при 120 картах листать сетку до нужной долго */
@@ -204,27 +218,29 @@
 <div id="app">
   <header>
     <div class="hdr-side">
-      <a class="icon-btn" id="btnMenu" href="index.html" title="В меню">☰</a>
-      <button class="icon-btn" id="btnSound" title="Звук">🔊</button>
+      <a class="icon-btn" id="btnMenu" href="index.html" title="В меню" aria-label="В меню"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg></a>
+      <button class="icon-btn" id="btnSound" title="Звук" aria-label="Звук"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4 6 8H3v8h3l5 4Z"/><path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button>
     </div>
     <div class="hdr-title" id="title" role="button" tabindex="0" title="Выбрать уровень">
       Уровень <span id="lvNum">1</span> ▾<small id="lvName">—</small>
     </div>
     <div class="hdr-side right">
-      <button class="icon-btn" id="btnRestart" title="Заново">⟳</button>
-      <button class="icon-btn" id="btnHelp" title="Как играть">?</button>
+      <button class="icon-btn" id="btnRestart" title="Заново" aria-label="Начать заново"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 7M4 4v6h6"/></svg></button>
+      <button class="icon-btn" id="btnHelp" title="Как играть" aria-label="Как играть"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1 .6-1.5 1-1.5 2M12 17h.01"/></svg></button>
     </div>
   </header>
 
+  <aside class="command-panel" aria-label="Управление обороной">
+    <div class="panel-heading"><b>Оборона</b><span class="phase" id="phase">Подготовка</span></div>
   <div class="stats">
-    <button class="stat" id="stLives" title="Улучшить замок"><span class="ic">🏰</span><span id="lives">20/20</span><span class="castle-rank" id="castleRank">1/5 ↗</span></button>
-    <div class="stat" id="stGold"><span class="ic">💰</span><span id="gold">0</span></div>
-    <div class="stat" id="stWave"><span class="ic">🌊</span><span id="wave">0/8</span></div>
+    <button class="stat" id="stLives" title="Улучшить замок"><span class="ic"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V9H2V3h4v3h4V3h4v3h4V3h4v6h-2v12ZM9 21v-6a3 3 0 0 1 6 0v6"/></svg></span><span class="stat-copy"><span class="stat-label">Прочность замка</span><span id="lives">20/20</span></span><span class="castle-rank" id="castleRank">1/5 ↗</span></button>
+    <div class="stat" id="stGold"><span class="ic"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m12 7 4 5-4 5-4-5Z"/></svg></span><span class="stat-copy"><span class="stat-label">Золото</span><span id="gold">0</span></span></div>
+    <div class="stat" id="stWave"><span class="ic"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 5 7 7-7 7m9-14 7 7-7 7"/></svg></span><span class="stat-copy"><span class="stat-label">Волны</span><span id="wave">0/8</span></span></div>
   </div>
 
-  <main><canvas id="cv"></canvas></main>
-
+  <div class="wave-track" aria-hidden="true"><span id="waveProgress"></span></div>
   <footer>
+    <div class="build-heading">Башни<span>Выберите для постройки</span></div>
     <div class="sel" id="sel">
       <div class="info"><div><b id="selName">—</b><small id="selStats">—</small></div><div class="tier-pips" id="selTier" role="img" aria-label="Разряд 1 из 5"></div><button class="close-sel" id="btnCloseSel" aria-label="Закрыть панель башни" title="Закрыть">×</button></div>
       <div class="sel-next"><b id="selNextName">—</b><span id="selNextStats">—</span></div>
@@ -232,12 +248,15 @@
       <button class="sell" id="btnSell">Продать<br><span id="sellSum">—</span></button>
     </div>
     <div class="palette" id="palette"></div>
+    <p class="build-tip" id="buildTip">Выберите башню, затем свободную клетку рядом с дорогой.</p>
     <div class="row2">
       <button class="go" id="btnGo">Начать волну</button>
-      <button class="spd undo" id="btnUndo" title="Нечего отменять" aria-label="Нечего отменять" disabled>↶</button>
-      <button class="spd" id="btnSpd">×1</button>
+      <button class="spd undo" id="btnUndo" title="Нечего отменять" aria-label="Нечего отменять" disabled><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5-5 5 5 5M4 10h10a6 6 0 0 1 0 12"/></svg><span class="control-label">Отмена</span></button>
+      <button class="spd" id="btnSpd" title="Скорость игры" aria-label="Скорость игры: 1×">×1</button>
     </div>
   </footer>
+  </aside>
+  <main><canvas id="cv" aria-label="Игровое поле: разместите башни вдоль дороги"></canvas></main>
 </div>
 
 <div class="hint" id="hint"></div>
@@ -796,6 +815,8 @@ let CELL = 30, OX = 0, OY = 0, DPR = 1, laidOut = false;
 function layout(){
   const main = document.querySelector('main');
   document.documentElement.style.setProperty('--controls-top', document.querySelector('footer').getBoundingClientRect().top + 'px');
+  const bounds = main.getBoundingClientRect();
+  document.documentElement.style.setProperty('--board-center', (bounds.left + bounds.width / 2) + 'px');
   const availW = main.clientWidth, availH = main.clientHeight;
   if (!availW || !availH) return;
   const cell = Math.max(1, Math.floor(Math.min(availW / COLS, availH / ROWS)));
@@ -959,6 +980,7 @@ function startLevel(i){
   G.speed = 1; G.over = false; G.paused = false;
   clearUndo();
   $('#btnSpd').textContent = '×1';
+  $('#btnSpd').setAttribute('aria-label', 'Скорость игры: 1×');
   $('#btnSpd').classList.remove('on');
   $('#lvNum').textContent = G.lv + 1;
   $('#lvName').textContent = m.name;
@@ -2944,6 +2966,10 @@ function refreshHud(){
   $('#stLives').setAttribute('aria-label', 'Замок, разряд ' + G.castle.lvl + ', прочность ' + castleHealth() + ' из ' + castleStats().hp + '. Открыть улучшения');
   $('#gold').textContent = G.gold;
   $('#wave').textContent = G.wave + '/' + waveCount(G.lv);
+  $('#stGold').setAttribute('aria-label', 'Золото: ' + G.gold);
+  $('#stWave').setAttribute('aria-label', 'Волна ' + G.wave + ' из ' + waveCount(G.lv));
+  $('#phase').textContent = G.waveRunning ? 'Волна идёт' : G.wave >= waveCount(G.lv) ? 'Завершено' : 'Подготовка';
+  $('#waveProgress').style.width = (G.wave / waveCount(G.lv) * 100) + '%';
   const go = $('#btnGo');
   if (G.waveRunning){
     go.disabled = true;
@@ -2959,6 +2985,14 @@ function refreshHud(){
   refreshSel();
 }
 
+const TOWER_ICONS = {"gun": "<svg class=\"ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m7 13 9-9 5 5-9 9ZM14 6l5 5M3 21h16M6 21v-5h8v5\"/><circle cx=\"9\" cy=\"16\" r=\"2\"/></svg>", "frost": "<svg class=\"ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 4l3 3 3-3M9 20l3-3 3 3M4 10l4-1-1-4m10 14-1-4 4-1M4 14l4 1-1 4M17 5l-1 4 4 1\"/></svg>", "tesla": "<svg class=\"ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m14 2-10 12h7l-1 8L21 9h-8Z\"/></svg>", "mortar": "<svg class=\"ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m8 15-4-8 7-3 4 8ZM5 6l7-3M3 21h18M7 21v-4h9v4M18 4l1-2m1 6 2-1\"/><circle cx=\"12\" cy=\"15\" r=\"3\"/></svg>"};
+function refreshSoundButton(){
+  const btn = $('#btnSound');
+  btn.innerHTML = soundOn ? '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4 6 8H3v8h3l5 4Z"/><path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg>' : '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4 6 8H3v8h3l5 4Z"/><path d="m16 9 5 6m0-6-5 6"/></svg>';
+  btn.setAttribute('aria-label', soundOn ? 'Выключить звук' : 'Включить звук');
+  btn.setAttribute('aria-pressed', String(soundOn));
+}
+
 let paletteBuilt = false;
 function refreshPalette(){
   const box = $('#palette');
@@ -2970,16 +3004,21 @@ function refreshPalette(){
       el.className = 'twr';
       el.dataset.t = key;
       el.innerHTML = '<span class="em"></span><span class="nm"></span><span class="pc"></span>';
-      el.querySelector('.em').textContent = b.em;
+      el.querySelector('.em').innerHTML = TOWER_ICONS[key];
+      el.style.setProperty('--tower-color', b.color);
+      el.title = b.name + ': ' + b.about + ' · ' + b.cost + ' золота';
+      el.setAttribute('aria-label', el.title);
       el.querySelector('.nm').textContent = b.name;
       el.querySelector('.pc').textContent = b.cost;
       box.appendChild(el);
     }
     paletteBuilt = true;
   }
+  $('#buildTip').textContent = G.selected && G.selected.type === 'castle' ? 'Укрепляйте стены: выше прочность, крепче броня.' : G.selected ? 'Улучшайте защиту или продайте башню, чтобы изменить тактику.' : G.armed ? TOWERS[G.armed].name + ': ' + TOWERS[G.armed].about + '. Выберите свободную клетку.' : 'Выберите башню, затем свободную клетку рядом с дорогой.';
   for (const el of box.children){
     const b = TOWERS[el.dataset.t];
     el.classList.toggle('on', G.armed === el.dataset.t);
+    el.setAttribute('aria-pressed', String(G.armed === el.dataset.t));
     el.classList.toggle('poor', G.gold < b.cost);
   }
 }
@@ -3157,6 +3196,7 @@ $('#btnUndo').addEventListener('click', undoLastAction);
 $('#btnSpd').addEventListener('click', () => {
   G.speed = G.speed === 1 ? 2 : 1;
   $('#btnSpd').textContent = '×' + G.speed;
+  $('#btnSpd').setAttribute('aria-label', 'Скорость игры: ' + G.speed + '×');
   $('#btnSpd').classList.toggle('on', G.speed === 2);
   sndTap();
 });
@@ -3170,7 +3210,7 @@ document.addEventListener('keydown', e => {
 });
 $('#btnSound').addEventListener('click', () => {
   soundOn = !soundOn;
-  $('#btnSound').textContent = soundOn ? '🔊' : '🔇';
+  refreshSoundButton();
   writeSave();
   if (soundOn) sndTap();
 });
@@ -3402,10 +3442,10 @@ document.addEventListener('visibilitychange', () => {
 })();
 
 /* ============ пуск ============ */
-$('#btnSound').textContent = soundOn ? '🔊' : '🔇';
+refreshSoundButton();
 startLevel(firstUnfinished());
 requestAnimationFrame(now => { last = now; requestAnimationFrame(frame); });
-if (!Object.keys(save.stars).length) setTimeout(() => showHint('Выбери башню внизу и поставь у дороги'), 800);
+if (!Object.keys(save.stars).length) setTimeout(() => showHint('Выберите башню и поставьте её у дороги'), 800);
 
 if ('serviceWorker' in navigator)
   addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {}));

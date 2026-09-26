@@ -36,9 +36,12 @@
   .game .ico{
     flex:0 0 auto;width:60px;height:60px;border-radius:19px;
     display:flex;align-items:center;justify-content:center;font-size:31px;
-    background:linear-gradient(165deg,rgba(255,255,255,.2),rgba(255,255,255,.06));
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.18);
+    background:rgba(255,255,255,.045);border:1px solid rgba(219,201,255,.12);
   }
+  .game .ico .ui-icon{width:34px;height:34px;stroke-width:1.6}
+  .game .ico.flask{color:#8cdad2}
+  .game .ico.castle{color:#c6b0eb}
+  .game .arr{display:flex;align-items:center}
   .game .txt{flex:1 1 auto;min-width:0}
   .game .nm{font-size:17px;font-weight:800;letter-spacing:.2px}
   .game .ds{font-size:12.5px;opacity:.6;margin-top:3px;line-height:1.35}
@@ -75,7 +78,7 @@
 const GAMES = [
   {
     file: 'water-sort.html',
-    icon: '🧪',
+    icon: 'flask',
     name: 'Разлей по цветам',
     desc: 'Головоломка: разлей жидкость так, чтобы в каждой пробирке остался один цвет',
     progress(){
@@ -85,7 +88,7 @@ const GAMES = [
   },
   {
     file: 'tower-defense.html',
-    icon: '🏰',
+    icon: 'castle',
     name: 'Защита башни',
     desc: 'Ставь башни вдоль дороги и не пускай врагов к базе',
     progress(){
@@ -121,8 +124,9 @@ for (const g of GAMES){
     '<div class="ico"></div>' +
     '<div class="txt"><div class="nm"></div><div class="ds"></div>' +
     '<div class="pr ' + (pr ? '' : 'none') + '"></div></div>' +
-    '<div class="arr">›</div>';
-  a.querySelector('.ico').textContent = g.icon;
+    '<div class="arr"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#chevron"/></svg></div>';
+  a.querySelector('.ico').innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#' + g.icon + '"/></svg>';
+  a.querySelector('.ico').classList.add(g.icon);
   a.querySelector('.nm').textContent = g.name;
   a.querySelector('.ds').textContent = g.desc;
   a.querySelector('.pr').textContent = g.soon ? 'скоро' : (pr || 'ещё не играл');

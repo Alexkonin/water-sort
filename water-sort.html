@@ -12,6 +12,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
+<script src="sound.js"></script>
 <style>
   :root{
     --w: 52px;
@@ -129,7 +130,7 @@
   .tube:focus-visible,.btn:focus-visible,.icon-btn:focus-visible,.lvl:focus-visible{
     outline:2px solid #e8d6ff;outline-offset:4px;
   }
-  .ui-icon{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;
+  .ui-icon{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;
     stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto;pointer-events:none}
   .sound-off{display:none}
   #btnSound.muted .sound-on{display:none}
@@ -274,7 +275,8 @@
     transform-origin:50% 0;
   }
   .tube.locked .lock, .lock.pop{display:flex}
-  .lock .ico{font-size:calc(var(--u) * .52);line-height:1;opacity:.9}
+  .lock .ico{display:flex;align-items:center;justify-content:center;font-size:calc(var(--u) * .52);line-height:1;opacity:.9}
+  .lock .ico .ui-icon{width:calc(var(--u)*.6);height:calc(var(--u)*.6)}
   .lock .num{
     font-size:calc(var(--u) * .40);font-weight:800;line-height:1;color:#fff;
     background:rgba(0,0,0,.42);border-radius:99px;
@@ -350,6 +352,9 @@
   }
   .overlay.show .card{transform:none}
   .card .big{font-size:44px;line-height:1;margin-bottom:12px}
+  .card .big{color:#ffda79;display:flex;justify-content:center}
+  .card .big .ui-icon{width:44px;height:44px;stroke-width:1.5}
+  #ovHelp .big{color:#8cdad2}
   .card h2{margin:0 0 6px;font-size:22px}
   .card p{margin:0 0 20px;opacity:.65;font-size:14px}
   .cta{
@@ -424,12 +429,12 @@
 <div id="app">
   <header>
     <div class="hdr-side">
-      <a class="icon-btn" id="btnMenu" href="index.html" title="В меню" aria-label="В меню"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></a>
-      <button class="icon-btn" id="btnSound" title="Выключить звук" aria-label="Выключить звук"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4Z"/><g class="sound-on"><path d="M15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14"/></g><path class="sound-off" d="m16 9 5 6m0-6-5 6"/></svg></button>
+      <a class="icon-btn" id="btnMenu" href="index.html" title="В меню" aria-label="В меню"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#menu"/></svg></a>
+      <button class="icon-btn" id="btnSound" title="Выключить звук" aria-label="Выключить звук"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use class="sound-on" href="icons.svg#sound"/><use class="sound-off" href="icons.svg#muted"/></svg></button>
     </div>
     <div class="lvl" id="lvlBtn" role="button" tabindex="0" title="Выбрать уровень">Уровень <span id="lvlNum">1</span> <span class="caret">▾</span><small id="movesTxt">ходов: 0</small></div>
     <div class="hdr-side right">
-      <button class="icon-btn" id="btnHelp" title="Как играть">?</button>
+      <button class="icon-btn" id="btnHelp" title="Как играть" aria-label="Как играть"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#help"/></svg></button>
     </div>
   </header>
 
@@ -438,10 +443,10 @@
   <main id="board"></main>
 
   <footer>
-    <button class="btn" id="btnUndo"><b><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5-5 5 5 5M4 10h10a6 6 0 0 1 0 12" transform="translate(0 -2)"/></svg></b>Отменить</button>
-    <button class="btn" id="btnAdd"><b><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></b>Пробирка</button>
-    <button class="btn" id="btnRestart"><b><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 8M4 4v6h6"/></svg></b>Заново</button>
-    <button class="btn" id="btnHint"><b><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M8 14a6 6 0 1 1 8 0c-1 1-1 2-1 2H9s0-1-1-2Z"/></svg></b>Подсказка</button>
+    <button class="btn" id="btnUndo"><b><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#undo"/></svg></b>Отменить</button>
+    <button class="btn" id="btnAdd"><b><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#add"/></svg></b>Пробирка</button>
+    <button class="btn" id="btnRestart"><b><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#restart"/></svg></b>Заново</button>
+    <button class="btn" id="btnHint"><b><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#hint"/></svg></b>Подсказка</button>
   </footer>
 </div>
 
@@ -450,7 +455,7 @@
 
 <div class="overlay" id="ovWin">
   <div class="card">
-    <div class="big">🎉</div>
+    <div class="big"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#trophy"/></svg></div>
     <h2 id="winTitle">Уровень пройден!</h2>
     <p id="winSub">Отличная работа</p>
     <button class="cta" id="btnNext">Следующий уровень</button>
@@ -459,7 +464,7 @@
 
 <div class="overlay" id="ovLevel">
   <div class="card">
-    <div class="big">🎚️</div>
+    <div class="big"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#levels"/></svg></div>
     <h2>Выбор уровня</h2>
     <p>Чем выше номер, тем сложнее: больше цветов, скрытые слои и маленькие скляночки.</p>
     <div class="lvlGrid">
@@ -478,7 +483,7 @@
 
 <div class="overlay" id="ovHelp">
   <div class="card">
-    <div class="big">🧪</div>
+    <div class="big"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#flask"/></svg></div>
     <h2>Как играть</h2>
     <p>Нажми на пробирку, чтобы взять верхний слой жидкости, потом на другую — чтобы перелить.<br><br>
        Переливать можно только на такой же цвет или в пустую пробирку.<br><br>
@@ -843,71 +848,15 @@ function generateLevel(level){
 }
 
 /* ============ звук ============ */
-let actx = null, soundOn = true;
-function audio(){
-  if (!actx){
-    const C = window.AudioContext || window.webkitAudioContext;
-    if (!C) return null;
-    actx = new C();
-  }
-  if (actx.state === 'suspended') actx.resume();
-  return actx;
-}
-function tone(freq, dur, vol, when, type){
-  if (!soundOn) return;
-  const ac = audio(); if (!ac) return;
-  const t0 = ac.currentTime + (when || 0);
-  const o = ac.createOscillator(), g = ac.createGain();
-  o.type = type || 'sine';
-  o.frequency.setValueAtTime(freq, t0);
-  g.gain.setValueAtTime(0, t0);
-  g.gain.linearRampToValueAtTime(vol, t0 + 0.012);
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  o.connect(g); g.connect(ac.destination);
-  o.start(t0); o.stop(t0 + dur + 0.05);
-}
-// Буфер шума генерится ОДИН раз и зацикливается: раньше на каждый перелив в главном
-// потоке заполнялись десятки тысяч семплов — ровно в тот кадр, когда пошла струя.
-let NOISE_BUF = null;
-function noiseBuffer(ac){
-  if (NOISE_BUF && NOISE_BUF.sampleRate === ac.sampleRate) return NOISE_BUF;
-  const len = Math.ceil(ac.sampleRate * 2);
-  const buf = ac.createBuffer(1, len, ac.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-  NOISE_BUF = buf;
-  return buf;
-}
-
-// шум воды: полосовой фильтр по белому шуму + подъём тона, как у наполняющейся ёмкости
-function sndFlow(dur){
-  if (!soundOn) return;
-  const ac = audio(); if (!ac) return;
-
-  const src = ac.createBufferSource();
-  src.buffer = noiseBuffer(ac);
-  src.loop = true;                       // длительность задаётся stop(), не длиной буфера
-  const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.9;
-  const g  = ac.createGain();
-  const t0 = ac.currentTime;
-
-  bp.frequency.setValueAtTime(650, t0);
-  bp.frequency.linearRampToValueAtTime(1600, t0 + dur);
-  g.gain.setValueAtTime(0, t0);
-  g.gain.linearRampToValueAtTime(0.13, t0 + 0.06);
-  g.gain.setValueAtTime(0.13, t0 + Math.max(0.08, dur - 0.09));
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur + 0.03);
-
-  src.connect(bp); bp.connect(g); g.connect(ac.destination);
-  src.start(t0); src.stop(t0 + dur + 0.05);
-}
-const sndPlop     = () => tone(240, 0.10, 0.06, 0, 'sine');
-const sndComplete = () => { tone(660, .16, .09, 0); tone(880, .22, .09, .09); };
-const sndWin      = () => [523, 659, 784, 1046].forEach((f, i) => tone(f, .3, .1, i * .1));
-const sndTap      = () => tone(420, .07, .05, 0, 'sine');
-// открытие крышки — восходящее трезвучие, чтобы не путалось со звуком сбора
-const sndUnlock   = () => [392, 523, 784].forEach((f, i) => tone(f, i === 2 ? .3 : .14, .085, i * .085));
-const sndNope     = () => tone(150, .12, .06, 0, 'square');
+let soundOn = true;
+const sfx = GameAudio.create({enabled: () => soundOn});
+const sndFlow = duration => sfx.play('flow', {duration});
+const sndPlop = () => sfx.play('plop');
+const sndComplete = () => sfx.play('complete');
+const sndWin = () => sfx.play('win');
+const sndTap = () => sfx.play('tap');
+const sndUnlock = () => sfx.play('unlock');
+const sndNope = () => sfx.play('nope');
 
 /* ============ состояние ============ */
 const state = {
@@ -1039,7 +988,7 @@ function makeTube(i){
   el.tabIndex = 0;
   el.innerHTML = '<div class="mouth"></div><div class="liquid"></div>' +
                  '<div class="shine"></div><div class="shine sm"></div>' +
-                 '<div class="lock"><div class="ico">🔒</div><div class="num"></div></div>';
+                 '<div class="lock"><div class="ico"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#lock"/></svg></div><div class="num"></div></div>';
   tubeEls[i] = el;
   paintTube(i);
   return el;
@@ -1324,6 +1273,7 @@ function showHint(text){
 
 /* ============ уровень ============ */
 function startLevel(l){
+  sfx.stop();
   settleFlights();
   state.level = l;
   const gen = generateLevel(l);
@@ -2107,6 +2057,7 @@ function paintSoundButton(){
 
 $('#btnSound').addEventListener('click', () => {
   soundOn = !soundOn;
+  sfx.sync();
   paintSoundButton();
   if (soundOn) sndTap();
   save();

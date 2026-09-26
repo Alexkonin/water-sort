@@ -13,6 +13,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
 <link rel="stylesheet" href="shell.css">
+<script src="sound.js"></script>
 <style>
   :root{--hint-bottom:110px;--line:rgba(219,201,255,.12);--muted:#b7a9c9}
   body{display:flex;align-items:center;background:radial-gradient(ellipse at 38% 25%,#423057 0%,#281c39 55%,#191222 100%)}
@@ -90,7 +91,7 @@
   .sel .up{background:#bbd68c;color:#233016}
   .sel .up[disabled]{filter:grayscale(.7);opacity:.5;pointer-events:none}
   .sel .sell{background:#ffffff12;color:#ffc4c7}
-  .sel .close-sel{width:44px;padding:0;background:transparent;color:var(--muted);font-size:24px}
+  .sel .close-sel{display:flex;align-items:center;justify-content:center;width:44px;padding:0;background:transparent;color:var(--muted);font-size:24px}
   #hint{bottom:calc(100dvh - var(--controls-top,600px) + 8px);font-size:11px;padding:8px 12px}
   @media(hover:hover){
     #app .icon-btn:hover,.twr:hover,.spd:not([disabled]):hover,#stLives:hover{background-color:#ffffff16}
@@ -218,31 +219,31 @@
 <div id="app">
   <header>
     <div class="hdr-side">
-      <a class="icon-btn" id="btnMenu" href="index.html" title="В меню" aria-label="В меню"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg></a>
-      <button class="icon-btn" id="btnSound" title="Звук" aria-label="Звук"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4 6 8H3v8h3l5 4Z"/><path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button>
+      <a class="icon-btn" id="btnMenu" href="index.html" title="В меню" aria-label="В меню"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#menu"/></svg></a>
+      <button class="icon-btn" id="btnSound" title="Звук" aria-label="Звук"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#sound"/></svg></button>
     </div>
     <div class="hdr-title" id="title" role="button" tabindex="0" title="Выбрать уровень">
       Уровень <span id="lvNum">1</span> ▾<small id="lvName">—</small>
     </div>
     <div class="hdr-side right">
-      <button class="icon-btn" id="btnRestart" title="Заново" aria-label="Начать заново"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 7M4 4v6h6"/></svg></button>
-      <button class="icon-btn" id="btnHelp" title="Как играть" aria-label="Как играть"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1 .6-1.5 1-1.5 2M12 17h.01"/></svg></button>
+      <button class="icon-btn" id="btnRestart" title="Заново" aria-label="Начать заново"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#restart"/></svg></button>
+      <button class="icon-btn" id="btnHelp" title="Как играть" aria-label="Как играть"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#help"/></svg></button>
     </div>
   </header>
 
   <aside class="command-panel" aria-label="Управление обороной">
     <div class="panel-heading"><b>Оборона</b><span class="phase" id="phase">Подготовка</span></div>
   <div class="stats">
-    <button class="stat" id="stLives" title="Улучшить замок"><span class="ic"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V9H2V3h4v3h4V3h4v3h4V3h4v6h-2v12ZM9 21v-6a3 3 0 0 1 6 0v6"/></svg></span><span class="stat-copy"><span class="stat-label">Прочность замка</span><span id="lives">20/20</span></span><span class="castle-rank" id="castleRank">1/5 ↗</span></button>
-    <div class="stat" id="stGold"><span class="ic"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m12 7 4 5-4 5-4-5Z"/></svg></span><span class="stat-copy"><span class="stat-label">Золото</span><span id="gold">0</span></span></div>
-    <div class="stat" id="stWave"><span class="ic"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 5 7 7-7 7m9-14 7 7-7 7"/></svg></span><span class="stat-copy"><span class="stat-label">Волны</span><span id="wave">0/8</span></span></div>
+    <button class="stat" id="stLives" title="Улучшить замок"><span class="ic"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#castle"/></svg></span><span class="stat-copy"><span class="stat-label">Прочность замка</span><span id="lives">20/20</span></span><span class="castle-rank" id="castleRank">1/5 ↗</span></button>
+    <div class="stat" id="stGold"><span class="ic"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#gold"/></svg></span><span class="stat-copy"><span class="stat-label">Золото</span><span id="gold">0</span></span></div>
+    <div class="stat" id="stWave"><span class="ic"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#wave"/></svg></span><span class="stat-copy"><span class="stat-label">Волны</span><span id="wave">0/8</span></span></div>
   </div>
 
   <div class="wave-track" aria-hidden="true"><span id="waveProgress"></span></div>
   <footer>
     <div class="build-heading">Башни<span>Выберите для постройки</span></div>
     <div class="sel" id="sel">
-      <div class="info"><div><b id="selName">—</b><small id="selStats">—</small></div><div class="tier-pips" id="selTier" role="img" aria-label="Разряд 1 из 5"></div><button class="close-sel" id="btnCloseSel" aria-label="Закрыть панель башни" title="Закрыть">×</button></div>
+      <div class="info"><div><b id="selName">—</b><small id="selStats">—</small></div><div class="tier-pips" id="selTier" role="img" aria-label="Разряд 1 из 5"></div><button class="close-sel" id="btnCloseSel" aria-label="Закрыть панель башни" title="Закрыть"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#close"/></svg></button></div>
       <div class="sel-next"><b id="selNextName">—</b><span id="selNextStats">—</span></div>
       <button class="up" id="btnUp">Улучшить<br><span id="upCost">—</span></button>
       <button class="sell" id="btnSell">Продать<br><span id="sellSum">—</span></button>
@@ -251,7 +252,7 @@
     <p class="build-tip" id="buildTip">Выберите башню, затем свободную клетку рядом с дорогой.</p>
     <div class="row2">
       <button class="go" id="btnGo">Начать волну</button>
-      <button class="spd undo" id="btnUndo" title="Нечего отменять" aria-label="Нечего отменять" disabled><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5-5 5 5 5M4 10h10a6 6 0 0 1 0 12"/></svg><span class="control-label">Отмена</span></button>
+      <button class="spd undo" id="btnUndo" title="Нечего отменять" aria-label="Нечего отменять" disabled><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#undo"/></svg><span class="control-label">Отмена</span></button>
       <button class="spd" id="btnSpd" title="Скорость игры" aria-label="Скорость игры: 1×">×1</button>
     </div>
   </footer>
@@ -263,7 +264,7 @@
 
 <div class="overlay" id="ovWin">
   <div class="card">
-    <div class="big">🏆</div>
+    <div class="big"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#trophy"/></svg></div>
     <h2 id="winTitle">Уровень пройден!</h2>
     <div class="stars-big" id="winStars">★★★</div>
     <p id="winSub">База выстояла</p>
@@ -274,7 +275,7 @@
 
 <div class="overlay" id="ovLose">
   <div class="card">
-    <div class="big">💥</div>
+    <div class="big"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#shield"/></svg></div>
     <h2>База прорвана</h2>
     <p id="loseSub">Враги дошли до базы</p>
     <button class="cta" id="btnRetry">Попробовать снова</button>
@@ -284,7 +285,7 @@
 
 <div class="overlay" id="ovMaps">
   <div class="card">
-    <div class="big">🗺️</div>
+    <div class="big"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#levels"/></svg></div>
     <h2>Выбор уровня</h2>
     <p>Все уровни открыты. Чем дальше номер, тем длиннее дорога и злее волны</p>
     <div class="lvlPick">
@@ -298,19 +299,19 @@
 
 <div class="overlay" id="ovHelp">
   <div class="card">
-    <div class="big">🏰</div>
+    <div class="big"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#castle"/></svg></div>
     <h2>Как играть</h2>
     <ol class="help-list">
-      <li>Выбери башню внизу и коснись свободной клетки — она встанет туда.</li>
+      <li>Выбери башню и коснись свободной клетки — она встанет туда.</li>
       <li>Нажми «Начать волну». Враги пойдут от портала по дороге к твоей базе.</li>
       <li>За каждого убитого дают золото. На него строй и улучшай башни.</li>
       <li>Башня при каждом выстреле выбирает ближайшего к себе видимого врага в радиусе атаки.</li>
       <li>Коснись поставленной башни — её можно улучшить или продать (вернётся 60%).</li>
-      <li>Кнопка ↶ отменяет последнюю постройку, улучшение или продажу. Если башня уже успела выстрелить после постройки или улучшения, откат отключается. Улучшение замка нельзя отменить после его выстрела или полученного удара.</li>
+      <li>Кнопка «Отмена» отменяет последнюю постройку, улучшение или продажу. Если башня уже успела выстрелить после постройки или улучшения, откат отключается. Улучшение замка нельзя отменить после его выстрела или полученного удара.</li>
       <li>Все башни можно развить с 1-го до 5-го разряда на любой карте. Перед улучшением видны цена и прибавка к силе.</li>
       <li>Пушка ускоряет стрельбу, мороз сильнее замедляет, молния на старших разрядах цепляет до пяти врагов, мортира увеличивает площадь взрыва. Корпус меняется с каждым разрядом.</li>
       <li>Дошедший до ворот враг не исчезает: он бьёт замок, пока жив. Башни и гарнизон замка продолжают по нему стрелять. Зато у ворот он открытая мишень — броня не спасает, урон двойной. Держи оборону у ворот.</li>
-      <li>Нажми на замок или 🏰 вверху: у него пять разрядов. Сначала растут прочность и броня, на 4-м появляются лучники, на 5-м — баллиста. Новые стены добавляют прочность, но не чинят весь прежний урон. Улучшения действуют на текущей карте. Кончилась прочность — база прорвана.</li>
+      <li>Нажми на замок или показатель его прочности: у него пять разрядов. Сначала растут прочность и броня, на 4-м появляются лучники, на 5-м — баллиста. Новые стены добавляют прочность, но не чинят весь прежний урон. Улучшения действуют на текущей карте. Кончилась прочность — база прорвана.</li>
       <li><b>Камнеспины</b> гасят слабые удары: по ним бьёт пушка и мортира, а молния почти бесполезна.</li>
       <li>На поздних картах к замку ведёт несколько дорог, а у врагов появляются повадки: одни не мёрзнут, другие уходят под землю, лечат соседей или рассыпаются спорами. При первой встрече игра подскажет, чем брать; все вместе — в бестиарии.</li>
       <li>Три звезды дают, если замок не получил ни одного удара.</li>
@@ -322,7 +323,7 @@
 
 <div class="overlay" id="ovBook">
   <div class="card">
-    <div class="big">📖</div>
+    <div class="big"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#book"/></svg></div>
     <h2>Бестиарий</h2>
     <p>Кто ходит по дорогам и с какого уровня. У поздних свои повадки — они в подписи.</p>
     <div class="book" id="book"></div>
@@ -836,54 +837,23 @@ function layout(){
 const px = v => OX + v * CELL;
 const py = v => OY + v * CELL;
 
-/* ============ звук ============
-   Тот же подход, что в «Разлей»: короткие тоны на WebAudio, без файлов.
-   Контекст создаётся на первом касании — иначе iOS его не пускает. */
-let actx = null;
-function audio(){
-  if (!soundOn) return null;
-  if (!actx){
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return null;
-    actx = new AC();
-  }
-  if (actx.state === 'suspended') actx.resume();
-  return actx;
-}
-function tone(freq, dur, vol, when, type){
-  const ac = audio(); if (!ac) return;
-  const t0 = ac.currentTime + (when || 0);
-  const o = ac.createOscillator(), g = ac.createGain();
-  o.type = type || 'triangle';
-  o.frequency.setValueAtTime(freq, t0);
-  g.gain.setValueAtTime(0, t0);
-  g.gain.linearRampToValueAtTime(vol, t0 + 0.012);
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  o.connect(g); g.connect(ac.destination);
-  o.start(t0); o.stop(t0 + dur + 0.02);
-}
-// Выстрелов в секунду бывает десятки — свой звук у каждого превратится в треск.
-// Поэтому у стрельбы есть «горло»: не чаще раза в 70 мс и тише остального.
-let lastShot = 0;
-function sndShot(kind){
-  const now = performance.now();
-  if (now - lastShot < 70) return;
-  lastShot = now;
-  if (kind === 'splash') tone(90, 0.16, 0.05, 0, 'square');
-  else if (kind === 'chain') tone(1200, 0.06, 0.03, 0, 'sawtooth');
-  else if (kind === 'frost') tone(1500, 0.05, 0.025, 0, 'sine');
-  else tone(320, 0.05, 0.035, 0, 'square');
-}
-const sndKill    = () => tone(420, 0.07, 0.04, 0, 'triangle');
-const sndBoom    = () => { tone(70, 0.3, 0.08, 0, 'square'); tone(110, 0.2, 0.05, 0.02, 'sawtooth'); };
-const sndBuild   = () => { tone(520, 0.08, 0.06, 0); tone(780, 0.1, 0.05, 0.07); };
-const sndSell    = () => { tone(500, 0.08, 0.05, 0); tone(300, 0.12, 0.05, 0.07); };
-const sndLeak    = () => tone(150, 0.22, 0.09, 0, 'square');
-const sndTap     = () => tone(420, 0.06, 0.04, 0, 'sine');
-const sndNope    = () => tone(150, 0.11, 0.05, 0, 'square');
-const sndWave    = () => [330, 440].forEach((f, i) => tone(f, 0.16, 0.06, i * 0.1, 'triangle'));
-const sndWin     = () => [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.3, 0.09, i * 0.1));
-const sndLose    = () => [300, 240, 180].forEach((f, i) => tone(f, 0.35, 0.09, i * 0.14, 'square'));
+/* ============ звук ============ */
+const sfx = GameAudio.create({enabled: () => soundOn});
+const sndShot = (kind, tier = 1) => sfx.play('shot', {kind, tier});
+const sndKill = f => sfx.play('kill', {voice:FOES[f.type].voice});
+const sndFoe = f => {
+  const voice = FOES[f.type].voice;
+  if (voice) sfx.play('creature', {voice, event:'appear'});
+};
+const sndBoom = () => sfx.play('boom');
+const sndBuild = () => sfx.play('build');
+const sndSell = () => sfx.play('sell');
+const sndLeak = () => sfx.play('leak');
+const sndTap = () => sfx.play('tap');
+const sndNope = () => sfx.play('nope');
+const sndWave = () => sfx.play('wave');
+const sndWin = () => sfx.play('win');
+const sndLose = () => sfx.play('lose');
 
 /* ============ подсказка ============ */
 let hintT = 0;
@@ -961,6 +931,7 @@ function undoLastAction(){
 
 /* ============ старт уровня ============ */
 function startLevel(i){
+  sfx.stop();
   G.lv = clamp(i, 0, MAPS.length - 1);
   const m = MAPS[G.lv];
   G.paths = buildPaths(m);
@@ -1041,6 +1012,7 @@ function spawn(type, scale, opts){
   f.pos = foePos(f);
   for (const [k, p] of b.tr) if (TRAITS[k].init) TRAITS[k].init(f, p);
   G.foes.push(f);
+  sndFoe(f);
   // первая встреча: одна подсказка на существо за всю игру — чем его брать
   if (b.intro && !save.seen[type]){ save.seen[type] = 1; writeSave(); showHint(b.name + ': ' + b.intro, 3400); }
   return f;
@@ -1103,7 +1075,7 @@ function dmgFoe(f, dmg, kind){
     const p = foePos(f);
     G.fx.push({ kind:'puff', x: p.x, y: p.y, t: 0, life: 0.45, color: f.color, parts: parts(7, 0.9, (f.d * 1000) | 0) });
     for (const [k, q] of b.tr) if (TRAITS[k].death) TRAITS[k].death(f, q, p);   // дождевик рассыпается спорами
-    sndKill();
+    sndKill(f);
     flash('#stGold', 'gain');
   }
   return real;
@@ -1161,7 +1133,7 @@ function fireCastle(){
   t.cool = 1 / st.rate; t.flash = 0.14;
   G.shots.push({ kind:'arrow', x:tx, y:sy, target:best.f, sp:12, dmg:st.dmg,
     vx:Math.cos(t.aim), vy:Math.sin(t.aim), heavy:t.lvl === 5 });
-  sndShot('shot');
+  sndShot(t.lvl === 5 ? 'ballista' : 'arrow', t.lvl);
 }
 
 function fireTower(t){
@@ -1174,7 +1146,7 @@ function fireTower(t){
   t.aim = Math.atan2(best.p.y - ty, best.p.x - tx);
   t.cool = 1 / st.rate;
   t.flash = 0.07; t.recoil = 1;
-  sndShot(b.kind);
+  sndShot(b.kind, t.lvl);
 
   if (b.kind === 'chain'){
     // молния: цепочка по ближайшим от предыдущего звена
@@ -2250,6 +2222,7 @@ const TRAITS = {
 const FOES = {
   // Уголёк: пушистый тёмный дух с круглыми глазами, несёт тлеющий уголь
   grunt: {
+    voice:'ember',
     name:'Уголёк', about:'пушистый дух из-под печки, несёт свой уголёк и никому не отдаст',
     hp:36, sp:1.35, armor:0, bounty:8, hit:1, atk:1.6, r:0.30, color:'#6b6070',
     gap:0.62, wave:(L, W) => 4 + Math.round(W * 0.6 + L * 0.2),
@@ -2271,6 +2244,7 @@ const FOES = {
   },
   // Вихрёк: лист на крошечном смерче
   runner: {
+    voice:'leaf',
     name:'Вихрёк', about:'сухой лист, подхваченный крошечным смерчем; быстрый, но хлипкий',
     hp:26, sp:2.60, armor:0, bounty:7, hit:1, atk:1.2, r:0.26, color:'#a8d84a',
     gap:0.42, wave:(L, W) => (W >= 2 || L >= 1) ? 2 + Math.round(W * 0.35 + L * 0.15) : 0,
@@ -2299,6 +2273,7 @@ const FOES = {
   },
   // Камнеспин: замшелый валун на коротких лапах
   tank: {
+    voice:'stone',
     name:'Камнеспин', about:'валун, поросший мхом, на коротких лапах; слабые удары о него гаснут',
     hp:95, sp:0.95, armor:5, bounty:15, hit:2, atk:2.2, r:0.34, color:'#8b8472',
     gap:1.15, wave:(L, W, late) => (W >= 4 || L >= 2) ? 1 + Math.round(late * (1 + L * 0.22)) : 0,
@@ -2347,6 +2322,7 @@ const FOES = {
   // Туманник: полупрозрачный дух в маске, стелется над землёй. Не мёрзнет —
   // мороз против него пуст, нужны пушка и молния
   ghost: {
+    voice:'mist',
     name:'Туманник', about:'клок тумана в белой маске; стелется над дорогой и не чувствует холода',
     hp:30, sp:2.00, armor:0, bounty:9, hit:1, atk:1.2, r:0.28, color:'#cfd8e8',
     from:8, gap:0.5, wave:(L, W, late) => W >= 3 ? 3 + Math.round(late * (3 + L * 0.3)) : 0,
@@ -2380,6 +2356,7 @@ const FOES = {
      В броне 9: пушка первого уровня (13) оставляет ему 4 за попадание, молния (8) —
      единицу; его берут мортира и прокачка. */
   golem: {
+    voice:'wood',
     name:'Древень', about:'старый пень, который решил дойти до замка; в дупле тлеет огонёк',
     hp:260, sp:0.70, armor:9, bounty:30, hit:3, atk:2.6, r:0.40, color:'#a8825a',
     from:14, gap:2.5, wave:(L, W, late) => W >= 5 ? 1 + Math.round(late * (1 + L * 0.15)) : 0,
@@ -2434,6 +2411,7 @@ const FOES = {
 
   // Дождевик: гриб на ножках; при гибели рассыпается спорами
   puffball: {
+    voice:'spores',
     name:'Дождевик', about:'гриб-дождевик на коротких ножках; тронешь — лопнет, и разбегутся споры',
     acc:['дождевика', 'дождевика', 'дождевиков'],
     hp:60, sp:1.0, armor:0, bounty:16, hit:1, atk:1.8, r:0.34, color:'#e6dcc2',
@@ -2473,6 +2451,7 @@ const FOES = {
   },
   // Фонарник: ночной мотылёк с бумажным фонарём; на свет тянутся остальные
   lantern: {
+    voice:'lantern',
     name:'Фонарник', about:'ночной мотылёк-дух с бумажным фонарём; на его свет тянутся все, кто идёт рядом',
     hp:34, sp:1.5, armor:0, bounty:20, hit:1, atk:1.4, r:0.28, color:'#ffcf7a',
     from:31, threat:2.2, mix:true, gap:1.6, wave:(L, W, late) => W >= 3 ? (late < 0.6 ? 1 : 2) : 0,
@@ -2501,6 +2480,7 @@ const FOES = {
   },
   // Росник: капля росы, в которой кто-то живёт; лечит соседей
   dew: {
+    voice:'dew',
     name:'Росник', about:'капля росы, в которой живёт кто-то маленький и добрый; лечит всех, кто идёт рядом',
     hp:80, sp:1.1, armor:0, bounty:42, hit:1, atk:1.8, r:0.32, color:'#8fd8c8',
     from:39, threat:2.4, mix:true, gap:1.8, wave:(L, W, late) => W >= 3 ? (late < 0.6 ? 1 : 2) : 0,
@@ -2571,6 +2551,7 @@ const FOES = {
   },
   // Гулень: толстый лесной дух с полым бревном; под его гул соседи держат удар
   drummer: {
+    voice:'drum',
     name:'Гулень', about:'толстый лесной дух с полым бревном вместо барабана; под его гул соседи не чувствуют ударов',
     hp:150, sp:0.9, armor:3, bounty:58, hit:2, atk:2.2, r:0.36, color:'#6f8f5a',
     from:64, threat:2.4, mix:true, gap:2.0, wave:(L, W, late) => W >= 4 ? (late < 0.6 ? 1 : 2) : 0,
@@ -2703,6 +2684,7 @@ const FOES = {
      по 7000 HP в финале второй дюжины были стеной — симуляция теряла там по
      13–16 прочности при чистых предыдущих волнах. */
   boss: {
+    voice:'guardian',
     name:'Хранитель', about:'дух-хранитель этих мест; в финале карты выходит сам, а с 5-й — ещё и в середине',
     hp:430, sp:0.80, armor:6, bounty:70, hit:1, atk:2.0, r:0.44, color:'#ee3550',
     skins: BOSS_SKINS,
@@ -2985,10 +2967,10 @@ function refreshHud(){
   refreshSel();
 }
 
-const TOWER_ICONS = {"gun": "<svg class=\"ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m7 13 9-9 5 5-9 9ZM14 6l5 5M3 21h16M6 21v-5h8v5\"/><circle cx=\"9\" cy=\"16\" r=\"2\"/></svg>", "frost": "<svg class=\"ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 4l3 3 3-3M9 20l3-3 3 3M4 10l4-1-1-4m10 14-1-4 4-1M4 14l4 1-1 4M17 5l-1 4 4 1\"/></svg>", "tesla": "<svg class=\"ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m14 2-10 12h7l-1 8L21 9h-8Z\"/></svg>", "mortar": "<svg class=\"ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m8 15-4-8 7-3 4 8ZM5 6l7-3M3 21h18M7 21v-4h9v4M18 4l1-2m1 6 2-1\"/><circle cx=\"12\" cy=\"15\" r=\"3\"/></svg>"};
+const TOWER_ICONS = {"gun": "<svg class=\"ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><use href=\"icons.svg#gun\"/></svg>", "frost": "<svg class=\"ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><use href=\"icons.svg#frost\"/></svg>", "tesla": "<svg class=\"ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><use href=\"icons.svg#tesla\"/></svg>", "mortar": "<svg class=\"ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><use href=\"icons.svg#mortar\"/></svg>"};
 function refreshSoundButton(){
   const btn = $('#btnSound');
-  btn.innerHTML = soundOn ? '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4 6 8H3v8h3l5 4Z"/><path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg>' : '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4 6 8H3v8h3l5 4Z"/><path d="m16 9 5 6m0-6-5 6"/></svg>';
+  btn.innerHTML = soundOn ? '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#sound"/></svg>' : '<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg#muted"/></svg>';
   btn.setAttribute('aria-label', soundOn ? 'Выключить звук' : 'Включить звук');
   btn.setAttribute('aria-pressed', String(soundOn));
 }
@@ -3046,7 +3028,7 @@ function refreshCastleSel(){
   const up = $('#btnUp');
   up.disabled = cost === null || G.gold < cost;
   up.firstChild.textContent = cost === null ? 'Максимум' : 'Укрепить';
-  $('#upCost').textContent = cost === null ? '5 / 5' : cost + ' 💰';
+  $('#upCost').textContent = cost === null ? '5 / 5' : cost + ' зол.';
   up.setAttribute('aria-label', cost === null ? 'Замок достиг максимального разряда 5' : 'Улучшить замок до разряда ' + (t.lvl + 1) + ' за ' + cost + ' золота');
   if (cost !== null){
     const next = CASTLE_TIERS[t.lvl + 1];
@@ -3085,7 +3067,7 @@ function refreshSel(){
   const up = $('#btnUp');
   up.disabled = uc === null || G.gold < uc;
   up.firstChild.textContent = uc === null ? 'Максимум' : 'Улучшить';
-  $('#upCost').textContent = uc !== null ? uc + ' 💰' : '5 / 5';
+  $('#upCost').textContent = uc !== null ? uc + ' зол.' : '5 / 5';
   if (uc !== null){
     const next = towerStats({ ...t, lvl:t.lvl + 1 });
     $('#selNextName').textContent = '→ ' + TOWER_TIERS[t.type].names[t.lvl] + ' · ' + (t.lvl + 1) + '/5';
@@ -3097,7 +3079,7 @@ function refreshSel(){
     $('#selNextStats').textContent = 'Все улучшения получены';
     up.setAttribute('aria-label', 'Достигнут максимальный разряд 5');
   }
-  $('#sellSum').textContent = '+' + sellSum(t) + ' 💰';
+  $('#sellSum').textContent = '+' + sellSum(t) + ' зол.';
 }
 
 /* ============ ввод ============ */
@@ -3210,6 +3192,7 @@ document.addEventListener('keydown', e => {
 });
 $('#btnSound').addEventListener('click', () => {
   soundOn = !soundOn;
+  sfx.sync();
   refreshSoundButton();
   writeSave();
   if (soundOn) sndTap();
@@ -3246,6 +3229,7 @@ function levelLose(){
 const OVERLAYS = ['ovWin','ovLose','ovMaps','ovHelp','ovBook'];
 let prevOv = null;
 function showOverlay(id){
+  if (id) sfx.stop();
   for (const k of OVERLAYS) $('#' + k).classList.toggle('show', k === id);
   // при закрытии пауза снимается, только если уровень ещё идёт
   G.paused = id ? true : G.over;

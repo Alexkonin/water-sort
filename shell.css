@@ -55,6 +55,14 @@ a.icon-btn{text-decoration:none}
 }
 .hdr-title small{display:block;font-size:11px;font-weight:500;opacity:.5;letter-spacing:.4px;margin-top:2px}
 
+/* Общий контурный набор: геометрия хранится в icons.svg, цвет наследуется. */
+.ui-icon{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto;pointer-events:none}
+.card .big{color:#ffda79;display:flex;justify-content:center}
+.card .big .ui-icon{width:44px;height:44px;stroke-width:1.5}
+#ovLose .big{color:#eaa0ab}
+#ovHelp .big,#ovBook .big{color:#c6b0eb}
+
 /* ---------- оверлеи ---------- */
 .overlay{
   position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;

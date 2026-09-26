@@ -105,15 +105,15 @@
       rgba(255,255,255,.045);
     /* стенка + внутренние рефлексы стекла; боковые тени сильнее — они «скругляют» цилиндр */
     box-shadow:
-      inset 0 0 0 var(--wall) rgba(255,255,255,.54),
-      inset 9px 0 12px -8px rgba(255,255,255,.55),
-      inset -9px 0 13px -8px rgba(255,255,255,.36),
+      inset 0 0 0 var(--wall) rgba(255,255,255,.40),
+      inset 9px 0 12px -8px rgba(255,255,255,.34),
+      inset -9px 0 13px -8px rgba(255,255,255,.24),
       inset 12px 0 16px -14px rgba(0,0,0,.45),
       inset -12px 0 16px -14px rgba(0,0,0,.40),
       inset 0 -12px 16px -10px rgba(255,255,255,.30),
       /* было filter:drop-shadow — он пересчитывался покадрово на всех колбах;
          box-shadow повторяет форму по border-radius и почти неотличим */
-      0 8px 12px rgba(0,0,0,.32);
+      0 8px 12px rgba(0,0,0,.27);
     isolation:isolate;          /* filter создавал стекинг-контекст, возвращаем его */
     transition:transform .16s cubic-bezier(.34,1.45,.5,1);
     cursor:pointer;
@@ -125,17 +125,23 @@
     top:calc(var(--neck) * .62);height:var(--wall);
     border-radius:2px;background:rgba(255,255,255,.34);
   }
-  .tube.sel{transform:translateY(-18px)}
-  /* will-change только на время полёта: содержимое пробирки в это время статично,
-     поэтому она растеризуется один раз, а кадры становятся чистой GPU-трансформацией.
-     Вешать это на все пробирки нельзя — каждый слой ест видеопамять. */
+  .tube.sel{transform:translateY(-14px);outline:2px solid rgba(232,214,255,.9);outline-offset:5px}
+  .tube:focus-visible,.btn:focus-visible,.icon-btn:focus-visible,.lvl:focus-visible{
+    outline:2px solid #e8d6ff;outline-offset:4px;
+  }
+  .ui-icon{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto;pointer-events:none}
+  .sound-off{display:none}
+  #btnSound.muted .sound-on{display:none}
+  #btnSound.muted .sound-off{display:block}
+  /* Стекло во время полёта — отдельный слой; жидкость рисуется в SVG.
+     will-change снимается после посадки, чтобы не держать лишние GPU-слои. */
   /* pointer-events:none обязателен: наклонённая на ~120° колба перекрывает прямоугольником
      2-4 соседние, и тап по свободной колбе попадал в летящую — ход просто не срабатывал */
   .tube.flying{
-    transition:transform .26s cubic-bezier(.3,.85,.35,1);
+    transition:none;
     z-index:60;will-change:transform;pointer-events:none;
   }
-  .tube.flying.back{transition:transform .2s cubic-bezier(.32,1.2,.5,1)}
   .tube.done{animation:pop .45s ease}
   @keyframes pop{
     0%{transform:translateY(0) scale(1)}
@@ -164,9 +170,7 @@
       rgba(255,255,255,.05) 52%,
       rgba(0,0,0,.08) 74%,
       rgba(0,0,0,.24) 100%);
-    box-shadow:
-      inset 0 -7px 9px -7px rgba(0,0,0,.30),
-      inset 0 7px 9px -7px rgba(255,255,255,.16);
+    box-shadow:none;
   }
   /* скрытый слой: цвет неизвестен, пока он не станет верхним */
   .seg.hid::after{
@@ -185,11 +189,6 @@
   .liquid.pouring .seg{transition:none}
   /* верхний слой: поверхность жидкости — эллипс, а не плоская линия.
      Круглая колба смотрится сверху овалом, это главный признак объёма. */
-  .liquid > .seg.top{
-    box-shadow:
-      inset 0 6px 7px -6px rgba(0,0,0,.30),
-      inset 0 -7px 9px -7px rgba(0,0,0,.28);
-  }
   .liquid > .seg.top::before{
     content:'';position:absolute;z-index:1;
     left:4%;right:4%;top:calc(var(--u) * -.07);
@@ -201,12 +200,12 @@
   /* у скрытого слоя поверхность не подсвечиваем — он должен читаться глухим */
   .liquid > .seg.top.hid::before{display:none}
   /* колыхание поверхности, когда струя дошла */
-  .seg.wob{animation:wob .40s cubic-bezier(.3,1.3,.5,1);transform-origin:50% 100%}
+  .seg.wob::before{animation:wob .46s ease-out;transform-origin:center}
   @keyframes wob{
-    0%{transform:scaleY(1.16)}
-    40%{transform:scaleY(.93)}
-    70%{transform:scaleY(1.04)}
-    100%{transform:scaleY(1)}
+    0%{transform:translateY(1px) scaleY(1.35)}
+    35%{transform:translateY(-1px) scaleY(.75)}
+    65%{transform:translateY(.4px) scaleY(1.1)}
+    100%{transform:translateY(0) scaleY(1)}
   }
   /* блики на стекле поверх жидкости */
   .shine{
@@ -214,7 +213,7 @@
     left:13%;width:8%;
     top:calc(var(--neck) + var(--u) * .40);bottom:calc(var(--w) * .46);
     background:linear-gradient(180deg,
-      rgba(255,255,255,.46) 0%, rgba(255,255,255,.22) 55%, rgba(255,255,255,.06) 100%);
+      rgba(255,255,255,.30) 0%, rgba(255,255,255,.15) 55%, rgba(255,255,255,.06) 100%);
     filter:blur(.7px);
   }
   .shine.sm{
@@ -242,17 +241,6 @@
     0%{transform:scale(.35);opacity:.65}
     100%{transform:scale(1.25);opacity:0}
   }
-  .drip{
-    position:fixed;width:7px;height:9px;z-index:69;pointer-events:none;
-    border-radius:50% 50% 56% 56%;
-    animation:drip .40s cubic-bezier(.4,0,.9,1) forwards;
-  }
-  @keyframes drip{
-    0%{transform:translateY(0) scaleY(.8);opacity:0}
-    18%{opacity:1}
-    100%{transform:translateY(var(--fall)) scaleY(1.4);opacity:.1}
-  }
-
   /* ---------- низ ---------- */
   footer{flex:0 0 auto;display:flex;gap:8px;justify-content:center;padding-top:6px}
   .btn{
@@ -262,7 +250,7 @@
     cursor:pointer;transition:transform .12s, opacity .2s;
     padding:0 2px;white-space:nowrap;
   }
-  .btn b{font-size:18px;font-weight:400;line-height:1}
+  .btn b{display:flex;align-items:center;justify-content:center;height:22px}
   .btn:active{transform:scale(.94)}
   .btn:disabled{opacity:.32;pointer-events:none}
 
@@ -323,8 +311,8 @@
   #shelf .seg.top::before{display:none}
   .shelfCount{
     position:absolute;right:2px;top:50%;transform:translateY(-50%);
-    font-size:12px;font-weight:800;letter-spacing:.3px;
-    color:rgba(255,255,255,.5);background:rgba(255,255,255,.08);
+    font-size:11px;font-weight:600;letter-spacing:.1px;
+    color:rgba(255,255,255,.7);background:rgba(255,255,255,.08);
     border-radius:11px;padding:3px 9px;transition:transform .14s;
   }
   .shelfCount.bump{transform:translateY(-50%) scale(1.18)}
@@ -424,14 +412,20 @@
     0%,100%{outline:2px solid rgba(255,205,45,0);outline-offset:3px}
     50%    {outline:2px solid rgba(255,205,45,.95);outline-offset:3px}
   }
+  @media (prefers-reduced-motion: reduce){
+    .tube,.btn,.icon-btn,.overlay,.card{transition:none!important}
+    .tube.done,.tube.tip,.seg.reveal,.seg.wob::before,.lock.pop{animation:none!important}
+    .drop,.ripple{display:none}
+    .tube.sel{transform:none}
+  }
 </style>
 </head>
 <body>
 <div id="app">
   <header>
     <div class="hdr-side">
-      <a class="icon-btn" id="btnMenu" href="index.html" title="В меню">☰</a>
-      <button class="icon-btn" id="btnSound" title="Звук">🔊</button>
+      <a class="icon-btn" id="btnMenu" href="index.html" title="В меню" aria-label="В меню"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></a>
+      <button class="icon-btn" id="btnSound" title="Выключить звук" aria-label="Выключить звук"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4Z"/><g class="sound-on"><path d="M15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14"/></g><path class="sound-off" d="m16 9 5 6m0-6-5 6"/></svg></button>
     </div>
     <div class="lvl" id="lvlBtn" role="button" tabindex="0" title="Выбрать уровень">Уровень <span id="lvlNum">1</span> <span class="caret">▾</span><small id="movesTxt">ходов: 0</small></div>
     <div class="hdr-side right">
@@ -444,10 +438,10 @@
   <main id="board"></main>
 
   <footer>
-    <button class="btn" id="btnUndo"><b>↩</b>Отменить</button>
-    <button class="btn" id="btnAdd"><b>＋</b>Пробирка</button>
-    <button class="btn" id="btnRestart"><b>⟳</b>Заново</button>
-    <button class="btn" id="btnHint"><b>💡</b>Подсказка</button>
+    <button class="btn" id="btnUndo"><b><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5-5 5 5 5M4 10h10a6 6 0 0 1 0 12" transform="translate(0 -2)"/></svg></b>Отменить</button>
+    <button class="btn" id="btnAdd"><b><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></b>Пробирка</button>
+    <button class="btn" id="btnRestart"><b><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 8M4 4v6h6"/></svg></b>Заново</button>
+    <button class="btn" id="btnHint"><b><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M8 14a6 6 0 1 1 8 0c-1 1-1 2-1 2H9s0-1-1-2Z"/></svg></b>Подсказка</button>
   </footer>
 </div>
 
@@ -955,7 +949,7 @@ const shelf = $('#shelf');
    обязано быть можно вылить обратно — иначе уровень становится нерешаемым. */
 const SHELF_H    = 54;            // высота полосы, px
 const SHELF_PAD  = 4;
-const SHELF_COUNT_W = 58;         // место под пилюлю счётчика справа
+const SHELF_COUNT_W = 112;         // место под пилюлю счётчика справа
 const SHELF_MIN  = 11;            // с какого числа пробирок полка включается
 let SHELF = { scale: .2, slotW: 10, step: 12, padL: 8 };
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -996,7 +990,8 @@ function layout(rows, cols){
   w = clamp(w, 28, maxW);
   // высота пробирки = 4u + горлышко (0.30u) + стенка; плюс запас на подъём и отступы
   // высота пробирки = CAP·u + горлышко (0.30u) + стенка
-  let u = (bh - (rows - 1) * (gap + 14) - 26 - rows * 3) / rows / (CAP + 0.3);
+  const flightRoom = state.shelfOn ? 13 : Math.min(90, w + 18);
+  let u = (bh - (rows - 1) * (gap + 14) - 2 * flightRoom - rows * 3) / rows / (CAP + 0.3);
   u = clamp(Math.min(u, w * 0.95), 18, maxU);
 
   UNIT = +u.toFixed(1);
@@ -1040,6 +1035,8 @@ function makeTube(i){
   el.className = 'tube' + (state.caps[i] < CAP ? ' small' : '');
   el.style.setProperty('--cap', state.caps[i]);   // высота пробирки = --u × --cap
   el.dataset.i = i;
+  el.setAttribute('role', 'button');
+  el.tabIndex = 0;
   el.innerHTML = '<div class="mouth"></div><div class="liquid"></div>' +
                  '<div class="shine"></div><div class="shine sm"></div>' +
                  '<div class="lock"><div class="ico">🔒</div><div class="num"></div></div>';
@@ -1059,6 +1056,7 @@ function paintTube(i){
     liq.appendChild(s);
   }
   if (liq.lastElementChild) liq.lastElementChild.classList.add('top');
+  tubeEls[i].setAttribute('aria-label', 'Колба ' + (i + 1) + ', заполнено ' + state.tubes[i].length + ' из ' + state.caps[i]);
   paintLock(i, solvedCount(state.tubes, state.caps));
 }
 
@@ -1142,6 +1140,7 @@ function buildBoard(){
     board.appendChild(row);
   }
   renderShelf();
+  updateSelection();
   // после реального замера пересчитываем размеры; rAF в скрытой вкладке не сработает,
   // поэтому дублируем таймером
   requestAnimationFrame(() => layout(rows, cols));
@@ -1160,14 +1159,14 @@ function renderShelf(){
   });
   const c = document.createElement('div');
   c.className = 'shelfCount';
-  c.textContent = state.shelf.length + '/' + state.shelfMax;
+  c.textContent = 'Собрано ' + state.shelf.length + ' из ' + state.shelfMax;
   shelf.appendChild(c);
 }
 
 function updateShelfCount(bump){
   const c = shelf.querySelector('.shelfCount');
   if (!c) return;
-  c.textContent = state.shelf.length + '/' + state.shelfMax;
+  c.textContent = 'Собрано ' + state.shelf.length + ' из ' + state.shelfMax;
   if (!bump) return;
   c.classList.remove('bump');
   void c.offsetWidth;
@@ -1312,6 +1311,7 @@ function refreshHud(){
   // и ужимает слой с 25 до 18.4px — минус четверть высоты у каждой колбы ради одной.
   $('#btnAdd').disabled  = state.addUsed || state.anim > 0 || state.tubes.length >= MAX_TUBES;
   $('#btnHint').disabled = state.anim > 0 || state.locked;
+  updateSelection();
 }
 
 function showHint(text){
@@ -1369,26 +1369,24 @@ function hintShelfOnce(){
 }
 
 /* ============ анимация переливания ============ */
-// Тайминги, мс (LIFT — подъём/наклон — задаётся внутри animatePour)
-const T_FALL = 75;               // струя летит от горлышка до поверхности
-const T_UNIT = 105;              // на каждый переливаемый слой
-
 const smooth = p => p * p * (3 - 2 * p);
-const easeOut = p => 1 - (1 - p) * (1 - p);
+const smoother = p => p * p * p * (p * (p * 6 - 15) + 10);
 
 /* ---- геометрия SVG-перелива ----
-   Жидкость источника рисуется в SVG-оверлее: полость пробирки поворачивается
-   (clipPath), а слои — ГОРИЗОНТАЛЬНЫЕ полосы в мировых координатах. Поэтому
-   поверхность всегда горизонтальна, а не крутится вместе со стеклом. */
+   Жидкость стремится к горизонту, но откликается на движение с инерцией.
+   Объём и порядок цветов сохраняются даже у волнистой свободной поверхности. */
 const TUBE_WALL = 3;          // = CSS --wall
 const lerp = (a, b, p) => a + (b - a) * p;
 
 // многоугольник внутренней полости в client-координатах ПОКОЯ (прямоугольник
-// Wi × 4u со скруглённым полукруглым дном радиуса Wi/2)
-function cavityPolygon(fRect, cap){
+// со скруглённым дном и воздушным зазором до настоящего устья)
+function cavityPolygon(fRect){
   const Wi = fRect.width - 2 * TUBE_WALL, r = Wi / 2;
   const left = fRect.left + TUBE_WALL, right = fRect.right - TUBE_WALL;
-  const bottom = fRect.bottom - TUBE_WALL, top = bottom - cap * UNIT;
+  const bottom = fRect.bottom - TUBE_WALL;
+  // Центр видимого ободка .tube::before: --neck * .62 + половина стенки.
+  // Верх прямоугольника расположен выше ободка и не является точкой слива.
+  const top = fRect.top + UNIT * .30 * .62 + TUBE_WALL / 2;
   const cx = (left + right) / 2, arcCy = bottom - r;
   const p = [[left, top], [right, top], [right, arcCy]];
   const SEG = 14;
@@ -1401,15 +1399,15 @@ function cavityPolygon(fRect, cap){
 }
 
 // перенос точки покоя в мир: world = center' + R(deg)·(p − center)
-function mapper(ocx, ocy, dx, dy, deg){
+function mapper(ocx, ocy, dx, dy, deg, scale = 1){
   const r = deg * Math.PI / 180, c = Math.cos(r), s = Math.sin(r);
   return ([x, y]) => {
-    const px = x - ocx, py = y - ocy;
+    const px = (x - ocx) * scale, py = (y - ocy) * scale;
     return [ocx + dx + px * c - py * s, ocy + dy + px * s + py * c];
   };
 }
 // площадь части полигона НИЖЕ мировой горизонтали y=ys (жидкость тянет вниз, y растёт вниз)
-function areaBelow(poly, ys){
+function clipBelow(poly, ys){
   const out = [], n = poly.length;
   for (let i = 0; i < n; i++){
     const a = poly[i], b = poly[(i + 1) % n];
@@ -1420,6 +1418,13 @@ function areaBelow(poly, ys){
       out.push([a[0] + t * (b[0] - a[0]), ys]);
     }
   }
+  return out;
+}
+function clipAbove(poly, ys){
+  return clipBelow(poly.map(([x,y]) => [x,-y]), -ys).map(([x,y]) => [x,-y]);
+}
+function areaBelow(poly, ys){
+  const out = clipBelow(poly, ys);
   let s = 0;
   for (let i = 0; i < out.length; i++){
     const a = out[i], b = out[(i + 1) % out.length];
@@ -1431,36 +1436,95 @@ function areaBelow(poly, ys){
 function surfaceForArea(poly, V, minY, maxY){
   if (V <= 0) return maxY;
   let lo = minY, hi = maxY;
-  for (let i = 0; i < 22; i++){
+  for (let i = 0; i < 16; i++){
     const mid = (lo + hi) / 2;
     if (areaBelow(poly, mid) > V) lo = mid; else hi = mid;
   }
   return (lo + hi) / 2;
 }
+// Срез волнистой поверхностью. Вертикальный сдвиг y -= wave(x) сохраняет
+// площадь. Общая сетка x делает этот сдвиг кусочно-линейным и обратимым:
+// при наклоне волна не создаёт и не уничтожает цветную жидкость.
+function liquidSurface(poly, volume, amplitude = 0, phase = 0){
+  const minY = Math.min(...poly.map(p=>p[1])), maxY = Math.max(...poly.map(p=>p[1]));
+  const level = surfaceForArea(poly,volume,minY,maxY);
+  const flat = clipBelow(poly,level);
+  const ends = flat.filter(p=>Math.abs(p[1]-level)<.001);
+  if (volume <= .001 || ends.length < 2) return { wet:[], edge:[] };
+  const left = Math.min(...ends.map(p=>p[0])), right = Math.max(...ends.map(p=>p[0]));
+  if (amplitude < .025) return { wet:flat, edge:[[left,level],[right,level]] };
+  const step = Math.max(.1,(right-left)/32);
+  const sample = points => {
+    const out = [];
+    points.forEach((a,i)=>{
+      const b = points[(i+1)%points.length]; out.push(a);
+      const cuts = [];
+      for (let k=0;k<=32;k++){
+        const x=left+k*step, t=(x-a[0])/(b[0]-a[0]);
+        if (t>0 && t<1) cuts.push([t,[x,lerp(a[1],b[1],t)]]);
+      }
+      cuts.sort((a,b)=>a[0]-b[0]).forEach(c=>out.push(c[1]));
+    });
+    return out;
+  };
+  const wave = x => {
+    const u=clamp((x-left)/(right-left||1),0,1);
+    const k=Math.min(31,Math.floor(u*32)), t=u*32-k;
+    const at = v => amplitude*Math.sin(Math.PI*v)*Math.sin(2*Math.PI*v+phase);
+    return lerp(at(k/32),at((k+1)/32),t);
+  };
+  const warped = sample(poly).map(([x,y])=>[x,y-wave(x)]);
+  const y = surfaceForArea(warped,volume,
+    Math.min(...warped.map(p=>p[1])),Math.max(...warped.map(p=>p[1])));
+  const cut = sample(clipBelow(warped,y));
+  const wet = cut.map(([x,v])=>[x,v+wave(x)]);
+  const edge = cut.filter(p=>Math.abs(p[1]-y)<.001)
+    .map(([x,v])=>[x,v+wave(x)]).sort((a,b)=>a[0]-b[0]);
+  return { wet, edge };
+}
+// Угол, при котором поверхность данного объёма ровно достигает нижнего края
+// устья. Не переворачиваем колбу за 90°: иначе у носика окажется нижний цвет.
+function pourAngle(cavity, volume, opening = 0){
+  if (volume <= .001) return 90;
+  let lo = 0, hi = 90;
+  for (let i = 0; i < 18; i++){
+    const deg = (lo+hi)/2;
+    const m = mapper(cavity.right,cavity.top,0,0,deg);
+    // Ненулевая подача смачивает часть устья. Поверхность проходит через
+    // внутренний край струи, а не касается носика одной точкой.
+    const held = areaBelow(cavity.poly.map(m),cavity.top-opening*Math.sin(deg*Math.PI/180));
+    if (held > volume) lo = deg; else hi = deg;
+  }
+  return (lo+hi)/2;
+}
+
 function polyPath(poly){
   let d = 'M' + poly[0][0].toFixed(1) + ',' + poly[0][1].toFixed(1);
   for (let i = 1; i < poly.length; i++) d += 'L' + poly[i][0].toFixed(1) + ',' + poly[i][1].toFixed(1);
   return d + 'Z';
 }
-// лента струи: квадратичная безье со слегка провисающей осью и сужением книзу
-function ribbonPath(P0, P1, wTop, wBot){
-  const C = [P0[0] * 0.32 + P1[0] * 0.68, P0[1] * 0.14 + P1[1] * 0.86];
-  const K = 12, L = [], R = [];
+// Каждый участок струи отражает подачу в момент своего выхода из горлышка.
+// Начало растёт вниз, а после остановки подачи хвост долетает до поверхности.
+function ribbonPath(P0, P1, width, elapsed, flow, fall, nozzle = null){
+  const head = clamp(elapsed / fall, 0, 1) ** 2;
+  const tail = clamp((elapsed - flow) / fall, 0, 1) ** 2;
+  if (head <= tail) return '';
+  const lead = Math.min(9,Math.max(2,(P1[1]-P0[1])*.12));
+  const direction = nozzle ? nozzle.direction : [0,1];
+  const C1 = [P0[0]+direction[0]*lead,P0[1]+direction[1]*lead];
+  const C2 = [P1[0],lerp(P0[1],P1[1],.55)], K = 28, L = [], R = [];
   for (let i = 0; i <= K; i++){
-    const s = i / K, mt = 1 - s;
-    const x = mt * mt * P0[0] + 2 * mt * s * C[0] + s * s * P1[0];
-    const y = mt * mt * P0[1] + 2 * mt * s * C[1] + s * s * P1[1];
-    let tx = 2 * mt * (C[0] - P0[0]) + 2 * s * (P1[0] - C[0]);
-    let ty = 2 * mt * (C[1] - P0[1]) + 2 * s * (P1[1] - C[1]);
-    const len = Math.hypot(tx, ty) || 1;
-    const nx = -ty / len, ny = tx / len, w = (wTop + (wBot - wTop) * s) / 2;
-    L.push([x + nx * w, y + ny * w]);
-    R.push([x - nx * w, y - ny * w]);
+    const s = lerp(tail, head, i / K), mt = 1 - s;
+    const x = mt**3*P0[0]+3*mt*mt*s*C1[0]+3*mt*s*s*C2[0]+s**3*P1[0];
+    const y = mt**3*P0[1]+3*mt*mt*s*C1[1]+3*mt*s*s*C2[1]+s**3*P1[1];
+    const tx = 3*mt*mt*(C1[0]-P0[0])+6*mt*s*(C2[0]-C1[0])+3*s*s*(P1[0]-C2[0]);
+    const ty = 3*mt*mt*(C1[1]-P0[1])+6*mt*s*(C2[1]-C1[1])+3*s*s*(P1[1]-C2[1]);
+    const len = Math.hypot(tx,ty) || 1;
+    const p = clamp((elapsed-Math.sqrt(s)*fall)/flow,0,1);
+    const w = (nozzle ? nozzle.widthAt(p) : width*Math.sqrt(4*p*(1-p))) * (1-.35*s) / 2;
+    L.push([x-ty/len*w,y+tx/len*w]); R.push([x+ty/len*w,y-tx/len*w]);
   }
-  let d = 'M' + L[0][0].toFixed(1) + ',' + L[0][1].toFixed(1);
-  for (let i = 1; i <= K; i++) d += 'L' + L[i][0].toFixed(1) + ',' + L[i][1].toFixed(1);
-  for (let i = K; i >= 0; i--) d += 'L' + R[i][0].toFixed(1) + ',' + R[i][1].toFixed(1);
-  return d + 'Z';
+  return polyPath(L.concat(R.reverse()));
 }
 
 // Пул SVG-оверлеев: переливы идут параллельно, поэтому каждому нужен свой слой
@@ -1510,258 +1574,271 @@ function buildSVG(idx){
   bands.setAttribute('clip-path', 'url(#' + clipId + ')');
   const rects = [];
   for (let i = 0; i <= CAP; i++){ const r = document.createElementNS(NS, 'rect'); bands.appendChild(r); rects.push(r); }
-  const volume = document.createElementNS(NS, 'rect');   // объём поверх слоёв
+  const surface = document.createElementNS(NS, 'path');
+  bands.appendChild(surface);
+  const volume = document.createElementNS(NS, 'path');   // объём поверх слоёв
   volume.setAttribute('fill', 'url(#' + gradId + ')');
   bands.appendChild(volume);
-  const shine = document.createElementNS(NS, 'rect');    // блик поверхности
-  shine.setAttribute('fill', 'rgba(255,255,255,.28)'); bands.appendChild(shine);
+  const meniscus = document.createElementNS(NS, 'path');
+  meniscus.setAttribute('fill','rgba(255,255,255,.16)');
+  bands.appendChild(meniscus);
+  const shine = document.createElementNS(NS, 'path');    // блик свободной поверхности
+  shine.setAttribute('fill', 'none');
+  shine.setAttribute('stroke', 'rgba(255,255,255,.28)');
+  shine.setAttribute('stroke-width', '1.5'); bands.appendChild(shine);
   const stream = document.createElementNS(NS, 'path');
   svg.append(defs, bands, stream);
   document.body.appendChild(svg);
-  return { NS, svg, clipPath, rects, shine, stream, grad, volume, taken: false };
+  return { NS, svg, clipPath, rects, surface, shine, meniscus, stream, grad, volume, taken: false };
 }
 
-// Рисует перелив. Модель к этому моменту УЖЕ обновлена (см. doMove), поэтому состояние
-// источника до хода приходит в plan — иначе параллельные переливы читали бы чужие данные.
+// Одна временная шкала для стекла, жидкости и струи, включая возврат в слот.
+// plan — снимок ДО хода: параллельные переливы не читают изменённые чужие слои.
 function animatePour(plan){
   const { a, b, n, colorIdx, srcColors, startA, startB } = plan;
-  const gen = state.gen;
+  const gen = state.gen, unit = UNIT;
+  const fromEl = tubeEls[a], toEl = tubeEls[b];
+  if (reduceMotion.matches){
+    fromEl.classList.remove('sel');
+    paintTube(a); paintTube(b);
+    return Promise.resolve();
+  }
   return new Promise(resolve => {
-    const fromEl = tubeEls[a], toEl = tubeEls[b];
     const color = COLORS[colorIdx % COLORS.length];
-
-    // Колба после выделения едет вверх по CSS-переходу (.sel = translateY(-18px)).
-    // Если читать её геометрию в этот момент — поймаем промежуточные координаты, и
-    // жидкость прыгнет на 6-10px при переходе DOM→SVG. Сначала возвращаем в покой.
+    // Сохраняем фактическое положение при быстром втором тапе, а не -14px наугад.
+    const visual = fromEl.getBoundingClientRect();
     fromEl.classList.remove('sel');
     fromEl.style.transition = 'none';
     fromEl.style.transform = 'none';
-
-    const fRect = fromEl.getBoundingClientRect();
-    const tRect = toEl.getBoundingClientRect();
+    const fRect = fromEl.getBoundingClientRect(), tRect = toEl.getBoundingClientRect();
+    const startY = visual.top - fRect.top;
     const H = fRect.height, W = fRect.width;
     const ocx = fRect.left + W / 2, ocy = fRect.top + H / 2;
-    const streamW = clamp(W * 0.44, 16, 34);      // толщина струи у носика (шире = «из колбы»)
-
-    // горлышко должно встать строго над центром пробирки-приёмника
-    const Mx = tRect.left + tRect.width / 2;
-    let My = tRect.top - Math.max(13, H * 0.09);
-
-    // положение пробирки при угле ang (со знаком стороны side): горлышко в (Mx,My)
-    let side = Mx >= ocx ? 1 : -1;
-    const geomAt = ang => {
-      const r = ang * side * Math.PI / 180;
-      return { dx: (Mx - (H / 2) * Math.sin(r)) - ocx,
-               dy: (My + (H / 2) * Math.cos(r)) - ocy, deg: ang * side };
-    };
-
-    // Пробирка наклоняется ГОРЛЫШКОМ ВНИЗ (~116–132°): жидкость скапливается у носика
-    // и льётся через него. Проверяем, что повёрнутая пробирка целиком в кадре.
-    const fits = ang => {
-      const r = ang * side * Math.PI / 180;
-      const half = (Math.abs(Math.sin(r)) * H + Math.abs(Math.cos(r)) * W) / 2;
-      const cx = Mx - (H / 2) * Math.sin(r);
-      return (cx - half) >= 6 && (cx + half) <= vpW() - 6;
-    };
-    if (!fits(120)) side = -side;                 // другая сторона поместится лучше
-    let fitMax = 114;
-    for (let ang = 138; ang >= 108; ang -= 2){ if (fits(ang)){ fitMax = ang; break; } }
-
-    // геометрия полости и кумулятивные объёмы слоёв (из покоя → стык бесшовный)
-    const capA = state.caps[a];
-    const cav = cavityPolygon(fRect, capA);
+    const cav = cavityPolygon(fRect);
     const Cv = [0];
-    for (let i = 1; i <= capA; i++) Cv[i] = areaBelow(cav.poly, cav.bottom - i * UNIT);
-
-    const Vfull = Cv[startA], Vend = Cv[startA - n];
-    const totalPour = Vfull - Vend;
-    // Горлышко вниз → жидкость скапливается у носика, а верхний цвет (тот, что льётся)
-    // оказывается у носика. Строим слои источника от НОСИКА вверх (обратный порядок
-    // хранения); lo/hi — накопленный объём от носика.
-    const pool = [];
-    let acc = 0;
-    for (let j = 0; j < startA; j++){
-      const s = startA - 1 - j;                   // сверху вниз по хранению
-      const vol = Cv[s + 1] - Cv[s];
-      pool.push({ color: srcColors[s], lo: acc, hi: acc + vol });
-      acc += vol;
+    for (let i = 1; i <= startA; i++) Cv[i] = areaBelow(cav.poly, cav.bottom - i * unit);
+    const Vfull = Cv[startA], totalPour = Vfull - Cv[startA - n];
+    let topStart = startA - 1;
+    while (topStart > 0 && srcColors[topStart - 1] === srcColors[startA - 1]) topStart--;
+    const angStart = pourAngle(cav,Vfull), angEnd = pourAngle(cav,Vfull-totalPour);
+    const jetWidth = clamp(W*.14,5,11);
+    const maxSpan = Math.hypot(cav.bottom-cav.top,cav.right-cav.left);
+    const openingAt = p => Math.min(jetWidth*4*p*(1-p),
+      Math.max(0,Vfull-totalPour*smooth(p)-Cv[topStart])/maxSpan*.8);
+    const maxOpening = Math.min(jetWidth,(Vfull-totalPour-Cv[topStart])/maxSpan*.8);
+    const angMax = Math.max(angEnd,pourAngle(cav,Vfull-totalPour,maxOpening));
+    const Mx = tRect.left + tRect.width / 2;
+    let My = tRect.top - 15;
+    const topEdge = document.querySelector('header').getBoundingClientRect().bottom + 8;
+    const preferredSide = Mx >= ocx ? 1 : -1;
+    // Якорь — нижний край устья, откуда выходит струя, а не центр горлышка.
+    const geomAt = (ang, side, scale, lipY = My) => {
+      const deg = ang * side, r = deg * Math.PI / 180;
+      const px = (side > 0 ? cav.right : cav.left) - ocx, py = cav.top - ocy;
+      return { dx: Mx - ocx - scale * (px * Math.cos(r) - py * Math.sin(r)),
+               dy: lipY - ocy - scale * (px * Math.sin(r) + py * Math.cos(r)), deg, scale };
+    };
+    const corners = [[fRect.left,fRect.top],[fRect.right,fRect.top],
+                     [fRect.right,fRect.bottom],[fRect.left,fRect.bottom]];
+    let pose = null, bestScore = Infinity;
+    // Угол задаёт жидкость. Для размещения меняем сторону, высоту и масштаб,
+    // а не наклон: это позволяет поверхности оставаться у горлышка весь слив.
+    for (const scale of [1, .92, .84, .76, .68, .60]){
+      for (const side of [preferredSide, -preferredSide]){
+        for (const raise of [0, 24, 48, 72, 96, 128, 160]){
+          const lipY = tRect.top-15-raise;
+          let overflow = 0;
+          for (const tilt of [angStart,lerp(angStart,angMax,.25),lerp(angStart,angMax,.5),lerp(angStart,angMax,.75),angMax]){
+            const g = geomAt(tilt,side,scale,lipY);
+            const m = mapper(ocx,ocy,g.dx,g.dy,g.deg,scale);
+            for (const [x,y] of corners.map(m)){
+              overflow += Math.max(0,8-x)+Math.max(0,x-vpW()+8)+
+                          Math.max(0,topEdge-y)+Math.max(0,y-vpH()+12);
+            }
+          }
+          const score = overflow*1000+(1-scale)*500+raise*.4+(side!==preferredSide?3:0);
+          if (score < bestScore){ bestScore=score; pose={side,scale,lipY}; }
+        }
+      }
     }
-    const angEnd = clamp(fitMax, 116, 132);
-    const angStart = angEnd - 12;
-
-    const toLiq = toEl.querySelector('.liquid');
+    My = pose.lipY;
+    const gS = geomAt(angStart,pose.side,pose.scale);
+    const gE = geomAt(angEnd,pose.side,pose.scale);
+    const toLiq = toEl.querySelector('.liquid'), fromLiq = fromEl.querySelector('.liquid');
     toLiq.classList.add('pouring');
     const dstSegs = Array.from(toLiq.children);
     for (let i = 0; i < n; i++){
-      const s = document.createElement('div');
-      s.className = 'seg'; s.style.backgroundColor = color; s.style.height = '0px';
-      toLiq.appendChild(s); dstSegs.push(s);
+      const seg = document.createElement('div');
+      seg.className = 'seg'; seg.style.backgroundColor = color; seg.style.height = '0px';
+      toLiq.appendChild(seg); dstSegs.push(seg);
     }
-    dstSegs.slice(0, startB).forEach(s => { s.style.height = UNIT + 'px'; });
     const baseY = toLiq.getBoundingClientRect().bottom;
-    const innerW = W - 6;
-    const setFill = (segs, amount) => {
+    const setFill = amount => {
       let top = -1;
-      for (let i = 0; i < segs.length; i++){
+      dstSegs.forEach((seg, i) => {
         const f = clamp(amount - i, 0, 1);
-        segs[i].style.height = (f * UNIT).toFixed(2) + 'px';
-        if (f > 0.02) top = i;
-      }
-      for (let i = 0; i < segs.length; i++) segs[i].classList.toggle('top', i === top);
+        seg.style.height = (f * unit).toFixed(2) + 'px';
+        if (f > .001) top = i;
+      });
+      dstSegs.forEach((seg, i) => seg.classList.toggle('top', i === top));
     };
-
-    // чтобы наклонённая пробирка не вылезла за верх экрана — опускаем всю сцену
-    { const ge = geomAt(angEnd), me = mapper(ocx, ocy, ge.dx, ge.dy, ge.deg);
-      let mY = 1e9; for (const p of cav.poly){ const q = me(p); if (q[1] < mY) mY = q[1]; }
-      const TOP = 44; if (mY < TOP) My += TOP - mY; }
-
     const fx = acquireSVG();
-    const fromLiq = fromEl.querySelector('.liquid');
-
-    // общий рисователь жидкости источника для произвольного положения пробирки;
-    // возвращает точку носика (нижний угол устья)
-    const drawSource = (dx, dy, deg, Dv) => {
-      const m = mapper(ocx, ocy, dx, dy, deg);
+    fx.stream.setAttribute('fill', color);
+    fx.stream.setAttribute('d', '');
+    const drawSource = (g, drained, sway = 0, wave = 0, phase = 0) => {
+      const m = mapper(ocx, ocy, g.dx, g.dy, g.deg, g.scale);
       const wp = cav.poly.map(m);
-      let minY = 1e9, maxY = -1e9, minX = 1e9, maxX = -1e9;
-      for (const p of wp){ if (p[1] < minY) minY = p[1]; if (p[1] > maxY) maxY = p[1];
-                           if (p[0] < minX) minX = p[0]; if (p[0] > maxX) maxX = p[0]; }
-      fx.clipPath.setAttribute('d', polyPath(wp));
-      const bandX = (minX - 8).toFixed(1), bandW = (maxX - minX + 16).toFixed(1);
-      let ri = 0;
-      for (let j = 0; j < pool.length; j++){
-        const lo = Math.max(0, pool[j].lo - Dv), hi = Math.max(0, pool[j].hi - Dv);
-        const rect = fx.rects[ri++];
-        if (hi - lo < 0.5){ rect.setAttribute('height', '0'); continue; }
-        const yLo = surfaceForArea(wp, lo, minY, maxY);   // ниже, у носика
-        const yHi = surfaceForArea(wp, hi, minY, maxY);   // выше, к дну
-        rect.setAttribute('x', bandX); rect.setAttribute('width', bandW);
-        rect.setAttribute('y', yHi.toFixed(1)); rect.setAttribute('height', (yLo - yHi).toFixed(1));
-        rect.setAttribute('fill', pool[j].color);
+      const cx = ocx + g.dx, cy = ocy + g.dy;
+      // Наклон поверхности независим от стекла. Во время слива sway=0,
+      // чтобы верхний цвет всё время был соединён с нижним краем горлышка.
+      const toLiquid = mapper(cx,cy,0,0,-sway), toWorld = mapper(cx,cy,0,0,sway);
+      const lp = wp.map(toLiquid);
+      const minY = Math.min(...lp.map(p=>p[1])), maxY = Math.max(...lp.map(p=>p[1]));
+      const minX = Math.min(...lp.map(p=>p[0])), maxX = Math.max(...lp.map(p=>p[0]));
+      const remaining = Math.max(0,Vfull-drained), scaleArea = g.scale*g.scale;
+      const levels = new Map();
+      const surface = volume => {
+        if (!levels.has(volume)) levels.set(volume,surfaceForArea(lp,volume*scaleArea,minY,maxY));
+        return levels.get(volume);
+      };
+      fx.clipPath.setAttribute('d',polyPath(wp));
+      for (let j=0;j<fx.rects.length;j++){
+        const rect=fx.rects[j];
+        if (j>=topStart){ rect.setAttribute('height','0'); continue; }
+        const bottom=surface(Cv[j]),top=surface(Cv[j+1]);
+        rect.setAttribute('x',minX-1); rect.setAttribute('width',maxX-minX+2);
+        rect.setAttribute('y',top); rect.setAttribute('height',bottom-top);
+        rect.setAttribute('fill',srcColors[j]);
+        rect.setAttribute('transform','rotate('+sway+' '+cx+' '+cy+')');
       }
-      for (; ri < fx.rects.length; ri++) fx.rects[ri].setAttribute('height', '0');
-      const Vsrc = Vfull - Dv;
-      const surf = Vsrc > 1 ? surfaceForArea(wp, Vsrc, minY, maxY) : null;
-      if (surf !== null){
-        fx.shine.setAttribute('x', bandX); fx.shine.setAttribute('width', bandW);
-        fx.shine.setAttribute('y', surf.toFixed(1)); fx.shine.setAttribute('height', '3');
-      } else fx.shine.setAttribute('height', '0');
-
-      // градиент объёма ведём поперёк колбы: вектор берём из её же поворота,
-      // иначе жидкость подсветится «по экрану», а не по цилиндру
-      const rad = deg * Math.PI / 180;
-      const halfW = (fRect.width - 2 * TUBE_WALL) / 2;
-      const gx = Math.cos(rad) * halfW, gy = Math.sin(rad) * halfW;
-      const midX = (minX + maxX) / 2, midY = (minY + maxY) / 2;
-      fx.grad.setAttribute('x1', (midX - gx).toFixed(1));
-      fx.grad.setAttribute('y1', (midY - gy).toFixed(1));
-      fx.grad.setAttribute('x2', (midX + gx).toFixed(1));
-      fx.grad.setAttribute('y2', (midY + gy).toFixed(1));
-      fx.volume.setAttribute('x', bandX);
-      fx.volume.setAttribute('width', bandW);
-      fx.volume.setAttribute('y', (minY - 4).toFixed(1));
-      fx.volume.setAttribute('height', (maxY - minY + 8).toFixed(1));
-
-      const c1 = m([cav.left, cav.top]), c2 = m([cav.right, cav.top]);
-      return c1[1] >= c2[1] ? c1 : c2;
+      const surf=surface(remaining);
+      // Не даём волне пересечь следующий цвет, когда верхний почти вытек.
+      const amplitude = Math.min(wave*g.scale,Math.max(0,surface(Cv[topStart])-surf)*.22);
+      const {wet,edge} = liquidSurface(lp,remaining*scaleArea,amplitude,phase);
+      const topWet=clipAbove(wet,surface(Cv[topStart]));
+      fx.surface.setAttribute('d',topWet.length>2?polyPath(topWet.map(toWorld)):'');
+      fx.surface.setAttribute('fill',srcColors[startA-1]);
+      fx.volume.setAttribute('d',wet.length>2?polyPath(wet.map(toWorld)):'');
+      const worldEdge=edge.map(toWorld);
+      fx.shine.setAttribute('d',worldEdge.length>1?polyPath(worldEdge).slice(0,-1):'');
+      // Небольшая линза под свободной поверхностью даёт ощущение круглой колбы.
+      const lens = [];
+      if (edge.length>1){
+        const l=edge[0],r=edge[edge.length-1], depth=unit*.12*g.scale;
+        for(let i=0;i<=16;i++){
+          const u=i/16,x=lerp(l[0],r[0],u);
+          const k=Math.min(edge.length-2,Math.floor(u*(edge.length-1)));
+          const e=edge[k],f=edge[k+1];
+          const y=lerp(e[1],f[1],clamp((x-e[0])/(f[0]-e[0]||1),0,1));
+          lens.push([x,y+Math.sin(Math.PI*u)*depth]);
+        }
+      }
+      fx.meniscus.setAttribute('d',lens.length?polyPath(edge.concat(lens.reverse()).map(toWorld)):'');
+      const rad = g.deg * Math.PI / 180, halfW = (W - 6) * g.scale / 2;
+      const gx = Math.cos(rad)*halfW, gy = Math.sin(rad)*halfW;
+      fx.grad.setAttribute('x1', cx-gx); fx.grad.setAttribute('y1', cy-gy);
+      fx.grad.setAttribute('x2', cx+gx); fx.grad.setAttribute('y2', cy+gy);
     };
-
-    const setTf = (dx, dy, deg) => {
-      fromEl.style.transform = 'translate(' + dx.toFixed(1) + 'px,' + dy.toFixed(1) +
-        'px) rotate(' + deg.toFixed(2) + 'deg)';
+    const setPose = (g, drained, sway = 0, wave = 0, phase = 0) => {
+      fromEl.style.transform = 'translate(' + g.dx.toFixed(3) + 'px,' + g.dy.toFixed(3) +
+        'px) rotate(' + g.deg.toFixed(3) + 'deg) scale(' + g.scale.toFixed(5) + ')';
+      drawSource(g, drained, sway, wave, phase);
     };
-
-    // старт: жидкость источника переходит с DOM на SVG без «хлопка»
-    fromEl.classList.remove('sel');
-    fromEl.classList.add('flying');
-    fromEl.style.transition = 'none';
-    fromLiq.style.visibility = 'hidden';
-    fx.svg.style.display = 'block';
-
-    const gS = geomAt(angStart);
-    const LIFT = 165, FLOW = T_UNIT * n + 90, POUR = T_FALL + FLOW;
-    const t0 = performance.now();
-    let lastDrop = -1e9, lastRipple = -1e9, spawn = 0, flowStarted = false;
-
-    const frame = now => {
-      // уровень сменили посреди перелива — сворачиваемся, поле уже перерисовано заново
-      if (gen !== state.gen){
-        releaseSVG(fx);
-        fromLiq.style.visibility = '';
-        fromEl.style.transition = ''; fromEl.style.transform = '';
-        fromEl.classList.remove('flying', 'back');
-        resolve(); return;
+    const distance = Math.hypot(gS.dx, gS.dy-startY);
+    const lift = clamp(285 + distance*.16, 300, 380), back = clamp(245 + distance*.12, 270, 330);
+    const settle = 180, flow = 240 + 150*n;
+    const fall = clamp(Math.sqrt(Math.max(1, baseY-startB*unit-My)/.022), 65, 140);
+    const arc = Math.min(22, distance*.06, Math.max(0, fRect.top+startY-topEdge));
+    const initial = { dx:0, dy:startY, deg:0, scale:1 };
+    const rest = { dx:0, dy:0, deg:0, scale:1 };
+    const halfSize = g => {
+      const r = g.deg * Math.PI / 180;
+      return { x:(Math.abs(Math.cos(r))*W+Math.abs(Math.sin(r))*H)*g.scale/2,
+               y:(Math.abs(Math.sin(r))*W+Math.abs(Math.cos(r))*H)*g.scale/2 };
+    };
+    const interpolate = (a, b, p, height, tiltP = p) => {
+      const g = { deg:lerp(a.deg,b.deg,tiltP), scale:lerp(a.scale,b.scale,p) };
+      const ha = halfSize(a), hb = halfSize(b), hg = halfSize(g);
+      // Интерполируем положение внутри ДОСТУПНОЙ ширины/высоты. Обычная прямая
+      // траектория обрезала углы длинной колбы у края в середине поворота.
+      for (const [axis,center,limit,margin,endMargin] of [
+        ['x',ocx,vpW(),8,8], ['y',ocy,vpH(),topEdge,12]
+      ]){
+        const key = axis === 'x' ? 'dx' : 'dy';
+        const span = h => Math.max(1,limit-margin-endMargin-2*h[axis]);
+        const u = clamp(lerp((center+a[key]-margin-ha[axis])/span(ha),
+                            (center+b[key]-margin-hb[axis])/span(hb),p),0,1);
+        g[key] = margin+hg[axis]+span(hg)*u-center;
+        if (axis === 'y') g[key] -= Math.min(height,span(hg)*.2)*16*p*p*(1-p)*(1-p)*4*u*(1-u);
       }
-      const t = now - t0;
-
-      // ---- фаза 1: подъём из слота с одновременным наклоном (всё в rAF, синхронно с SVG) ----
-      if (t < LIFT){
-        const p = smooth(clamp(t / LIFT, 0, 1));
-        const dx = lerp(0, gS.dx, p), dy = lerp(-18, gS.dy, p), deg = lerp(0, gS.deg, p);
-        setTf(dx, dy, deg);
-        drawSource(dx, dy, deg, 0);
-        requestAnimationFrame(frame); return;
-      }
-      if (!flowStarted){ flowStarted = true; sndFlow(POUR / 1000); }
-
-      // ---- фаза 2: слив ----
-      const pt = t - LIFT;
-      const flowP = clamp((pt - T_FALL) / FLOW, 0, 1);
-      const ang = lerp(angStart, angEnd, easeOut(flowP));
-      const g = geomAt(ang);
-      setTf(g.dx, g.dy, g.deg);
-
-      const Dv = totalPour * smooth(flowP);
-      const v = n * smooth(flowP);
-      const lipPt = drawSource(g.dx, g.dy, g.deg, Dv);
-      setFill(dstSegs, startB + v);
-
-      // ---- струя: широкая лента из самого горлышка ----
-      const surfaceY = baseY - (startB + v) * UNIT;
-      let botY;
-      if (pt < T_FALL){ const p = pt / T_FALL; botY = lipPt[1] + (surfaceY - lipPt[1]) * p * p; }
-      else botY = surfaceY;
-      const P0 = [lipPt[0], lipPt[1]];
-      const P1 = [Mx + Math.sin(pt / 38) * 1.4, botY];
-      const env = Math.max(0.45, Math.sin(Math.PI * clamp(pt / POUR, 0, 1)) ** 0.4);
-      fx.stream.setAttribute('d', ribbonPath(P0, P1, streamW * env, streamW * 0.6 * env));
-      fx.stream.setAttribute('fill', color);
-
-      if (pt > T_FALL && flowP < 1){
-        if (pt - lastDrop > 62){ lastDrop = pt; dropletsAt(P1[0], surfaceY, color, spawn++); }
-        if (pt - lastRipple > 130){ lastRipple = pt; rippleAt(P1[0], surfaceY, innerW); }
-      }
-
-      if (pt < POUR){ requestAnimationFrame(frame); return; }
-
-      // ---- финал: модель уже актуальна, просто приводим DOM к ней ----
+      return g;
+    };
+    const finish = cancelled => {
       releaseSVG(fx);
       fromLiq.style.visibility = '';
-      paintTube(a);
-      paintTube(b);
-      dripAt(P1[0], lipPt[1], surfaceY - lipPt[1], color);
-      sndPlop();
-      const surfSeg = toLiq.lastElementChild;
-      if (surfSeg){ surfSeg.classList.remove('wob'); void surfSeg.offsetWidth; surfSeg.classList.add('wob'); }
-
-      // ---- фаза 3: пробирка возвращается ----
-      fromEl.style.transition = '';
-      fromEl.classList.add('back');
-      void fromEl.offsetWidth;
-      fromEl.style.transform = '';
-      setTimeout(() => { fromEl.classList.remove('flying', 'back'); resolve(); }, 200);
+      fromEl.style.transform = ''; fromEl.style.transition = '';
+      fromEl.classList.remove('flying');
+      if (!cancelled){ paintTube(a); paintTube(b); }
+      else toLiq.classList.remove('pouring');
+      resolve();
+    };
+    fromEl.classList.add('flying');
+    // Рисуем первый кадр до скрытия DOM, без промежуточной пустой колбы.
+    setPose(initial, 0);
+    fromLiq.style.visibility = 'hidden';
+    const t0 = performance.now();
+    let lastDrop = -1e9, lastRipple = -1e9, spawn = 0, sounded = false, landed = false;
+    const frame = now => {
+      if (gen !== state.gen){ finish(true); return; }
+      const t = now-t0;
+      if (t < lift){
+        // Поворот начинается после первых 12% пути, с нулевой скоростью на стыках.
+        const p = smoother(clamp(t/lift,0,1));
+        const g = interpolate(initial,gS,p,arc,smoother(clamp((t/lift-.12)/.88,0,1)));
+        const u=t/lift, envelope=Math.sin(Math.PI*u)**2;
+        setPose(g,0,pose.side*8*Math.sin(2*Math.PI*u)*envelope,
+          Math.min(3.2,W*.045)*envelope,t/95);
+      } else if (t < lift+flow+fall){
+        const pt = t-lift, sourceP = clamp(pt/flow,0,1), destP = clamp((pt-fall)/flow,0,1);
+        if (!sounded){ sounded = true; sndFlow((flow+fall)/1000); }
+        const opening = openingAt(sourceP);
+        const g = geomAt(pourAngle(cav,Vfull-totalPour*smooth(sourceP),opening),pose.side,pose.scale);
+        setPose(g,totalPour*smooth(sourceP));
+        const poured = n*smooth(destP), surfaceY = baseY-(startB+poured)*unit;
+        setFill(startB+poured);
+        const P1 = [Mx+Math.sin(pt/95)*.55,surfaceY];
+        const m=mapper(ocx,ocy,g.dx,g.dy,g.deg,g.scale);
+        const lipX=pose.side>0?cav.right:cav.left;
+        const P0=m([lipX-pose.side*opening/2,cav.top]);
+        const rad=g.deg*Math.PI/180;
+        // Сечение струи совпадает со смоченной частью ободка. Сначала струя
+        // выходит вдоль оси горлышка и только затем загибается вниз.
+        fx.stream.setAttribute('d',ribbonPath(P0,P1,jetWidth,pt,flow,fall,{
+          direction:[Math.sin(rad),-Math.cos(rad)],
+          widthAt:p=>openingAt(p)*g.scale
+        }));
+        if (destP > 0 && destP < .94){
+          if (pt-lastDrop > 120){ lastDrop=pt; dropletsAt(P1[0],surfaceY,color,spawn++); }
+          if (pt-lastRipple > 180){ lastRipple=pt; rippleAt(P1[0],surfaceY,tRect.width-6); }
+        }
+      } else {
+        if (!landed){
+          landed = true; fx.stream.setAttribute('d','');
+          setFill(startB+n); sndPlop();
+          const top = toLiq.lastElementChild;
+          if (top) top.classList.add('wob');
+        }
+        const elapsed=t-lift-flow-fall;
+        const p = smoother(clamp(elapsed/back,0,1));
+        const u=clamp(elapsed/(back+settle),0,1), envelope=Math.sin(Math.PI*u)**2;
+        const sway=-pose.side*7*Math.sin(2*Math.PI*u)*envelope;
+        setPose(interpolate(gE,rest,p,arc*.5),totalPour,sway,
+          Math.min(3.2,W*.045)*envelope,t/95);
+        if (u >= 1){ finish(false); return; }
+      }
+      requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
-  });
-}
-
-// после перелива: высоты снова из CSS, «поверхность» — на верхнем слое
-function normalizeLiquid(liq){
-  liq.classList.remove('pouring');
-  const kids = Array.from(liq.children);
-  kids.forEach((s, i) => {
-    s.style.height = '';
-    s.classList.toggle('top', i === kids.length - 1);
   });
 }
 
@@ -1788,17 +1865,6 @@ function rippleAt(x, y, w){
   r.style.top  = (y - Math.max(5, w * 0.24) / 2) + 'px';
   document.body.appendChild(r);
   setTimeout(() => r.remove(), 440);
-}
-
-function dripAt(x, y, fall, color){
-  const d = document.createElement('div');
-  d.className = 'drip';
-  d.style.backgroundColor = color;
-  d.style.left = (x - 3.5) + 'px';
-  d.style.top  = y + 'px';
-  d.style.setProperty('--fall', Math.max(12, fall) + 'px');
-  document.body.appendChild(d);
-  setTimeout(() => d.remove(), 420);
 }
 
 /* ============ ход ============
@@ -1871,6 +1937,7 @@ function doMove(a, b){
     refreshHud();
     maybeWin();
     scheduleDeadCheck();
+    if (layoutPending && state.anim === 0) relayout();
   });
 }
 
@@ -1946,6 +2013,26 @@ board.addEventListener('click', e => {
   }
 });
 
+// Отмечаем только выбранную колбу; допустимые направления игрок определяет сам.
+function updateSelection(){
+  const closed = gameClosed(), selected = state.selected;
+  tubeEls.forEach((el, i) => {
+    if (!el) return;
+    const busy = state.busyTubes.has(i);
+    el.classList.toggle('sel', selected === i && !busy);
+    el.setAttribute('aria-pressed', String(selected === i));
+    el.setAttribute('aria-disabled', String(busy || !!(closed && closed[i]) || onShelf(i)));
+    el.tabIndex = onShelf(i) ? -1 : 0;
+  });
+}
+board.addEventListener('click', updateSelection);
+board.addEventListener('keydown', e => {
+  const tube = e.target.closest('.tube');
+  if (tube && (e.key === 'Enter' || e.key === ' ')){
+    e.preventDefault(); tube.click();
+  }
+});
+
 /* ============ кнопки ============ */
 const sameArr = (a, b) => a.length === b.length && a.every((v, k) => v === b[k]);
 
@@ -2010,9 +2097,17 @@ $('#btnNext').addEventListener('click', () => {
   startLevel(state.level + 1);
 });
 
+function paintSoundButton(){
+  const button = $('#btnSound');
+  button.classList.toggle('muted', !soundOn);
+  button.title = soundOn ? 'Выключить звук' : 'Включить звук';
+  button.setAttribute('aria-label', button.title);
+  button.setAttribute('aria-pressed', String(soundOn));
+}
+
 $('#btnSound').addEventListener('click', () => {
   soundOn = !soundOn;
-  $('#btnSound').textContent = soundOn ? '🔊' : '🔇';
+  paintSoundButton();
   if (soundOn) sndTap();
   save();
 });
@@ -2081,11 +2176,12 @@ function goToTypedLevel(){
 $('#btnGoLvl').addEventListener('click', goToTypedLevel);
 $('#lvlInput').addEventListener('keydown', e => { if (e.key === 'Enter') goToTypedLevel(); });
 
-let resizeT;
+let resizeT, layoutPending = false;
 const relayout = () => {
   clearTimeout(resizeT);
   resizeT = setTimeout(() => {
-    if (state.anim > 0) return;
+    if (state.anim > 0){ layoutPending = true; return; }
+    layoutPending = false;
     settleFlights();               // иначе перелёт анимировал бы уже осиротевший узел
     buildBoard();
   }, 150);
@@ -2096,7 +2192,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) rela
 
 /* ============ старт ============ */
 load();
-$('#btnSound').textContent = soundOn ? '🔊' : '🔇';
+paintSoundButton();
 startLevel(state.level);
 if (state.level === 1) setTimeout(() => showHint('Нажми на пробирку, потом на другую'), 700);
 

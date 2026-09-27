@@ -38,7 +38,7 @@
     touch-action:manipulation;
   }
   #app{
-    height:100dvh;display:flex;flex-direction:column;
+    height:100dvh;display:flex;flex-direction:column;touch-action:none;
     padding:calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 10px);
   }
   /* iOS с домашнего экрана: black-translucent поднимает документ под статус-бар,
@@ -342,7 +342,7 @@
   .overlay{
     position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
     background:rgba(12,6,26,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-    opacity:0;pointer-events:none;transition:opacity .25s;
+    opacity:0;pointer-events:none;touch-action:pan-y;transition:opacity .25s;
   }
   .overlay.show{opacity:1;pointer-events:auto}
   .card{
@@ -2104,7 +2104,11 @@ function openLevelPicker(){
   $('#ovLevel').classList.add('show');
   sndTap();
 }
-const closeLevelPicker = () => $('#ovLevel').classList.remove('show');
+const closeLevelPicker = () => {
+  if (document.activeElement === $('#lvlInput')) $('#lvlInput').blur();
+  $('#ovLevel').classList.remove('show');
+  requestAnimationFrame(() => window.scrollTo(0, 0));
+};
 
 $('#lvlInput').max = MAX_LEVEL;
 $('#lvlBtn').addEventListener('click', openLevelPicker);

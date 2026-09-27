@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="shell.css?v=50">
+<link rel="stylesheet" href="shell.css?v=58">
 <link rel="stylesheet" href="palette.css?v=50">
 <script src="launch-history.js?v=57"></script>
 <style>
@@ -174,7 +174,8 @@
   if(!activeDialog)return;
   const d=activeDialog;d.classList.remove('show');d.hidden=true;activeDialog=null;
   if(d.id==='ovHelp'){helpSeen=true;save();}
-  $('#app').inert=false;if(previousFocus?.isConnected)previousFocus.focus();previousFocus=null;
+  $('#app').inert=false;if(previousFocus?.isConnected)previousFocus.focus({preventScroll:true});previousFocus=null;
+  if(d.id==='ovLevel'&&getComputedStyle(document.body).overflow==='hidden')requestAnimationFrame(()=>window.scrollTo(0,0));
  }
  function openDialog(id){
   const prior=previousFocus||document.activeElement;if(activeDialog)closeDialog();

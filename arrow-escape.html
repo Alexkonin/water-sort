@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#102f2d">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,11 +11,11 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="shell.css?v=51">
+<link rel="stylesheet" href="shell.css?v=58">
 <link rel="stylesheet" href="palette.css?v=51">
 <script src="launch-history.js?v=57"></script>
 <style>
-  #app{max-width:600px;margin:auto;gap:14px;padding-left:18px;padding-right:18px}
+  #app{max-width:600px;margin:auto;gap:14px;padding-left:18px;padding-right:18px;touch-action:pan-x pan-y}
   button{font:inherit;cursor:pointer;touch-action:manipulation}
   button:disabled{cursor:default;opacity:.4}
   header{grid-template-columns:80px minmax(0,1fr) 80px;gap:4px;min-height:44px}
@@ -28,9 +28,9 @@
   .puzzle-card{background:var(--cream);border:1px solid #ffffe522;border-radius:25px;box-shadow:0 14px 35px #061b1930;display:flex;flex-direction:column;flex:1;min-height:160px;overflow:hidden;color:var(--ink)}
   .board-top{display:flex;align-items:center;justify-content:space-between;padding:13px 18px 0;font-size:12px;flex-shrink:0;color:#6d795f;min-height:39px}
   #count{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600}
-  #viewport{position:relative;overflow:auto;overscroll-behavior:contain;flex:1;min-height:0;scrollbar-width:thin;scrollbar-color:#b3bea3 transparent;touch-action:pan-x pan-y pinch-zoom}
+  #viewport{position:relative;overflow:auto;overscroll-behavior:contain;flex:1;min-height:0;scrollbar-width:thin;scrollbar-color:#b3bea3 transparent;touch-action:pan-x pan-y}
   #boardFrame{display:flex;align-items:center;justify-content:center;margin:auto;min-width:100%;min-height:100%;padding:10px}
-  #board{display:block;flex-shrink:0;overflow:hidden;touch-action:pan-x pan-y pinch-zoom}
+  #board{display:block;flex-shrink:0;overflow:hidden;touch-action:pan-x pan-y}
   .arrow{color:#36584a;cursor:pointer;outline:none}
   .arrow .body{fill:none;stroke:currentColor;stroke-width:.16;stroke-linecap:round;stroke-linejoin:round}
   .arrow .head{fill:currentColor;stroke:none}
@@ -53,7 +53,7 @@
   .control{min-height:58px;border:1px solid #bfd0a31a;background:#bfd0a30f;color:var(--cream);border-radius:17px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px}
   .control .ui-icon{width:20px;height:20px}.control[aria-pressed="true"]{background:#bfd0a32a;border-color:#bfd0a378}
   #hint{border:0;background:linear-gradient(160deg,#edda99,#d9bf75);color:#354831;font-weight:650;box-shadow:0 5px 15px #061b1926}
-  dialog{border:0;padding:25px 22px 20px;width:min(390px,calc(100vw - 32px));max-height:85dvh;overflow:auto;border-radius:26px;color:var(--ink);background:linear-gradient(160deg,#faf6e7,var(--paper));box-shadow:0 25px 90px #061b1970}
+  dialog{border:0;padding:25px 22px 20px;width:min(390px,calc(100vw - 32px));max-height:85dvh;overflow:auto;touch-action:pan-y;border-radius:26px;color:var(--ink);background:linear-gradient(160deg,#faf6e7,var(--paper));box-shadow:0 25px 90px #061b1970}
   dialog::backdrop{background:#061b19ba;backdrop-filter:blur(5px)}
   dialog h2{font-size:23px;margin:0 0 10px}dialog p{font-size:14px;line-height:1.55;color:#65715a;margin:0 0 20px}
   dialog .close{float:right;border:0;background:#697c4812;color:var(--ink);width:36px;height:36px;border-radius:12px;display:grid;place-items:center;margin:-7px -5px 0 8px}
@@ -98,6 +98,6 @@
 <dialog id="resultDialog" aria-labelledby="resultTitle"><svg id="resultIcon" class="ui-icon" aria-hidden="true"><use href="icons.svg?v=51#sprout"/></svg><h2 id="resultTitle" tabindex="-1"></h2><div id="stars" aria-label=""></div><p id="resultText"></p><button class="cta" id="resultPrimary"></button><button class="ghost" id="resultSecondary">Выбрать уровень</button></dialog>
 <script src="sound.js?v=51"></script>
 <script src="arrow-escape.js?v=51"></script>
-<script src="arrow-escape-ui.js?v=54"></script>
+<script src="arrow-escape-ui.js?v=58"></script>
 </body>
 </html>

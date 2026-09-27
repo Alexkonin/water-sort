@@ -155,7 +155,13 @@
     clearHint();hintId=free[0];state.hints++;groups.get(hintId).classList.add('hinted');
     const arrow=state.puzzle.arrows.find(a=>a.id===hintId),head=arrow.cells.at(-1),dir=G.direction(arrow),length=Math.max(state.puzzle.width,state.puzzle.height);
     const guide=svg('path',{class:'guide-ray',d:path([head,[head[0]+dir[0]*length,head[1]+dir[1]*length]])});board.insertBefore(guide,board.firstChild);
-    groups.get(hintId).scrollIntoView({block:'nearest',inline:'nearest',behavior:'instant'});
+    // Подводим стрелку только внутри игрового поля. scrollIntoView может
+    // прокрутить и документ целиком, даже если у страницы overflow:hidden.
+    const viewport=$('#viewport'), target=groups.get(hintId).getBoundingClientRect(), visible=viewport.getBoundingClientRect();
+    if(target.left<visible.left)viewport.scrollLeft+=target.left-visible.left;
+    else if(target.right>visible.right)viewport.scrollLeft+=target.right-visible.right;
+    if(target.top<visible.top)viewport.scrollTop+=target.top-visible.top;
+    else if(target.bottom>visible.bottom)viewport.scrollTop+=target.bottom-visible.bottom;
     tell('Золотая стрелка может выйти. Нажми на неё.');sfx.play('unlock');save();
   };
   function changeZoom(next){

@@ -79,6 +79,18 @@
    обращение к localStorage может бросить, и меню не должно из-за этого пропасть. */
 const GAMES = [
   {
+    file: 'arrow-escape.html',
+    icon: 'arrows',
+    name: 'Распутай стрелки',
+    desc: 'Освобождай пути и выпускай изогнутые стрелки с поля — 100 лесных узоров',
+    progress(){
+      const d = read('arrowescape.v1');
+      if (!d) return null;
+      const count = d.best && typeof d.best === 'object' ? Object.keys(d.best).length : 0;
+      return count ? 'пройдено ' + count + ' из 100' : 'уровень ' + (d.level || 1) + ' из 100';
+    }
+  },
+  {
     file: 'forest-lights.html',
     icon: 'lights',
     name: 'Собери огоньки',
@@ -139,8 +151,8 @@ for (const g of GAMES){
     '<div class="ico"></div>' +
     '<div class="txt"><div class="nm"></div><div class="ds"></div>' +
     '<div class="pr ' + (pr ? '' : 'none') + '"></div></div>' +
-    '<div class="arr"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#chevron"/></svg></div>';
-  a.querySelector('.ico').innerHTML = '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#' + g.icon + '"/></svg>';
+    '<div class="arr"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=51#chevron"/></svg></div>';
+  a.querySelector('.ico').innerHTML = '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=51#' + g.icon + '"/></svg>';
   a.querySelector('.ico').classList.add(g.icon);
   a.querySelector('.nm').textContent = g.name;
   a.querySelector('.ds').textContent = g.desc;

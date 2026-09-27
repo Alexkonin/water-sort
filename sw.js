@@ -1,5 +1,5 @@
 // Офлайн-кэш. Меняй CACHE при каждом обновлении игры — старая версия сотрётся.
-const CACHE = 'games-v59';
+const CACHE = 'games-v63';
 /* Все страницы сборника кладём в кэш сразу при установке: переход из меню
    в игру должен работать офлайн с первого раза, а не после того, как игру
    один раз открыли онлайн. Добавляешь игру — дописываешь её сюда и в GAMES
@@ -9,6 +9,7 @@ const ASSETS = [
   './water-sort.html', './tower-defense.html',
   './forest-lights.html', './forest-lights.js', './forest-lights-levels.js',
   './arrow-escape.html', './arrow-escape.js', './arrow-escape-ui.js',
+  './mahjong.html', './mahjong.css', './mahjong.js', './mahjong-ui.js',
   './manifest.json', './icon-192.png', './icon-512.png', './icon-180.png'
 ];
 

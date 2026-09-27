@@ -26,4 +26,6 @@
   <symbol fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" id="sprout" viewBox="0 0 24 24"><path d="M12 21v-8M12 15C5 16 3 12 3 6c7 0 10 3 9 9Zm0-3C12 5 16 3 21 3c0 7-3 10-9 9Z"/></symbol>
   <symbol fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" id="arrows" viewBox="0 0 24 24"><path d="M4 20V9h7V4m-3 3 3-3 3 3M9 20h7v-8h5m-3-3 3 3-3 3"/></symbol>
   <symbol fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" id="grid" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></symbol>
+  <symbol fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" id="mahjong" viewBox="0 0 24 24"><rect x="3" y="3" width="13" height="17" rx="3"/><path d="M18 6h1a2 2 0 0 1 2 2v11a3 3 0 0 1-3 3H8"/><text x="9.5" y="15.5" text-anchor="middle" font-family="Songti SC, SimSun, serif" font-size="12" font-weight="600" fill="currentColor" stroke="none">中</text></symbol>
+  <symbol fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" id="shuffle" viewBox="0 0 24 24"><path d="M3 6h3c5 0 7 12 12 12h3m-4-4 4 4-4 4M3 18h3c2 0 3-2 4-4m4-4c1-2 2-4 4-4h3m-4-4 4 4-4 4"/></symbol>
 </svg>

@@ -3,7 +3,7 @@
   'use strict';
   const KEY = 'games.launches.v1';
   const LIMIT = 30;
-  const FILES = ['tower-defense.html','water-sort.html','arrow-escape.html','forest-lights.html'];
+  const FILES = ['tower-defense.html','water-sort.html','arrow-escape.html','forest-lights.html','mahjong.html'];
   const known = new Set(FILES);
 
   function clean(value){

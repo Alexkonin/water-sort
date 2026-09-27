@@ -8,12 +8,12 @@ header{grid-template-columns:84px minmax(0,1fr) 84px;gap:4px;min-height:44px}.hd
 #viewport{position:relative;flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;touch-action:pan-y;scrollbar-width:thin;scrollbar-color:#a1ad8b transparent}
 #boardFrame{display:flex;align-items:center;justify-content:center;min-width:100%;min-height:100%;padding:12px}
 #boardSize{position:relative;flex-shrink:0}#board{position:absolute;left:0;top:0;transform-origin:top left}
-.tile{position:absolute;padding:0;border:1px solid #b4ab8b;border-radius:7px;background:linear-gradient(145deg,#fffef5,#eee6cb);box-shadow:1px 4px 0 #aaa384,2px 6px 4px #35482e30,inset 0 1px 0 #fff;color:#35634e;transition:filter .15s,background .15s;outline-offset:1px;display:grid;place-items:center}
+.tile{position:absolute;padding:0;border:1px solid #b4ab8b;border-radius:7px;background:linear-gradient(145deg,#fffef5,#eee6cb);box-shadow:1px 4px 0 #aaa384,2px 6px 4px #35482e30,inset 0 1px 0 #fff;color:#35634e;transition:filter .15s;outline-offset:1px;display:grid;place-items:center}
 .tile::after{content:'';position:absolute;inset:3px;border:1px solid #a4996822;border-radius:4px;pointer-events:none}
 .tile svg{width:88%;height:88%;pointer-events:none}.tile.blocked{filter:brightness(.86) saturate(.65)}
 .tile.selected,.tile.hinted{background:linear-gradient(145deg,#fff0b8,#e8cc7a);outline:3px solid #b78c35;outline-offset:1px}
 .tile:focus-visible{outline:3px solid #657e48;outline-offset:1px}.tile.removing{pointer-events:none;animation:vanish .18s ease-in forwards}
-@media(hover:hover){.tile:not(.blocked):hover{background:#fff5d2}}
+@media(hover:hover){.tile:not(.blocked):not(.selected):not(.hinted):hover{background:#fff5d2}}
 @keyframes vanish{to{opacity:0;transform:translateY(-8px) scale(.85)}}
 .board-bottom{padding:0 14px 12px;flex-shrink:0}.progress-track{height:3px;background:#d8ddc7;border-radius:4px;overflow:hidden}#progress{height:100%;background:#729269;transition:width .25s}
 #status{height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;text-align:center;margin:0;font-size:13px;line-height:1.35;color:var(--muted)}#status.stuck{color:var(--honey)}

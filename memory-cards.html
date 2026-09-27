@@ -87,9 +87,9 @@
 <body>
 <div id="app">
   <header>
-    <div class="hdr-side"><a href="index.html" class="icon-btn" aria-label="Все игры"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=66#menu"/></svg></a><button class="icon-btn" id="soundButton" aria-label="Выключить звук"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=66#sound"/></svg></button></div>
+    <div class="hdr-side"><a href="index.html" class="icon-btn" aria-label="Все игры"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=68#menu"/></svg></a><button class="icon-btn" id="soundButton" aria-label="Выключить звук"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=68#sound"/></svg></button></div>
     <button class="level-title" id="levelButton" aria-label="Выбрать уровень"><span id="levelLabel">Уровень 1</span><small>ВЫБРАТЬ УРОВЕНЬ ▾</small></button>
-    <div class="hdr-side right"><button class="icon-btn" id="restartButton" aria-label="Начать уровень заново"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=66#restart"/></svg></button><button class="icon-btn" id="helpButton" aria-label="Как играть"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=66#help"/></svg></button></div>
+    <div class="hdr-side right"><button class="icon-btn" id="restartButton" aria-label="Начать уровень заново"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=68#restart"/></svg></button><button class="icon-btn" id="helpButton" aria-label="Как играть"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=68#help"/></svg></button></div>
   </header>
   <div class="intro"><h1>Лесные карточки</h1><p>Запомни находки, прежде чем карточка закроется</p></div>
   <main class="game-panel">
@@ -101,22 +101,23 @@
   </main>
   <div class="game-foot" id="progressText"></div>
 </div>
-<dialog id="helpDialog" aria-labelledby="helpTitle"><button class="close" data-close aria-label="Закрыть"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=66#close"/></svg></button><h2 id="helpTitle">Запомни, что где лежит</h2><div class="help-grid" aria-hidden="true"><span>✦</span><span>✧</span><span>✦</span><span>✧</span><span>?</span><span>✧</span><span>✦</span><span>✧</span><span>✦</span></div><ol class="help-list"><li>Открой карточку и запомни расположение девяти лесных символов.</li><li>Когда время закончится, карточка закроется. Можно закрыть её раньше кнопкой «Я запомнил».</li><li>Для каждого названного символа нажми клетку, где он лежал. Ошибка покажет верное место.</li></ol><p>Во время справки и при свёрнутой вкладке отсчёт останавливается. Уровень можно повторить в любой момент.</p><button class="cta" data-close>Понятно, играем</button></dialog>
-<dialog id="levelsDialog" aria-labelledby="levelsTitle"><button class="close" data-close aria-label="Закрыть"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=66#close"/></svg></button><h2 id="levelsTitle">Выбери уровень</h2><p id="levelsProgress"></p><div class="level-pages"><button id="prevPage" aria-label="Предыдущие уровни">‹</button><span id="pageLabel"></span><button id="nextPage" aria-label="Следующие уровни">›</button></div><div class="level-grid" id="levelGrid"></div><form class="level-jump" id="jumpForm"><input id="levelInput" type="number" inputmode="numeric" min="1" max="100" required placeholder="Номер от 1 до 100" aria-label="Номер уровня"><button type="submit">Перейти</button></form><p id="levelError" role="alert"></p></dialog>
+<dialog id="helpDialog" aria-labelledby="helpTitle"><button class="close" data-close aria-label="Закрыть"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=68#close"/></svg></button><h2 id="helpTitle">Запомни, что где лежит</h2><div class="help-grid" aria-hidden="true"><span>✦</span><span>✧</span><span>✦</span><span>✧</span><span>?</span><span>✧</span><span>✦</span><span>✧</span><span>✦</span></div><ol class="help-list"><li>Открой карточку и запомни расположение девяти лесных символов.</li><li>Когда время закончится, карточка закроется. Можно закрыть её раньше кнопкой «Я запомнил».</li><li>Для каждого названного символа нажми клетку, где он лежал. Ошибка покажет верное место.</li></ol><p>Во время справки и при свёрнутой вкладке отсчёт останавливается. При повторе появится другая подборка символов. Уровень можно повторить в любой момент.</p><button class="cta" data-close>Понятно, играем</button></dialog>
+<dialog id="levelsDialog" aria-labelledby="levelsTitle"><button class="close" data-close aria-label="Закрыть"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=68#close"/></svg></button><h2 id="levelsTitle">Выбери уровень</h2><p id="levelsProgress"></p><div class="level-pages"><button id="prevPage" aria-label="Предыдущие уровни">‹</button><span id="pageLabel"></span><button id="nextPage" aria-label="Следующие уровни">›</button></div><div class="level-grid" id="levelGrid"></div><form class="level-jump" id="jumpForm"><input id="levelInput" type="number" inputmode="numeric" min="1" max="100" required placeholder="Номер от 1 до 100" aria-label="Номер уровня"><button type="submit">Перейти</button></form><p id="levelError" role="alert"></p></dialog>
 <script src="sound.js?v=51"></script>
-<script src="memory-cards.js?v=66"></script>
+<script src="memory-cards.js?v=68"></script>
 <script>
 (() => {
   'use strict';
   const $=selector=>document.querySelector(selector);
   const KEY='memorycards.v1', positions=['слева сверху','посередине сверху','справа сверху','слева по центру','в центре','справа по центру','слева снизу','посередине снизу','справа снизу'];
   let saved;try{saved=JSON.parse(localStorage.getItem(KEY)||'null');}catch{saved=null;}
-  let {level,best,sound,helpSeen}=MemoryCards.restore(saved);
-  let card=MemoryCards.make(level),phase='ready',question=0,correct=0,answered=false,chosen=-1,page=0;
+  let {level,deal,best,sound,helpSeen}=MemoryCards.restore(saved);
+  let card=MemoryCards.fresh(level,deal).card,phase='ready',question=0,correct=0,answered=false,chosen=-1,page=0;
+  deal=card.deal;
   let remaining=0,deadline=0,frame=0;
   const sfx=GameAudio.create({enabled:()=>sound});
-  function save(){try{localStorage.setItem(KEY,JSON.stringify({level,best,sound,helpSeen}));}catch{}}
-  function icon(item){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('ui-icon');svg.setAttribute('aria-hidden','true');const use=document.createElementNS('http://www.w3.org/2000/svg','use');use.setAttribute('href','icons.svg?v=66#memory-'+item.id);svg.append(use);return svg;}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify({level,deal,best,sound,helpSeen}));}catch{}}
+  function icon(item){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('ui-icon');svg.setAttribute('aria-hidden','true');svg.style.color={plant:'#4d7654',animal:'#a66a52',sky:'#5a8390',object:'#9b773c'}[item.group];const use=document.createElementNS('http://www.w3.org/2000/svg','use');use.setAttribute('href','icons.svg?v=68#memory-'+item.id);svg.append(use);return svg;}
   function timerTick(){
     if(phase!=='preview'||document.hidden||$('#helpDialog').open||$('#levelsDialog').open)return;
     remaining=Math.max(0,deadline-performance.now());
@@ -146,7 +147,7 @@
     $('#levelLabel').textContent='Уровень '+level;
     $('#soundButton').setAttribute('aria-label',sound?'Выключить звук':'Включить звук');
     $('#soundButton').setAttribute('aria-pressed',String(sound));
-    $('#soundButton use').setAttribute('href','icons.svg?v=66#'+(sound?'sound':'muted'));
+    $('#soundButton use').setAttribute('href','icons.svg?v=68#'+(sound?'sound':'muted'));
     $('#progressText').textContent='Пройдено '+Object.keys(best).length+' из '+MemoryCards.COUNT;
     const primary=$('#primary'),secondary=$('#secondary'),kicker=$('#promptKicker'),main=$('#promptMain'),note=$('#promptNote');
     main.replaceChildren();main.classList.remove('with-icon');primary.hidden=false;secondary.hidden=true;
@@ -173,7 +174,7 @@
     renderBoard();
   }
   function start(n){
-    cancelAnimationFrame(frame);level=n;card=MemoryCards.make(n);phase='ready';question=0;correct=0;answered=false;chosen=-1;remaining=0;
+    cancelAnimationFrame(frame);level=n;({deal,card}=MemoryCards.fresh(n,deal,card));phase='ready';question=0;correct=0;answered=false;chosen=-1;remaining=0;
     if($('#levelsDialog').open)$('#levelsDialog').close();render();save();
   }
   function reveal(){phase='preview';remaining=card.seconds*1000;render();sfx.play('tap');resumeTimer();}
@@ -223,7 +224,7 @@
   $('#jumpForm').addEventListener('submit',e=>{e.preventDefault();const n=Number($('#levelInput').value);if(!Number.isInteger(n)||n<1||n>MemoryCards.COUNT){$('#levelError').textContent='Введи номер от 1 до 100.';return;}start(n);});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){pauseTimer();sfx.stop();save();}else resumeTimer();});
   window.addEventListener('pagehide',save);
-  render();if(!helpSeen)$('#helpDialog').showModal();
+  render();save();if(!helpSeen)$('#helpDialog').showModal();
   if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{}));
 })();
 </script>

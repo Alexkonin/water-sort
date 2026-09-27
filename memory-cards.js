@@ -1,14 +1,28 @@
-/* Воспроизводимые карточки и проверка сохранённого прогресса. */
+/* Новая раскладка для каждого показа и проверка сохранённого прогресса. */
 (function(root){
   'use strict';
   const COUNT = 100;
   const ITEMS = [
-    {id:'leaf',name:'лист'}, {id:'acorn',name:'жёлудь'},
-    {id:'mushroom',name:'гриб'}, {id:'feather',name:'перо'},
-    {id:'sun',name:'солнце'}, {id:'moon',name:'луна'},
-    {id:'star',name:'звезда'}, {id:'drop',name:'капля'},
-    {id:'mountain',name:'гора'}, {id:'flower',name:'цветок'},
-    {id:'paw',name:'лапа'}, {id:'lantern',name:'фонарь'}
+    {id:'leaf',name:'лист',group:'plant'}, {id:'acorn',name:'жёлудь',group:'plant'},
+    {id:'mushroom',name:'гриб',group:'plant'}, {id:'feather',name:'перо',group:'animal'},
+    {id:'sun',name:'солнце',group:'sky'}, {id:'moon',name:'луна',group:'sky'},
+    {id:'star',name:'звезда',group:'sky'}, {id:'drop',name:'капля',group:'sky'},
+    {id:'mountain',name:'гора',group:'sky'}, {id:'flower',name:'цветок',group:'plant'},
+    {id:'paw',name:'лапа',group:'animal'}, {id:'lantern',name:'фонарь',group:'object'},
+    {id:'tree',name:'дерево',group:'plant'}, {id:'pinecone',name:'шишка',group:'plant'},
+    {id:'clover',name:'клевер',group:'plant'}, {id:'fern',name:'папоротник',group:'plant'},
+    {id:'berry',name:'ягоды',group:'plant'}, {id:'sprout',name:'росток',group:'plant'},
+    {id:'apple',name:'яблоко',group:'plant'}, {id:'pumpkin',name:'тыква',group:'plant'},
+    {id:'fox',name:'лиса',group:'animal'}, {id:'owl',name:'сова',group:'animal'},
+    {id:'rabbit',name:'заяц',group:'animal'}, {id:'butterfly',name:'бабочка',group:'animal'},
+    {id:'fish',name:'рыба',group:'animal'}, {id:'bee',name:'пчела',group:'animal'},
+    {id:'snail',name:'улитка',group:'animal'}, {id:'bird',name:'птица',group:'animal'},
+    {id:'cloud',name:'облако',group:'sky'}, {id:'snowflake',name:'снежинка',group:'sky'},
+    {id:'rainbow',name:'радуга',group:'sky'}, {id:'fire',name:'огонь',group:'sky'},
+    {id:'wave',name:'волна',group:'sky'}, {id:'comet',name:'комета',group:'sky'},
+    {id:'compass',name:'компас',group:'object'}, {id:'key',name:'ключ',group:'object'},
+    {id:'bell',name:'колокольчик',group:'object'}, {id:'tent',name:'палатка',group:'object'},
+    {id:'book',name:'книга',group:'object'}, {id:'clock',name:'часы',group:'object'}
   ];
 
   function random(seed){
@@ -29,14 +43,24 @@
     }
     return copy;
   }
-  function make(level){
+  function make(level,deal=0){
     if(!Number.isInteger(level)||level<1||level>COUNT)throw RangeError('Уровень вне каталога');
-    const rng=random((Math.imul(level,0x9E3779B1)^0x4D454D4F)>>>0);
+    if(!Number.isSafeInteger(deal)||deal<0)throw RangeError('Неверный номер карточки');
+    const rng=random((Math.imul(level,0x9E3779B1)^Math.imul(deal,0x85EBCA6B)^0x4D454D4F)>>>0);
     const slots=shuffle(ITEMS,rng).slice(0,9);
     const count=level<=20?4:level<=50?5:6;
     const questions=shuffle(Array.from({length:9},(_,i)=>i),rng).slice(0,count);
     const seconds=level<=10?14:level<=30?12:level<=60?10:8;
-    return {level,slots,questions,seconds};
+    return {level,deal,slots,questions,seconds};
+  }
+  function fresh(level,afterDeal,previous){
+    const seen=new Set(previous?.slots?.map(item=>item.id)||[]);
+    let deal=afterDeal,card;
+    do{
+      deal=deal>=0xFFFFFFFF?1:deal+1;
+      card=make(level,deal);
+    }while(seen.size&&card.slots.filter(item=>seen.has(item.id)).length>4);
+    return {deal,card};
   }
   function stars(correct,total){
     if(correct===total)return 3;
@@ -53,9 +77,10 @@
         if(Number.isInteger(n)&&n>=1&&n<=COUNT&&String(n)===key&&Number.isInteger(score)&&score>=1&&score<=3)best[n]=score;
       }
     }
-    return {level,best,sound:source.sound!==false,helpSeen:source.helpSeen===true};
+    const deal=Number.isSafeInteger(source.deal)&&source.deal>=0&&source.deal<=0xFFFFFFFF?source.deal:0;
+    return {level,deal,best,sound:source.sound!==false,helpSeen:source.helpSeen===true};
   }
-  const api={COUNT,ITEMS,make,stars,restore};
+  const api={COUNT,ITEMS,make,fresh,stars,restore};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   else root.MemoryCards=api;
 })(globalThis);

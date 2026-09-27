@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>Собери огоньки — Игры</title>
 <meta name="theme-color" content="#102f2d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -13,6 +13,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="stylesheet" href="shell.css?v=50">
 <link rel="stylesheet" href="palette.css?v=50">
+<script src="launch-history.js?v=57"></script>
 <style>
 #lights{padding:16px 0}
 #lights *{box-sizing:border-box}
@@ -52,13 +53,13 @@
 
 .overlay[hidden]{display:none}
 #lights.fl-moving .fl-bead{transition:none}
-#app{max-width:480px;margin:auto;width:100%}
+#app{max-width:480px;margin:auto;width:100%;touch-action:none}
 #lights{padding:0;display:flex;flex:1;min-height:0;flex-direction:column}
 #lights .fl-game{width:100%;padding:0;max-width:none;margin:0;background:none;box-shadow:none;border-radius:0;display:flex;flex:1;min-height:0;flex-direction:column}
 #lights main{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
 #lights .fl-board{width:min(100%,calc(100dvh - 280px));max-width:390px;flex-shrink:0;margin:8px auto}
 #lights .fl-guide{margin:0 0 14px}
-#lights .fl-controls{flex-shrink:0}
+#lights .fl-controls{flex-shrink:0;margin-inline:-8px;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 #lights .fl-footer{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-top:12px;font-size:12px;text-align:center}
 #lights .fl-undo{width:auto;min-height:44px;height:44px;display:flex;gap:6px;padding:0 10px;justify-self:start;font-size:12px}
 #lights .fl-best{text-align:right;font-size:12px;line-height:1.4}
@@ -79,7 +80,7 @@
 #levelError{color:#a45348;font-size:13px;min-height:18px;margin:6px 0 0}
 .help-list strong{font-weight:700}
 #ovWin .win-detail{font-size:14px;line-height:1.5}
-@media(max-height:480px){html,body{height:auto;overflow:auto}#app{height:auto;min-height:100dvh}#lights .fl-board{width:min(100%,280px)}#lights main{min-height:340px}}
+@media(max-height:480px){html,body{height:auto;overflow:auto}#app{height:auto;min-height:100dvh;touch-action:pan-y}#lights .fl-board{width:min(100%,280px)}#lights main{min-height:340px}}
 @media(prefers-reduced-motion:reduce){#lights .fl-flow{transition:none}}
 </style>
 <script src="sound.js?v=50"></script>

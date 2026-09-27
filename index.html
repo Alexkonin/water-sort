@@ -56,6 +56,7 @@
   footer{flex:0 0 auto;text-align:center;font-size:11.5px;opacity:.7;padding-top:2px}
 </style>
 <link rel="stylesheet" href="palette.css?v=50">
+<script src="launch-history.js?v=57"></script>
 </head>
 <body>
 <div id="app">
@@ -71,13 +72,37 @@
 
 <script>
 /* ============ список игр ============
-   Одна запись на игру. Чтобы добавить третью, достаточно дописать объект:
+   Одна запись на игру в порядке по умолчанию. Для новой игры нужно добавить объект:
    меню, service worker и README ссылаются на этот список, а не на вёрстку.
    progress() читает сохранение самой игры (один и тот же origin, поэтому
    localStorage общий) и возвращает строку под названием — или null, если
    в игру ещё не заходили. Читаем в try/catch: в приватном режиме Safari
    обращение к localStorage может бросить, и меню не должно из-за этого пропасть. */
 const GAMES = [
+  {
+    file: 'tower-defense.html',
+    icon: 'castle',
+    name: 'Защита башни',
+    desc: 'Ставь башни вдоль дороги и не пускай врагов к базе',
+    progress(){
+      const d = read('towerdef.v1');
+      if (!d || !d.stars) return null;
+      const lv = Object.keys(d.stars).length;
+      if (!lv) return null;
+      const st = Object.values(d.stars).reduce((a, b) => a + b, 0);
+      return lv + ' ' + plural(lv, 'уровень', 'уровня', 'уровней') + ' · ' + st + '★';
+    }
+  },
+  {
+    file: 'water-sort.html',
+    icon: 'flask',
+    name: 'Разлей по цветам',
+    desc: 'Головоломка: разлей жидкость так, чтобы в каждой пробирке остался один цвет',
+    progress(){
+      const d = read('watersort.v1');
+      return d && d.level > 1 ? 'уровень ' + d.level : null;
+    }
+  },
   {
     file: 'arrow-escape.html',
     icon: 'arrows',
@@ -102,30 +127,6 @@ const GAMES = [
       const count = cleared && typeof cleared === 'object' ? Object.keys(cleared).length : 0;
       return count ? 'пройдено ' + count + ' из 1000' : 'уровень ' + (d.level || 1) + ' из 1000';
     }
-  },
-  {
-    file: 'water-sort.html',
-    icon: 'flask',
-    name: 'Разлей по цветам',
-    desc: 'Головоломка: разлей жидкость так, чтобы в каждой пробирке остался один цвет',
-    progress(){
-      const d = read('watersort.v1');
-      return d && d.level > 1 ? 'уровень ' + d.level : null;
-    }
-  },
-  {
-    file: 'tower-defense.html',
-    icon: 'castle',
-    name: 'Защита башни',
-    desc: 'Ставь башни вдоль дороги и не пускай врагов к базе',
-    progress(){
-      const d = read('towerdef.v1');
-      if (!d || !d.stars) return null;
-      const lv = Object.keys(d.stars).length;
-      if (!lv) return null;
-      const st = Object.values(d.stars).reduce((a, b) => a + b, 0);
-      return lv + ' ' + plural(lv, 'уровень', 'уровня', 'уровней') + ' · ' + st + '★';
-    }
   }
 ];
 
@@ -141,7 +142,9 @@ const plural = (n, one, few, many) => {
 };
 
 const box = document.getElementById('games');
-for (const g of GAMES){
+function renderGames(){
+box.replaceChildren();
+for (const g of (globalThis.GameLaunches ? globalThis.GameLaunches.rank(GAMES) : GAMES)){
   let pr = null;
   try { pr = g.progress(); } catch { pr = null; }
   const a = document.createElement('a');
@@ -159,6 +162,9 @@ for (const g of GAMES){
   a.querySelector('.pr').textContent = g.soon ? 'скоро' : (pr || 'ещё не играл');
   box.appendChild(a);
 }
+}
+renderGames();
+addEventListener('pageshow', e => { if (e.persisted) renderGames(); });
 
 if ('serviceWorker' in navigator)
   addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {}));

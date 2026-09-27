@@ -13,6 +13,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
 <link rel="stylesheet" href="shell.css?v=48">
+<script src="launch-history.js?v=57"></script>
 <script src="sound.js?v=48"></script>
 <style>
   :root{--hint-bottom:110px;--line:rgba(202,216,179,.17);--muted:#bdc9b2}
@@ -3231,10 +3232,12 @@ function levelLose(){
 const OVERLAYS = ['ovWin','ovLose','ovMaps','ovHelp','ovBook'];
 let prevOv = null;
 function showOverlay(id){
+  if (id !== 'ovMaps' && document.activeElement === $('#lvInput')) $('#lvInput').blur();
   if (id) sfx.stop();
   for (const k of OVERLAYS) $('#' + k).classList.toggle('show', k === id);
   // при закрытии пауза снимается, только если уровень ещё идёт
   G.paused = id ? true : G.over;
+  if (id !== 'ovMaps') requestAnimationFrame(() => window.scrollTo(0, 0));
 }
 function closeAll(){
   showOverlay(null);
@@ -3258,9 +3261,13 @@ function openMaps(){
   $('#lvInput').value = G.lv + 1;
   showOverlay('ovMaps');
   sndTap();
-  // при 120 картах листать до текущей неудобно — подводим её под глаза сами
+  // Прокручиваем только сетку: scrollIntoView на iOS сдвигал всю страницу,
+  // после чего игровое поле оставалось обрезанным до поворота телефона.
   const cur = grid.children[G.lv];
-  if (cur) cur.scrollIntoView({ block: 'center' });
+  if (cur){
+    const gridRect = grid.getBoundingClientRect(), curRect = cur.getBoundingClientRect();
+    grid.scrollTop += curRect.top - gridRect.top - (grid.clientHeight - curRect.height) / 2;
+  }
 }
 $('#title').addEventListener('click', openMaps);
 $('#title').addEventListener('keydown', e => {

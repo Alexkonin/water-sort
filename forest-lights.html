@@ -25,9 +25,12 @@
 #lights button{font:inherit;touch-action:manipulation;border:0;color:inherit}
 #lights button:disabled{opacity:.3}
 #lights .fl-undo{width:44px;height:44px;border-radius:13px;background:#bfd0a31a;display:grid;place-items:center}
-#lights .fl-board{position:relative;width:100%;aspect-ratio:1;margin:22px auto 8px}
+#lights .fl-board{position:relative;width:100%;aspect-ratio:1;margin:22px auto 8px;touch-action:none;cursor:grab}
+#lights .fl-board.fl-dragging{cursor:grabbing}
+#lights .fl-board.fl-dragging .fl-bead{transition:none}
+#lights .fl-board.fl-dragging .fl-track{border-color:#bfd0a377}
 #lights .fl-track{position:absolute;inset:18%;border:2px solid #bfd0a330;border-radius:50%;box-shadow:0 0 0 14px #bfd0a307,inset 0 0 0 13px #bfd0a307}
-#lights .fl-gate{position:absolute;inset:18%;border:2px solid transparent;border-bottom-color:#ead184b3;border-radius:50%;pointer-events:none}
+#lights .fl-gate{position:absolute;inset:18%;border:3px solid transparent;border-bottom-color:#ead184;border-radius:50%;filter:drop-shadow(0 0 4px #ead18488);pointer-events:none}
 #lights .fl-flow{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;opacity:0;transition:opacity .06s}
 #lights .fl-flow path{fill:none;stroke:#ead184;stroke-width:.55;stroke-linecap:round}
 #lights .fl-flow marker path{fill:#ead184;stroke:none}
@@ -100,7 +103,7 @@
   <div class="fl-track"></div><div class="fl-gate"></div><svg class="fl-flow" viewBox="0 0 100 100" aria-hidden="true"><defs><marker id="fl-direction" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0 0 L5 2.5 L0 5 Z"/></marker></defs><path d="M31 69 Q50 58 69 69" marker-end="url(#fl-direction)"/><path d="M73 78 Q66 84 56 85" marker-end="url(#fl-direction)"/><path d="M44 85 Q34 84 27 78" marker-end="url(#fl-direction)"/></svg><div class="fl-seats"></div><div class="fl-homes"></div><div class="fl-beads"></div>
   <div class="fl-center"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#sprout"/></svg><div class="fl-status" aria-live="polite"></div></div>
  </div>
- <p class="fl-guide">Каждый огонёк — к своей отметке<small>«Тройка» меняет местами три нижние позиции</small></p>
+ <p class="fl-guide">Каждый огонёк — к своей отметке<small>Крути кольцо пальцем · нажми на медовую дугу для тройки</small></p>
  </main>
  <div class="fl-controls"><button type="button" data-move="L" aria-label="Повернуть кольцо влево"><span aria-hidden="true">↶</span>Кольцо</button><button type="button" class="fl-turn" data-move="T" aria-label="Переставить нижнюю тройку"><span aria-hidden="true">⟳</span>Тройка</button><button type="button" data-move="R" aria-label="Повернуть кольцо вправо"><span aria-hidden="true">↷</span>Кольцо</button></div>
  <div class="fl-footer"><button class="fl-undo" aria-label="Отменить ход"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#undo"/></svg>Назад</button><span>Ходов: <b class="fl-moves">0</b></span><span class="fl-best"></span></div>
@@ -111,8 +114,8 @@
  <p>Помоги лесным огонькам вернуться на свои места.</p>
  <ol class="help-list">
   <li><strong>Найди пару.</strong> Совмести каждый шарик с неподвижной отметкой на внешнем ободке. Цвет и значок должны совпасть.</li>
-  <li><strong>Вращай кольцо.</strong> Кнопки слева и справа сдвигают все огоньки на одну позицию.</li>
-  <li><strong>Меняй тройку.</strong> Медовая дуга отмечает три нижние позиции. Правый огонёк идёт вниз, нижний — влево, левый — вправо. Пустые места участвуют в перестановке тоже.</li>
+  <li><strong>Вращай кольцо.</strong> Потяни за кольцо или огонёк в нужную сторону. Можно также нажать на левую или правую сторону кольца либо воспользоваться кнопками.</li>
+  <li><strong>Меняй тройку.</strong> Нажми на медовую дугу или кнопку «Тройка». Правый огонёк идёт вниз, нижний — влево, левый — вправо. Пустые места участвуют в перестановке тоже.</li>
   <li><strong>Пробуй спокойно.</strong> «Назад» отменяет ход, круглая стрелка сверху начинает уровень заново. Таймера нет.</li>
  </ol>
  <p>1000 уровней: от двух до семи огоньков. Нажми на номер вверху, чтобы выбрать любой уровень. Прогресс сохраняется автоматически.</p>
@@ -142,11 +145,12 @@
  let {level,state,moves,history,best,completed,legacyBest}=ForestLights.restoreProgress(saved,levels,FOREST_CATALOG_VERSION);
  let puzzle=levels[level-1];
  let soundOn=saved.sound!==false,helpSeen=saved.helpSeen===true;
- let busy=false,epoch=0,animations=[],activeDialog=null,previousFocus=null,page=0;
+ let busy=false,epoch=0,animations=[],activeDialog=null,previousFocus=null,page=0,gesture=null;
+ const board=$('.fl-board');
  const sfx=GameAudio.create({enabled:()=>soundOn});
  function save(){try{localStorage.setItem(KEY,JSON.stringify({catalogVersion:FOREST_CATALOG_VERSION,level,state,moves,history,best,completed,legacyBest,sound:soundOn,helpSeen}));}catch{}}
- function point(i,r=32){const a=(i*45-90)*Math.PI/180;return [50+r*Math.cos(a),50+r*Math.sin(a)];}
- function place(el,i,r=32){const [x,y]=point(i,r);el.style.left=x+'%';el.style.top=y+'%';}
+ function point(i,r=32,angle=0){const a=(i*45-90+angle)*Math.PI/180;return [50+r*Math.cos(a),50+r*Math.sin(a)];}
+ function place(el,i,r=32,angle=0){const [x,y]=point(i,r,angle);el.style.left=x+'%';el.style.top=y+'%';}
  function build(){
   $('.fl-seats').replaceChildren();$('.fl-homes').replaceChildren();$('.fl-beads').replaceChildren();
   for(let i=0;i<8;i++){
@@ -161,7 +165,7 @@
   document.querySelectorAll('.fl-home').forEach(h=>{const i=+h.dataset.slot,ok=state[i]===puzzle.target[i];h.classList.toggle('fl-match',ok);if(ok)matched++;});
   document.querySelectorAll('.fl-bead').forEach(b=>place(b,state.indexOf(b.dataset.color)));
   $('.fl-status').textContent=matched===total?'Все дома!':matched+' из '+total+' на местах';
-  $('.fl-board').setAttribute('aria-label','Огоньки по часовой стрелке от верха: '+[...state].map(x=>names[+x]).join(', ')+'. Совпадений: '+matched+' из '+total+'.');
+  board.setAttribute('aria-label','Огоньки по часовой стрелке от верха: '+[...state].map(x=>names[+x]).join(', ')+'. Совпадений: '+matched+' из '+total+'.');
   $('.fl-moves').textContent=moves;$('.fl-undo').disabled=busy||!history.length;
   $('.fl-best').textContent=best[level]?'Лучшее: '+best[level]:'Минимум: '+puzzle.par;
   $('#levelLabel').textContent='Уровень '+level;
@@ -170,7 +174,7 @@
   $('#btnSound use').setAttribute('href','icons.svg?v=50#'+(soundOn?'sound':'muted'));
   buttons.forEach(b=>b.disabled=busy||state===puzzle.target);
  }
- function cancelAnimation(){epoch++;animations.forEach(a=>a.cancel());animations=[];busy=false;root.classList.remove('fl-trio-active','fl-moving');}
+ function cancelAnimation(){epoch++;animations.forEach(a=>a.cancel());animations=[];busy=false;gesture=null;board.classList.remove('fl-dragging');root.classList.remove('fl-trio-active','fl-moving');}
  function closeDialog(){
   if(!activeDialog)return;
   const d=activeDialog;d.classList.remove('show');d.hidden=true;activeDialog=null;
@@ -194,11 +198,11 @@
   closeDialog();cancelAnimation();sfx.stop();level=n;puzzle=levels[level-1];state=puzzle.start;moves=0;history=[];
   build();render();save();
  }
- async function move(kind){
+ async function move(kind,count=1,fromAngle=null){
   if(busy||activeDialog||state===puzzle.target)return;
   const before=state,token=epoch;
   busy=true;root.classList.add('fl-moving');root.classList.toggle('fl-trio-active',kind==='T');
-  history.push(before);if(history.length>256)history.shift();state=step(state,kind);moves++;
+  for(let n=0;n<count;n++){history.push(state);if(history.length>256)history.shift();state=step(state,kind);moves++;}
   render();save();sfx.play(kind==='T'?'plop':'tap');
   if(!reduced.matches){
    document.querySelectorAll('.fl-bead').forEach(bead=>{
@@ -206,16 +210,45 @@
     const frames=Array.from({length:17},(_,k)=>{
      const t=k/16;let x,y;
      if(kind==='T'&&from===5){const [ax,ay]=point(5),[bx,by]=point(3);x=ax+(bx-ax)*t;y=(1-t)*(1-t)*ay+2*(1-t)*t*54+t*t*by;}
-     else{const a=(from*45-90+(kind==='L'?-45:45)*t)*Math.PI/180;x=50+32*Math.cos(a);y=50+32*Math.sin(a);}
+     else{const a=(from*45-90+(fromAngle??0)*(1-t)+(kind==='L'?-45:45)*count*t)*Math.PI/180;x=50+32*Math.cos(a);y=50+32*Math.sin(a);}
      return {left:x+'%',top:y+'%'};
     });
-    if(bead.animate)animations.push(bead.animate(frames,{duration:220,easing:'ease-out'}));
+    if(bead.animate)animations.push(bead.animate(frames,{duration:Math.min(500,220+Math.max(0,count-1)*45),easing:'ease-out'}));
    });
   }
   await Promise.all(animations.map(a=>a.finished.catch(()=>{})));
   if(token!==epoch)return;
   animations=[];busy=false;root.classList.remove('fl-trio-active','fl-moving');render();
-  if(state===puzzle.target){sfx.play('win');win();}
+ if(state===puzzle.target){sfx.play('win');win();}
+ }
+ function wheelPosition(e){
+  const rect=board.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width-.5,y=(e.clientY-rect.top)/rect.height-.5;
+  return {x,y,r:Math.hypot(x,y),angle:Math.atan2(y,x)};
+ }
+ function trackGesture(e){
+  if(!gesture||e.pointerId!==gesture.id)return;
+  const p=wheelPosition(e);
+  if(p.r>.14){
+   const change=Math.atan2(Math.sin(p.angle-gesture.angle),Math.cos(p.angle-gesture.angle));
+   gesture.turn+=change;gesture.angle=p.angle;
+  }
+  if(Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)>8)gesture.moved=true;
+  if(gesture.moved){
+   board.classList.add('fl-dragging');
+   document.querySelectorAll('.fl-bead').forEach(b=>place(b,state.indexOf(b.dataset.color),32,gesture.turn*180/Math.PI));
+  }
+ }
+ function endGesture(e,cancelled=false){
+  if(!gesture||e.pointerId!==gesture.id)return;
+  if(!cancelled)trackGesture(e);
+  const {moved,turn,arc,side}=gesture;gesture=null;board.classList.remove('fl-dragging');
+  if(cancelled||busy||activeDialog){render();return;}
+  if(moved){
+   if(Math.abs(turn)<.18){render();return;}
+   const count=Math.min(16,Math.max(1,Math.round(Math.abs(turn)/(Math.PI/4))));
+   move(turn>0?'R':'L',count,turn*180/Math.PI);
+  }else if(arc)move('T');
+  else move(side<0?'L':'R');
  }
  function undo(){if(busy||activeDialog||!history.length)return;state=history.pop();moves=Math.max(0,moves-1);sfx.play('tap');render();save();}
  function renderLevels(){
@@ -230,6 +263,15 @@
  }
  function showLevels(){page=Math.floor((level-1)/50);$('#levelError').textContent='';$('#levelInput').value='';renderLevels();openDialog('#ovLevel');}
  buttons.forEach(b=>b.addEventListener('click',()=>move(b.dataset.move)));
+ board.addEventListener('pointerdown',e=>{
+  if(gesture||busy||activeDialog||state===puzzle.target||!e.isPrimary||e.button!==0)return;
+  const p=wheelPosition(e);if(p.r<.18||p.r>.48)return;
+  gesture={id:e.pointerId,x:e.clientX,y:e.clientY,angle:p.angle,turn:0,moved:false,arc:p.y>0&&Math.abs(p.r-.32)<Math.max(.055,18/board.clientWidth),side:p.x};
+  board.setPointerCapture(e.pointerId);
+ });
+ board.addEventListener('pointermove',trackGesture);
+ board.addEventListener('pointerup',e=>endGesture(e));
+ board.addEventListener('pointercancel',e=>endGesture(e,true));
  $('.fl-undo').addEventListener('click',undo);
  $('#btnRestart').addEventListener('click',()=>start(level));
  $('#btnHelp').addEventListener('click',()=>openDialog('#ovHelp'));

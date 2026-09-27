@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="shell.css?v=48">
+<link rel="stylesheet" href="shell.css?v=50">
 <style>
   #app{justify-content:center;gap:18px;max-width:520px;margin:0 auto;width:100%}
   .menu-head{text-align:center;flex:0 0 auto}
@@ -39,6 +39,7 @@
     background:#dce3c8;border:1px solid rgba(105,124,72,.2);
   }
   .game .ico .ui-icon{width:34px;height:34px;stroke-width:1.6}
+  .game .ico.lights{color:#8b7032}
   .game .ico.flask{color:#3c7568}
   .game .ico.castle{color:#6d7d46}
   .game .arr{display:flex;align-items:center}
@@ -54,7 +55,7 @@
 
   footer{flex:0 0 auto;text-align:center;font-size:11.5px;opacity:.7;padding-top:2px}
 </style>
-<link rel="stylesheet" href="palette.css?v=48">
+<link rel="stylesheet" href="palette.css?v=50">
 </head>
 <body>
 <div id="app">
@@ -77,6 +78,19 @@
    в игру ещё не заходили. Читаем в try/catch: в приватном режиме Safari
    обращение к localStorage может бросить, и меню не должно из-за этого пропасть. */
 const GAMES = [
+  {
+    file: 'forest-lights.html',
+    icon: 'lights',
+    name: 'Собери огоньки',
+    desc: 'Вращай кольцо и меняй огоньки тройками, чтобы каждый вернулся на своё место',
+    progress(){
+      const d = read('forestlights.v1');
+      if (!d) return null;
+      const cleared = d.completed || d.best;
+      const count = cleared && typeof cleared === 'object' ? Object.keys(cleared).length : 0;
+      return count ? 'пройдено ' + count + ' из 1000' : 'уровень ' + (d.level || 1) + ' из 1000';
+    }
+  },
   {
     file: 'water-sort.html',
     icon: 'flask',
@@ -125,8 +139,8 @@ for (const g of GAMES){
     '<div class="ico"></div>' +
     '<div class="txt"><div class="nm"></div><div class="ds"></div>' +
     '<div class="pr ' + (pr ? '' : 'none') + '"></div></div>' +
-    '<div class="arr"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=48#chevron"/></svg></div>';
-  a.querySelector('.ico').innerHTML = '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=48#' + g.icon + '"/></svg>';
+    '<div class="arr"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#chevron"/></svg></div>';
+  a.querySelector('.ico').innerHTML = '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#' + g.icon + '"/></svg>';
   a.querySelector('.ico').classList.add(g.icon);
   a.querySelector('.nm').textContent = g.name;
   a.querySelector('.ds').textContent = g.desc;

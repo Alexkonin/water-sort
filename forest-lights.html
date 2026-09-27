@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Собери огоньки — Игры</title>
+<meta name="theme-color" content="#102f2d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="shell.css?v=50">
+<link rel="stylesheet" href="palette.css?v=50">
+<style>
+#lights{padding:16px 0}
+#lights *{box-sizing:border-box}
+#lights .fl-game{width:min(100%,390px);margin:auto;padding:22px 18px 20px;border-radius:26px;background:radial-gradient(ellipse at 50% 10%,#315649,#1c403b 50%,#102f2d);color:#f4efdb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 16px 36px #102f2d25}
+#lights .fl-header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+#lights .fl-title{font-size:18px;font-weight:700;line-height:1.3}
+#lights .fl-subtitle{font-size:12px;color:#bdc9b2;margin-top:4px}
+#lights button{font:inherit;touch-action:manipulation;border:0;color:inherit}
+#lights button:disabled{opacity:.3}
+#lights .fl-undo{width:44px;height:44px;border-radius:13px;background:#bfd0a31a;display:grid;place-items:center}
+#lights .fl-board{position:relative;width:100%;aspect-ratio:1;margin:22px auto 8px}
+#lights .fl-track{position:absolute;inset:18%;border:2px solid #bfd0a330;border-radius:50%;box-shadow:0 0 0 14px #bfd0a307,inset 0 0 0 13px #bfd0a307}
+#lights .fl-gate{position:absolute;inset:18%;border:2px solid transparent;border-bottom-color:#ead184b3;border-radius:50%;pointer-events:none}
+#lights .fl-flow{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;opacity:0;transition:opacity .06s}
+#lights .fl-flow path{fill:none;stroke:#ead184;stroke-width:.55;stroke-linecap:round}
+#lights .fl-flow marker path{fill:#ead184;stroke:none}
+#lights .fl-seat.fl-working{border-color:#ead18499;box-shadow:0 0 0 4px #ead18409}
+#lights.fl-trio-active .fl-flow,#lights .fl-game:has(.fl-turn:focus-visible) .fl-flow{opacity:.85}
+#lights.fl-trio-active .fl-seat.fl-working{border-color:#ead184;box-shadow:0 0 0 5px #ead18418,0 0 12px #ead18433}
+#lights.fl-trio-active .fl-bead{transition:none}
+@media(hover:hover){#lights .fl-game:has(.fl-turn:hover) .fl-flow{opacity:.85}}
+#lights .fl-guide small{display:block;margin-top:3px;font-size:12px;color:#ead184}
+#lights .fl-seat{position:absolute;width:13px;height:13px;border:1px solid #bfd0a35c;border-radius:50%;transform:translate(-50%,-50%)}
+#lights .fl-home{position:absolute;transform:translate(-50%,-50%);width:31px;height:31px;border:1px solid var(--fl-tone);border-radius:50%;color:var(--fl-tone);display:grid;place-items:center;font-size:16px;opacity:.85;transition:box-shadow .25s,background .25s}
+#lights .fl-home.fl-match{background:#f4efdb13;box-shadow:0 0 14px var(--fl-tone);opacity:1}
+#lights .fl-bead{position:absolute;transform:translate(-50%,-50%);width:35px;height:35px;border-radius:50%;background:radial-gradient(circle at 30% 22%,#fff9,var(--fl-tone) 44%,#102f2d 130%);color:#183b32;box-shadow:inset 0 0 0 1px #f4efdb66,0 3px 8px #061b1966,0 0 13px color-mix(in srgb,var(--fl-tone) 30%,transparent);display:grid;place-items:center;font-size:18px;transition:left .27s ease,top .27s ease}
+#lights .fl-center{position:absolute;inset:32% 22% 38%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;pointer-events:none}
+#lights .fl-center>svg{color:#bfd0a3;opacity:.55;width:28px;height:28px}
+#lights .fl-status{font-size:14px;font-weight:600;text-align:center;color:#e9e4cd}
+#lights .fl-guide{text-align:center;color:#bdc9b2;font-size:13px;line-height:1.5;margin:0 0 18px}
+#lights .fl-controls{display:grid;grid-template-columns:1fr 1.8fr 1fr;gap:8px}
+#lights .fl-controls button{min-height:58px;border-radius:17px;background:#bfd0a31a;font-size:13px;display:flex;gap:4px;align-items:center;justify-content:center;flex-direction:column}
+#lights .fl-controls .fl-turn{background:linear-gradient(#ead184,#d5b561);color:#2e4437;font-weight:700}
+#lights .fl-controls span{font-size:22px;line-height:1}
+#lights .fl-footer{margin-top:17px;text-align:center;font-size:12px;color:#bdc9b2}
+@media(prefers-reduced-motion:reduce){#lights .fl-bead,#lights .fl-home{transition:none}}
+
+.overlay[hidden]{display:none}
+#lights.fl-moving .fl-bead{transition:none}
+#app{max-width:480px;margin:auto;width:100%}
+#lights{padding:0;display:flex;flex:1;min-height:0;flex-direction:column}
+#lights .fl-game{width:100%;padding:0;max-width:none;margin:0;background:none;box-shadow:none;border-radius:0;display:flex;flex:1;min-height:0;flex-direction:column}
+#lights main{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#lights .fl-board{width:min(100%,calc(100dvh - 280px));max-width:390px;flex-shrink:0;margin:8px auto}
+#lights .fl-guide{margin:0 0 14px}
+#lights .fl-controls{flex-shrink:0}
+#lights .fl-footer{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-top:12px;font-size:12px;text-align:center}
+#lights .fl-undo{width:auto;min-height:44px;height:44px;display:flex;gap:6px;padding:0 10px;justify-self:start;font-size:12px}
+#lights .fl-best{text-align:right;font-size:12px;line-height:1.4}
+.level-title{font-size:clamp(14px,4vw,17px);border:0;background:none;color:inherit;cursor:pointer;padding:3px 0;font-family:inherit}
+.level-title small{font-size:10.5px;opacity:.7}
+#ovLevel .card{width:min(390px,92vw);padding:22px 18px}
+.level-pages{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.level-pages button{border:0;border-radius:12px;background:#dce3c8;color:var(--ink);min-width:44px;min-height:44px;font-size:20px}
+.level-pages span{font-size:14px}
+.level-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.level-grid button{position:relative;min-height:44px;border:0;border-radius:10px;background:#dce3c8;color:var(--ink);font:600 13px system-ui;cursor:pointer}
+.level-grid button.done{background:#bfd0a3}
+.level-grid button.done::after{content:'✓';position:absolute;right:3px;top:1px;font-size:9px}
+.level-grid button.current{background:var(--honey);box-shadow:inset 0 0 0 2px #8b7032}
+.level-jump{display:flex;gap:8px;margin-top:14px}
+.level-jump input{min-width:0;width:100%;padding:10px;border:1px solid #697c4840;border-radius:12px;background:#fffbee;color:var(--ink);font:16px system-ui}
+.level-jump button{border:0;border-radius:12px;background:#dce3c8;padding:0 12px;color:var(--ink);font:inherit}
+#levelError{color:#a45348;font-size:13px;min-height:18px;margin:6px 0 0}
+.help-list strong{font-weight:700}
+#ovWin .win-detail{font-size:14px;line-height:1.5}
+@media(max-height:480px){html,body{height:auto;overflow:auto}#app{height:auto;min-height:100dvh}#lights .fl-board{width:min(100%,280px)}#lights main{min-height:340px}}
+@media(prefers-reduced-motion:reduce){#lights .fl-flow{transition:none}}
+</style>
+<script src="sound.js?v=50"></script>
+<script src="forest-lights.js?v=50"></script>
+<script src="forest-lights-levels.js?v=50"></script>
+</head>
+<body>
+<div id="app">
+<header>
+ <div class="hdr-side"><a href="index.html" class="icon-btn" aria-label="Все игры"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#menu"/></svg></a><button class="icon-btn" id="btnSound" aria-label="Выключить звук"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#sound"/></svg></button></div>
+ <button class="hdr-title level-title" id="btnLevel" aria-label="Выбрать уровень"><span id="levelLabel">Уровень 1</span><small>Собери огоньки</small></button>
+ <div class="hdr-side right"><button class="icon-btn" id="btnRestart" aria-label="Начать уровень заново"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#restart"/></svg></button><button class="icon-btn" id="btnHelp" aria-label="Как играть"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#help"/></svg></button></div>
+</header>
+<div id="lights"><div class="fl-game">
+ <main> <div class="fl-board" role="img" aria-label="Восемь позиций по кругу. Три цветных огонька должны совпасть с отметками на внешнем ободке. Нижние три позиции соединяет медовая дуга.">
+  <div class="fl-track"></div><div class="fl-gate"></div><svg class="fl-flow" viewBox="0 0 100 100" aria-hidden="true"><defs><marker id="fl-direction" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0 0 L5 2.5 L0 5 Z"/></marker></defs><path d="M31 69 Q50 58 69 69" marker-end="url(#fl-direction)"/><path d="M73 78 Q66 84 56 85" marker-end="url(#fl-direction)"/><path d="M44 85 Q34 84 27 78" marker-end="url(#fl-direction)"/></svg><div class="fl-seats"></div><div class="fl-homes"></div><div class="fl-beads"></div>
+  <div class="fl-center"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#sprout"/></svg><div class="fl-status" aria-live="polite"></div></div>
+ </div>
+ <p class="fl-guide">Каждый огонёк — к своей отметке<small>«Тройка» меняет местами три нижние позиции</small></p>
+ </main>
+ <div class="fl-controls"><button type="button" data-move="L" aria-label="Повернуть кольцо влево"><span aria-hidden="true">↶</span>Кольцо</button><button type="button" class="fl-turn" data-move="T" aria-label="Переставить нижнюю тройку"><span aria-hidden="true">⟳</span>Тройка</button><button type="button" data-move="R" aria-label="Повернуть кольцо вправо"><span aria-hidden="true">↷</span>Кольцо</button></div>
+ <div class="fl-footer"><button class="fl-undo" aria-label="Отменить ход"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#undo"/></svg>Назад</button><span>Ходов: <b class="fl-moves">0</b></span><span class="fl-best"></span></div>
+</div></div>
+</div>
+<div class="overlay" id="ovHelp" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+ <div class="card"><div class="big"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#lights"/></svg></div><h2 id="helpTitle">Как играть</h2>
+ <p>Помоги лесным огонькам вернуться на свои места.</p>
+ <ol class="help-list">
+  <li><strong>Найди пару.</strong> Совмести каждый шарик с неподвижной отметкой на внешнем ободке. Цвет и значок должны совпасть.</li>
+  <li><strong>Вращай кольцо.</strong> Кнопки слева и справа сдвигают все огоньки на одну позицию.</li>
+  <li><strong>Меняй тройку.</strong> Медовая дуга отмечает три нижние позиции. Правый огонёк идёт вниз, нижний — влево, левый — вправо. Пустые места участвуют в перестановке тоже.</li>
+  <li><strong>Пробуй спокойно.</strong> «Назад» отменяет ход, круглая стрелка сверху начинает уровень заново. Таймера нет.</li>
+ </ol>
+ <p>1000 уровней: от двух до семи огоньков. Нажми на номер вверху, чтобы выбрать любой уровень. Прогресс сохраняется автоматически.</p>
+ <button class="cta" id="btnCloseHelp">Понятно, играем</button></div>
+</div>
+<div class="overlay" id="ovLevel" role="dialog" aria-modal="true" aria-labelledby="levelsTitle" hidden>
+ <div class="card"><div class="big"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#levels"/></svg></div><h2 id="levelsTitle">Выбор уровня</h2><p id="levelProgress"></p>
+ <div class="level-pages"><button id="prevPage" aria-label="Предыдущие уровни">‹</button><span id="pageLabel"></span><button id="nextPage" aria-label="Следующие уровни">›</button></div>
+ <div class="level-grid" id="levelGrid"></div>
+ <form class="level-jump" id="jumpForm"><input id="levelInput" type="number" inputmode="numeric" min="1" max="1000" required placeholder="Номер от 1 до 1000" aria-label="Номер уровня"><button type="submit">Перейти</button></form><p id="levelError" role="alert"></p>
+ <button class="ghost" id="btnCloseLevel">Закрыть</button></div>
+</div>
+<div class="overlay" id="ovWin" role="dialog" aria-modal="true" aria-labelledby="winTitle" hidden>
+ <div class="card"><div class="big"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#trophy"/></svg></div><h2 id="winTitle">Все огоньки дома!</h2><p class="win-detail" id="winDetail"></p><button class="cta" id="btnNext">Следующий уровень</button><button class="ghost" id="btnReplay">Сыграть ещё раз</button></div>
+</div>
+<script>
+'use strict';
+(() => {
+ const $=s=>document.querySelector(s), root=$('#lights');
+ const {step,valid}=ForestLights, levels=FOREST_LEVELS, KEY='forestlights.v1';
+ const tones=['','#ead184','#89c6b5','#c8b2dc','#e49c80','#91bfe2','#d7dc9b','#e2a6c2'];
+ const symbols=['','✦','◆','●','▲','■','✚','☾'];
+ const names=['пусто','янтарный','мятный','сиреневый','коралловый','голубой','лаймовый','розовый'];
+ const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+ const buttons=Array.from(root.querySelectorAll('[data-move]'));
+ let saved={};try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch{}
+ let {level,state,moves,history,best,completed,legacyBest}=ForestLights.restoreProgress(saved,levels,FOREST_CATALOG_VERSION);
+ let puzzle=levels[level-1];
+ let soundOn=saved.sound!==false,helpSeen=saved.helpSeen===true;
+ let busy=false,epoch=0,animations=[],activeDialog=null,previousFocus=null,page=0;
+ const sfx=GameAudio.create({enabled:()=>soundOn});
+ function save(){try{localStorage.setItem(KEY,JSON.stringify({catalogVersion:FOREST_CATALOG_VERSION,level,state,moves,history,best,completed,legacyBest,sound:soundOn,helpSeen}));}catch{}}
+ function point(i,r=32){const a=(i*45-90)*Math.PI/180;return [50+r*Math.cos(a),50+r*Math.sin(a)];}
+ function place(el,i,r=32){const [x,y]=point(i,r);el.style.left=x+'%';el.style.top=y+'%';}
+ function build(){
+  $('.fl-seats').replaceChildren();$('.fl-homes').replaceChildren();$('.fl-beads').replaceChildren();
+  for(let i=0;i<8;i++){
+   const seat=document.createElement('div');seat.className='fl-seat'+(i>=3&&i<=5?' fl-working':'');place(seat,i);$('.fl-seats').append(seat);
+   const color=+puzzle.target[i];if(!color)continue;
+   const home=document.createElement('div');home.className='fl-home';home.dataset.slot=i;home.style.setProperty('--fl-tone',tones[color]);home.textContent=symbols[color];place(home,i,44);$('.fl-homes').append(home);
+   const bead=document.createElement('div');bead.className='fl-bead';bead.dataset.color=color;bead.style.setProperty('--fl-tone',tones[color]);bead.textContent=symbols[color];$('.fl-beads').append(bead);
+  }
+ }
+ function render(){
+  let matched=0;const total=puzzle.target.replaceAll('0','').length;
+  document.querySelectorAll('.fl-home').forEach(h=>{const i=+h.dataset.slot,ok=state[i]===puzzle.target[i];h.classList.toggle('fl-match',ok);if(ok)matched++;});
+  document.querySelectorAll('.fl-bead').forEach(b=>place(b,state.indexOf(b.dataset.color)));
+  $('.fl-status').textContent=matched===total?'Все дома!':matched+' из '+total+' на местах';
+  $('.fl-board').setAttribute('aria-label','Огоньки по часовой стрелке от верха: '+[...state].map(x=>names[+x]).join(', ')+'. Совпадений: '+matched+' из '+total+'.');
+  $('.fl-moves').textContent=moves;$('.fl-undo').disabled=busy||!history.length;
+  $('.fl-best').textContent=best[level]?'Лучшее: '+best[level]:'Минимум: '+puzzle.par;
+  $('#levelLabel').textContent='Уровень '+level;
+  $('#btnSound').setAttribute('aria-label',soundOn?'Выключить звук':'Включить звук');
+  $('#btnSound').setAttribute('aria-pressed',String(soundOn));
+  $('#btnSound use').setAttribute('href','icons.svg?v=50#'+(soundOn?'sound':'muted'));
+  buttons.forEach(b=>b.disabled=busy||state===puzzle.target);
+ }
+ function cancelAnimation(){epoch++;animations.forEach(a=>a.cancel());animations=[];busy=false;root.classList.remove('fl-trio-active','fl-moving');}
+ function closeDialog(){
+  if(!activeDialog)return;
+  const d=activeDialog;d.classList.remove('show');d.hidden=true;activeDialog=null;
+  if(d.id==='ovHelp'){helpSeen=true;save();}
+  $('#app').inert=false;if(previousFocus?.isConnected)previousFocus.focus();previousFocus=null;
+ }
+ function openDialog(id){
+  const prior=previousFocus||document.activeElement;if(activeDialog)closeDialog();
+  previousFocus=prior;activeDialog=$(id);activeDialog.hidden=false;activeDialog.classList.add('show');$('#app').inert=true;
+  const card=activeDialog.querySelector('.card');card.tabIndex=-1;card.focus({preventScroll:true});card.scrollTop=0;
+ }
+ function win(){
+  best[level]=Math.min(best[level]??Infinity,moves);completed[level]=true;save();render();
+  const all=Object.keys(completed).length===1000;
+  $('#winTitle').textContent=all?'Все 1000 уровней пройдены!':'Все огоньки дома!';
+  $('#winDetail').textContent='Уровень '+level+' · ходов: '+moves+'. '+(moves===puzzle.par?'Кратчайшее решение!':'Можно уложиться в '+puzzle.par+'.')+' Пройдено '+Object.keys(completed).length+' из 1000.';
+  $('#btnNext').textContent=level===1000?'К выбору уровней':'Следующий уровень';openDialog('#ovWin');
+ }
+ function start(n){
+  closeDialog();cancelAnimation();sfx.stop();level=n;puzzle=levels[level-1];state=puzzle.start;moves=0;history=[];
+  build();render();save();
+ }
+ async function move(kind){
+  if(busy||activeDialog||state===puzzle.target)return;
+  const before=state,token=epoch;
+  busy=true;root.classList.add('fl-moving');root.classList.toggle('fl-trio-active',kind==='T');
+  history.push(before);if(history.length>256)history.shift();state=step(state,kind);moves++;
+  render();save();sfx.play(kind==='T'?'plop':'tap');
+  if(!reduced.matches){
+   document.querySelectorAll('.fl-bead').forEach(bead=>{
+    const from=before.indexOf(bead.dataset.color);if(kind==='T'&&(from<3||from>5))return;
+    const frames=Array.from({length:17},(_,k)=>{
+     const t=k/16;let x,y;
+     if(kind==='T'&&from===5){const [ax,ay]=point(5),[bx,by]=point(3);x=ax+(bx-ax)*t;y=(1-t)*(1-t)*ay+2*(1-t)*t*54+t*t*by;}
+     else{const a=(from*45-90+(kind==='L'?-45:45)*t)*Math.PI/180;x=50+32*Math.cos(a);y=50+32*Math.sin(a);}
+     return {left:x+'%',top:y+'%'};
+    });
+    if(bead.animate)animations.push(bead.animate(frames,{duration:220,easing:'ease-out'}));
+   });
+  }
+  await Promise.all(animations.map(a=>a.finished.catch(()=>{})));
+  if(token!==epoch)return;
+  animations=[];busy=false;root.classList.remove('fl-trio-active','fl-moving');render();
+  if(state===puzzle.target){sfx.play('win');win();}
+ }
+ function undo(){if(busy||activeDialog||!history.length)return;state=history.pop();moves=Math.max(0,moves-1);sfx.play('tap');render();save();}
+ function renderLevels(){
+  $('#levelGrid').replaceChildren();const first=page*50+1,last=Math.min(1000,first+49);
+  $('#pageLabel').textContent=first+'–'+last+' из 1000';$('#prevPage').disabled=page===0;$('#nextPage').disabled=page===19;
+  $('#levelProgress').textContent='Пройдено '+Object.keys(completed).length+' из 1000';
+  for(let n=first;n<=last;n++){
+   const b=document.createElement('button');b.type='button';b.textContent=n;b.dataset.level=n;
+   b.className=(completed[n]?'done ':'')+(n===level?'current':'');b.setAttribute('aria-label','Уровень '+n+(completed[n]?', пройден':'')+(n===level?', текущий':''));
+   if(n===level)b.setAttribute('aria-current','true');b.addEventListener('click',()=>start(n));$('#levelGrid').append(b);
+  }
+ }
+ function showLevels(){page=Math.floor((level-1)/50);$('#levelError').textContent='';$('#levelInput').value='';renderLevels();openDialog('#ovLevel');}
+ buttons.forEach(b=>b.addEventListener('click',()=>move(b.dataset.move)));
+ $('.fl-undo').addEventListener('click',undo);
+ $('#btnRestart').addEventListener('click',()=>start(level));
+ $('#btnHelp').addEventListener('click',()=>openDialog('#ovHelp'));
+ $('#btnCloseHelp').addEventListener('click',()=>{closeDialog();if(state===puzzle.target)win();});
+ $('#btnSound').addEventListener('click',()=>{soundOn=!soundOn;sfx.sync();render();save();});
+ $('#btnLevel').addEventListener('click',showLevels);$('#btnCloseLevel').addEventListener('click',closeDialog);
+ $('#prevPage').addEventListener('click',()=>{if(page>0){page--;renderLevels();}});
+ $('#nextPage').addEventListener('click',()=>{if(page<19){page++;renderLevels();}});
+ $('#jumpForm').addEventListener('submit',e=>{e.preventDefault();const n=Number($('#levelInput').value);if(!Number.isInteger(n)||n<1||n>1000){$('#levelError').textContent='Введи номер от 1 до 1000.';return;}start(n);});
+ $('#btnNext').addEventListener('click',()=>level===1000?showLevels():start(level+1));
+ $('#btnReplay').addEventListener('click',()=>start(level));
+ document.addEventListener('keydown',e=>{
+  if(activeDialog){
+   if(e.key==='Escape'&&activeDialog.id!=='ovWin'){e.preventDefault();closeDialog();return;}
+   if(e.key==='Tab'){
+    const focusable=Array.from(activeDialog.querySelectorAll('button:not([disabled]),input'));
+    const first=focusable[0],last=focusable.at(-1);
+    if(e.shiftKey&&(document.activeElement===first||document.activeElement===activeDialog.querySelector('.card'))){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+   }
+   return;
+  }
+  if(e.repeat||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
+  // Пробел/Enter на кнопках сохраняют нативное поведение и не создают двойной ход.
+  if(e.key==='ArrowLeft'){e.preventDefault();move('L');}
+  else if(e.key==='ArrowRight'){e.preventDefault();move('R');}
+  else if(e.key.toLowerCase()==='t'||e.key.toLowerCase()==='е'){e.preventDefault();move('T');}
+  else if(e.key.toLowerCase()==='z'){e.preventDefault();undo();}
+ });
+ document.addEventListener('visibilitychange',()=>{if(document.hidden){sfx.stop();save();}});
+ window.addEventListener('pagehide',save);
+ build();render();save();
+ if(!helpSeen)openDialog('#ovHelp');else if(state===puzzle.target)win();
+ if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{}));
+})();
+</script>
+</body>
+</html>

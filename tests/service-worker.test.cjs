@@ -53,6 +53,7 @@ test('static assets keep working offline',async()=>{
 test('installation bypasses HTTP cache and activation only removes older game caches',async()=>{
   const h=setup();await h.event('install');await h.event('activate');
   assert.ok(h.installed.length>5 && h.installed.every(r=>r.cache==='reload'));
+  assert.ok(h.installed.some(r=>r.url.endsWith('/focus-mode.js')));
   assert.deepEqual(h.removed,['games-v1']);
 });
 

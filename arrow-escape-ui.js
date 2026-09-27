@@ -110,7 +110,14 @@
     state.level=level;state.puzzle=G.generate(level);state.remaining=state.puzzle.arrows.map(a=>a.id);state.lives=G.LIVES;state.hints=0;zoom=1;
     build();save();tell('Нажми на стрелку, перед которой свободно.');
   }
-  function openDialog(id){document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();}
+  function openDialog(id){
+    document.querySelectorAll('dialog[open]').forEach(d=>d.close());
+    $(id).showModal();
+    // The browser otherwise focuses the primary button when a result appears,
+    // leaving a visible focus ring after touch play. Keep keyboard focus in the
+    // dialog; Tab still moves to the button and shows its focus indicator.
+    if(id==='#resultDialog')$('#resultTitle').focus({preventScroll:true});
+  }
   function result(won){
     $('#resultTitle').textContent=won?'Путь свободен!':'Попробуем ещё раз?';
     $('#resultIcon use').setAttribute('href','icons.svg?v=51#'+(won?'sprout':'restart'));

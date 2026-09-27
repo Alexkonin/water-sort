@@ -69,6 +69,7 @@
   .level-grid button.done{background:#c8d6b5}.level-grid button.done.current{background:var(--honey)}
   .level-summary{text-align:center;font-size:12px!important;margin:14px 0 0!important}
   #resultDialog{text-align:center}#resultIcon{width:46px;height:46px;color:#8b7032;margin:3px auto 15px;display:block}
+  #resultTitle:focus{outline:none}
   #stars{font-size:30px;letter-spacing:9px;color:#a17f32;margin-bottom:17px}
   @media(max-width:360px){#app{padding-left:12px;padding-right:12px;gap:10px}.icon-btn{width:36px;height:36px}.control{font-size:11px;gap:4px}}
   @media(max-height:650px){#app{gap:8px}.control{min-height:47px}.board-top{padding-top:8px}.board-bottom{padding-bottom:4px}#status{min-height:28px;font-size:12px}}
@@ -93,9 +94,9 @@
 </div>
 <dialog id="helpDialog" aria-labelledby="helpTitle"><button class="close" data-close aria-label="Закрыть справку"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=51#close"/></svg></button><h2 id="helpTitle">Освободи все стрелки</h2><div class="help-picture"><svg viewBox="0 0 120 90" aria-hidden="true"><path d="M12 70V40H63V20" fill="none" stroke="#36584a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="m63 9-7 12h14Z" fill="#36584a"/><path d="M90 75V52H80V33H104" fill="none" stroke="#b78328" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="m115 33-12-7v14Z" fill="#b78328"/></svg><span>Сначала проверь путь перед наконечником.</span></div><ol class="help-list"><li>Нажми на любую часть линии. Стрелка выходит в сторону своего наконечника, а хвост следует за ней.</li><li>Другая линия на пути? Сначала освободи её. За столкновение теряется одна из трёх попыток.</li><li>Убери все стрелки с поля. Подсказка покажет свободную, а сетка поможет проверить направление.</li></ol><p>Можно увеличивать поле кнопкой «+» и прокручивать его. С клавиатуры: Tab — выбрать стрелку, Enter — выпустить.</p><button class="cta" data-close>Понятно, играем</button></dialog>
 <dialog id="levelsDialog" aria-labelledby="levelsTitle"><button class="close" data-close aria-label="Закрыть выбор уровня"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=51#close"/></svg></button><h2 id="levelsTitle">Выбери уровень</h2><div class="level-pages"><button id="prevPage" aria-label="Предыдущие уровни">‹</button><span id="pageLabel"></span><button id="nextPage" aria-label="Следующие уровни">›</button></div><div class="level-grid" id="levelGrid"></div><p class="level-summary" id="completed"></p></dialog>
-<dialog id="resultDialog" aria-labelledby="resultTitle"><svg id="resultIcon" class="ui-icon" aria-hidden="true"><use href="icons.svg?v=51#sprout"/></svg><h2 id="resultTitle"></h2><div id="stars" aria-label=""></div><p id="resultText"></p><button class="cta" id="resultPrimary"></button><button class="ghost" id="resultSecondary">Выбрать уровень</button></dialog>
+<dialog id="resultDialog" aria-labelledby="resultTitle"><svg id="resultIcon" class="ui-icon" aria-hidden="true"><use href="icons.svg?v=51#sprout"/></svg><h2 id="resultTitle" tabindex="-1"></h2><div id="stars" aria-label=""></div><p id="resultText"></p><button class="cta" id="resultPrimary"></button><button class="ghost" id="resultSecondary">Выбрать уровень</button></dialog>
 <script src="sound.js?v=51"></script>
 <script src="arrow-escape.js?v=51"></script>
-<script src="arrow-escape-ui.js?v=52"></script>
+<script src="arrow-escape-ui.js?v=54"></script>
 </body>
 </html>

@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#102f2d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Лесные карточки — Игры</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="shell.css?v=58">
+<link rel="stylesheet" href="palette.css?v=51">
+<script src="launch-history.js?v=60"></script>
+<script src="focus-mode.js?v=65"></script>
+<style>
+  #app{width:100%;max-width:520px;margin:auto;gap:11px;padding-inline:16px;touch-action:pan-y}
+  button{font:inherit;cursor:pointer;touch-action:manipulation}
+  button:disabled{cursor:default}
+  header{grid-template-columns:80px minmax(0,1fr) 80px;gap:4px}
+  .hdr-side{gap:4px}
+  .level-title{border:0;background:none;color:var(--cream);padding:2px 0;font-weight:700;font-size:16px;line-height:1.2;white-space:nowrap}
+  .level-title small{display:block;font-size:10px;font-weight:500;letter-spacing:.5px;opacity:.62;margin-top:2px}
+  .intro{text-align:center;flex:0 0 auto}
+  .intro h1{font-size:clamp(22px,5vw,27px);letter-spacing:.2px;margin:5px 0 2px}
+  .intro p{font-size:12px;line-height:1.4;color:var(--muted);margin:0}
+  .game-panel{min-height:0;flex:1;display:flex;flex-direction:column;padding:14px;border-radius:25px;color:var(--ink);background:linear-gradient(160deg,#faf6e7,var(--paper));box-shadow:0 14px 35px #061b1938;overflow:auto}
+  .panel-top{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#607357;font-size:12px;font-weight:650;flex:0 0 auto}
+  .panel-top strong{font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums}
+  .timer-track{height:4px;border-radius:4px;background:#d8dec9;margin:10px 0 4px;overflow:hidden;flex:0 0 auto}
+  .timer-fill{height:100%;width:100%;background:#8da56a;transition:width .12s linear}
+  .memory-card{width:min(100%,380px);margin:auto;position:relative;border:1px solid #8f9a7759;background:#f3efdd;border-radius:22px;padding:13px;box-shadow:0 9px 20px #53674724, inset 0 1px 0 #fffef4}
+  .memory-card::before{content:"✦";position:absolute;top:5px;left:50%;transform:translateX(-50%);font-size:11px;color:#aa9568}
+  .memory-card::after{content:"ЛЕСНАЯ КОЛЛЕКЦИЯ";display:block;text-align:center;font-size:8px;letter-spacing:2.4px;color:#829274;margin-top:8px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}
+  .cell{aspect-ratio:1;border:1px solid #adb99b;border-radius:13px;display:flex;align-items:center;justify-content:center;background:#fffcf0;color:#456d5c;position:relative;padding:0;box-shadow:0 2px 4px #4c604118}
+  .cell svg{width:48%;height:48%;stroke-width:1.65}
+  .cell.face{background:#faf7e9}
+  .cell.back{background:repeating-linear-gradient(45deg,#dee7d1 0,#dee7d1 2px,#e9eedf 2px,#e9eedf 10px);color:#91a27b}
+  .cell.back::before{content:"✦";font-size:26px;font-weight:400;opacity:.74}
+  .cell.pick{background:#f9f6e9;border-color:#899e77;box-shadow:inset 0 0 0 1px #aabd91}
+  .cell.pick:hover{background:#e8eedc}
+  .cell.pick:active{transform:scale(.96)}
+  .cell.correct{border:2px solid #638e65;background:#dcebd3;color:#2e684c}
+  .cell.wrong{border:2px solid #bb7767;background:#f2ddd3;color:#9d4c42}
+  .cell.correct::after,.cell.wrong::after{content:"✓";position:absolute;right:7px;bottom:4px;font-size:20px;font-weight:800}
+  .cell.wrong::after{content:"×"}
+  .prompt{min-height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;flex:0 0 auto;padding:6px 4px}
+  .prompt-kicker{text-transform:uppercase;font-size:10px;font-weight:800;letter-spacing:2px;color:#829071;margin-bottom:5px}
+  .prompt-main{font-size:18px;font-weight:750;line-height:1.25;color:var(--ink)}
+  .prompt-main.with-icon{display:flex;align-items:center;gap:9px}
+  .prompt-main svg{width:25px;height:25px;color:#658363;stroke-width:1.7}
+  .prompt-note{font-size:12px;color:#607357;line-height:1.35;margin-top:5px;min-height:16px}
+  .actions{display:flex;gap:8px;flex:0 0 auto}
+  .actions .cta{min-height:50px;font-size:15px}
+  .actions .ghost{margin:0;width:auto;min-height:50px;padding:0 14px;color:#51654c;white-space:nowrap}
+  #primary[hidden],#secondary[hidden]{display:none}
+  .game-foot{text-align:center;font-size:11px;color:var(--muted);min-height:18px;flex:0 0 auto}
+  dialog{border:0;padding:23px 20px 20px;width:min(390px,calc(100vw - 30px));max-height:86dvh;overflow:auto;border-radius:25px;color:var(--ink);background:linear-gradient(160deg,#faf6e7,var(--paper));box-shadow:0 25px 90px #061b1970}
+  dialog::backdrop{background:#061b19c4;backdrop-filter:blur(5px)}
+  dialog h2{font-size:23px;margin:0 0 10px}dialog p{font-size:14px;line-height:1.5;color:#607357;margin:0 0 16px}
+  dialog .close{float:right;border:0;background:#697c4818;color:var(--ink);width:36px;height:36px;border-radius:11px;display:grid;place-items:center;margin:-7px -5px 0 8px}
+  dialog .close .ui-icon{width:20px;height:20px}
+  .help-grid{display:grid;grid-template-columns:repeat(3,34px);justify-content:center;gap:5px;margin:12px auto 17px}
+  .help-grid span{height:34px;background:#dce7d3;border-radius:7px;display:grid;place-items:center;color:#54775d;font-size:17px}
+  .help-grid span:nth-child(5){background:var(--honey)}
+  .help-list{color:#50614b;opacity:1}
+  .level-pages{display:flex;align-items:center;justify-content:space-between;gap:9px;margin:13px 0;font-size:13px}
+  .level-pages button{border:0;border-radius:11px;background:#dce3c8;color:var(--ink);width:40px;height:40px;font-size:21px}
+  .level-pages button:disabled{opacity:.35}
+  .level-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+  .level-grid button{min-height:46px;border:0;border-radius:10px;background:#dce3c8;color:var(--ink);font-size:13px;font-weight:700}
+  .level-grid button.done{background:#c5d8b8}
+  .level-grid button.current{box-shadow:inset 0 0 0 2px #a87930;background:var(--honey)}
+  .level-grid button small{display:block;font-size:9px;line-height:1;color:#826c35}
+  .level-jump{display:flex;gap:7px;margin-top:13px}
+  .level-jump input{width:100%;min-width:0;border:1px solid #aaba9d;border-radius:11px;padding:10px;background:#fffdf2;color:var(--ink);font:16px system-ui}
+  .level-jump button{border:0;border-radius:11px;background:#dce3c8;color:var(--ink);padding:0 12px}
+  #levelError{min-height:18px;margin:4px 0 0;color:#a45348;font-size:12px}
+  @media(max-height:720px){#app{gap:6px}.intro h1{font-size:21px}.intro p{display:none}.game-panel{padding:10px}.prompt{min-height:74px}.prompt-main{font-size:16px}.memory-card{width:min(100%,310px);padding:9px}.grid{gap:5px}.cell{border-radius:10px}.actions .cta{min-height:44px}.game-foot{display:none}}
+  @media(max-height:530px){html,body{overflow:auto}#app{height:auto;min-height:100dvh}.memory-card{width:min(100%,260px)}}
+  @media(prefers-reduced-motion:reduce){.timer-fill,.cell{transition:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="hdr-side"><a href="index.html" class="icon-btn" aria-label="Все игры"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=66#menu"/></svg></a><button class="icon-btn" id="soundButton" aria-label="Выключить звук"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=66#sound"/></svg></button></div>
+    <button class="level-title" id="levelButton" aria-label="Выбрать уровень"><span id="levelLabel">Уровень 1</span><small>ВЫБРАТЬ УРОВЕНЬ ▾</small></button>
+    <div class="hdr-side right"><button class="icon-btn" id="restartButton" aria-label="Начать уровень заново"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=66#restart"/></svg></button><button class="icon-btn" id="helpButton" aria-label="Как играть"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=66#help"/></svg></button></div>
+  </header>
+  <div class="intro"><h1>Лесные карточки</h1><p>Запомни находки, прежде чем карточка закроется</p></div>
+  <main class="game-panel">
+    <div class="panel-top"><span id="phaseLabel">Карточка готова</span><strong id="counter">0 / 4</strong></div>
+    <div class="timer-track" role="progressbar" aria-label="Время на запоминание" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><div class="timer-fill" id="timerFill"></div></div>
+    <div class="memory-card"><div class="grid" id="grid" role="group" aria-label="Девять мест на карточке"></div></div>
+    <div class="prompt" role="status" aria-live="polite"><div class="prompt-kicker" id="promptKicker">НОВАЯ КАРТОЧКА</div><div class="prompt-main" id="promptMain">Посмотри и запомни</div><div class="prompt-note" id="promptNote">Девять символов · четыре вопроса</div></div>
+    <div class="actions"><button class="cta" id="primary">Показать карточку</button><button class="ghost" id="secondary" hidden>Повторить</button></div>
+  </main>
+  <div class="game-foot" id="progressText"></div>
+</div>
+<dialog id="helpDialog" aria-labelledby="helpTitle"><button class="close" data-close aria-label="Закрыть"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=66#close"/></svg></button><h2 id="helpTitle">Запомни, что где лежит</h2><div class="help-grid" aria-hidden="true"><span>✦</span><span>✧</span><span>✦</span><span>✧</span><span>?</span><span>✧</span><span>✦</span><span>✧</span><span>✦</span></div><ol class="help-list"><li>Открой карточку и запомни расположение девяти лесных символов.</li><li>Когда время закончится, карточка закроется. Можно закрыть её раньше кнопкой «Я запомнил».</li><li>Для каждого названного символа нажми клетку, где он лежал. Ошибка покажет верное место.</li></ol><p>Во время справки и при свёрнутой вкладке отсчёт останавливается. Уровень можно повторить в любой момент.</p><button class="cta" data-close>Понятно, играем</button></dialog>
+<dialog id="levelsDialog" aria-labelledby="levelsTitle"><button class="close" data-close aria-label="Закрыть"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=66#close"/></svg></button><h2 id="levelsTitle">Выбери уровень</h2><p id="levelsProgress"></p><div class="level-pages"><button id="prevPage" aria-label="Предыдущие уровни">‹</button><span id="pageLabel"></span><button id="nextPage" aria-label="Следующие уровни">›</button></div><div class="level-grid" id="levelGrid"></div><form class="level-jump" id="jumpForm"><input id="levelInput" type="number" inputmode="numeric" min="1" max="100" required placeholder="Номер от 1 до 100" aria-label="Номер уровня"><button type="submit">Перейти</button></form><p id="levelError" role="alert"></p></dialog>
+<script src="sound.js?v=51"></script>
+<script src="memory-cards.js?v=66"></script>
+<script>
+(() => {
+  'use strict';
+  const $=selector=>document.querySelector(selector);
+  const KEY='memorycards.v1', positions=['слева сверху','посередине сверху','справа сверху','слева по центру','в центре','справа по центру','слева снизу','посередине снизу','справа снизу'];
+  let saved;try{saved=JSON.parse(localStorage.getItem(KEY)||'null');}catch{saved=null;}
+  let {level,best,sound,helpSeen}=MemoryCards.restore(saved);
+  let card=MemoryCards.make(level),phase='ready',question=0,correct=0,answered=false,chosen=-1,page=0;
+  let remaining=0,deadline=0,frame=0;
+  const sfx=GameAudio.create({enabled:()=>sound});
+  function save(){try{localStorage.setItem(KEY,JSON.stringify({level,best,sound,helpSeen}));}catch{}}
+  function icon(item){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('ui-icon');svg.setAttribute('aria-hidden','true');const use=document.createElementNS('http://www.w3.org/2000/svg','use');use.setAttribute('href','icons.svg?v=66#memory-'+item.id);svg.append(use);return svg;}
+  function timerTick(){
+    if(phase!=='preview'||document.hidden||$('#helpDialog').open||$('#levelsDialog').open)return;
+    remaining=Math.max(0,deadline-performance.now());
+    const percent=Math.ceil(remaining/(card.seconds*1000)*100);
+    $('#timerFill').style.width=percent+'%';$('.timer-track').setAttribute('aria-valuenow',String(percent));
+    $('#counter').textContent=Math.ceil(remaining/1000)+' с';
+    if(remaining<=0){hideCard();return;}
+    frame=requestAnimationFrame(timerTick);
+  }
+  function pauseTimer(){if(phase!=='preview')return;remaining=Math.max(0,deadline-performance.now());cancelAnimationFrame(frame);}
+  function resumeTimer(){if(phase!=='preview'||document.hidden)return;deadline=performance.now()+remaining;frame=requestAnimationFrame(timerTick);}
+  function renderBoard(){
+    const grid=$('#grid');grid.replaceChildren();
+    card.slots.forEach((item,index)=>{
+      const button=document.createElement('button');button.type='button';button.className='cell '+(phase==='preview'||phase==='result'?'face':phase==='quiz'?'pick':'back');
+      const revealed=phase==='preview'||phase==='result';
+      if(revealed){button.append(icon(item));button.setAttribute('aria-label',positions[index]+': '+item.name);}
+      else button.setAttribute('aria-label',positions[index]);
+      if(phase==='quiz'&&answered){button.classList.remove('pick');button.classList.add(index===card.questions[question]?'correct':index===chosen?'wrong':'back');}
+      button.disabled=phase!=='quiz'||answered;
+      if(phase==='quiz'&&!answered)button.addEventListener('click',()=>answer(index));
+      grid.append(button);
+    });
+  }
+  function questionWord(n){return n===4?'вопроса':'вопросов';}
+  function render(){
+    $('#levelLabel').textContent='Уровень '+level;
+    $('#soundButton').setAttribute('aria-label',sound?'Выключить звук':'Включить звук');
+    $('#soundButton').setAttribute('aria-pressed',String(sound));
+    $('#soundButton use').setAttribute('href','icons.svg?v=66#'+(sound?'sound':'muted'));
+    $('#progressText').textContent='Пройдено '+Object.keys(best).length+' из '+MemoryCards.COUNT;
+    const primary=$('#primary'),secondary=$('#secondary'),kicker=$('#promptKicker'),main=$('#promptMain'),note=$('#promptNote');
+    main.replaceChildren();main.classList.remove('with-icon');primary.hidden=false;secondary.hidden=true;
+    $('.timer-track').style.visibility=phase==='preview'?'visible':'hidden';
+    if(phase==='ready'){
+      $('#phaseLabel').textContent='Карточка готова';$('#counter').textContent=card.questions.length+' '+questionWord(card.questions.length);
+      kicker.textContent='НОВАЯ КАРТОЧКА';main.textContent='Посмотри и запомни';note.textContent='Девять символов · '+card.questions.length+' '+questionWord(card.questions.length);primary.textContent='Показать карточку';
+    }else if(phase==='preview'){
+      $('#phaseLabel').textContent='Запоминай расположение';kicker.textContent='ЗАПОМНИ';main.textContent='Где лежит каждый символ?';note.textContent='Карточка закроется через '+card.seconds+' секунд';primary.textContent='Я запомнил';
+    }else if(phase==='quiz'){
+      const item=card.slots[card.questions[question]];
+      $('#phaseLabel').textContent='Проверка памяти';$('#counter').textContent=(question+1)+' / '+card.questions.length;
+      kicker.textContent='НАЙДИ МЕСТО';main.classList.add('with-icon');main.append(icon(item),document.createTextNode(item.name));
+      note.textContent=answered?(chosen===card.questions[question]?'Верно!':'Верное место выделено зелёным.'):'Нажми на место на закрытой карточке';
+      primary.hidden=!answered;primary.textContent=question===card.questions.length-1?'Посмотреть результат':'Следующий вопрос';
+    }else{
+      const score=MemoryCards.stars(correct,card.questions.length);
+      $('#phaseLabel').textContent='Карточка открыта';$('#counter').textContent=correct+' / '+card.questions.length;
+      kicker.textContent='РЕЗУЛЬТАТ';main.textContent=score?' '+('★'.repeat(score)):'Попробуй ещё раз';
+      note.textContent='Верных ответов: '+correct+' из '+card.questions.length+'. '+(score?'Лучший результат: '+best[level]+' ★':'Для звезды нужно ответить хотя бы на половину вопросов.');
+      primary.textContent=score?(level===MemoryCards.COUNT?'Выбрать уровень':'Следующий уровень'):'Повторить карточку';
+      secondary.hidden=!score;secondary.textContent='Повторить';
+    }
+    renderBoard();
+  }
+  function start(n){
+    cancelAnimationFrame(frame);level=n;card=MemoryCards.make(n);phase='ready';question=0;correct=0;answered=false;chosen=-1;remaining=0;
+    if($('#levelsDialog').open)$('#levelsDialog').close();render();save();
+  }
+  function reveal(){phase='preview';remaining=card.seconds*1000;render();sfx.play('tap');resumeTimer();}
+  function hideCard(){cancelAnimationFrame(frame);phase='quiz';question=0;answered=false;render();sfx.play('plop');$('#grid button').focus({preventScroll:true});}
+  function answer(index){
+    if(phase!=='quiz'||answered)return;
+    chosen=index;answered=true;
+    if(index===card.questions[question]){correct++;sfx.play('tap');}else sfx.play('nope');
+    render();$('#primary').focus({preventScroll:true});
+  }
+  function finish(){
+    phase='result';const score=MemoryCards.stars(correct,card.questions.length);
+    if(score)best[level]=Math.max(best[level]||0,score);
+    save();render();sfx.play(score?'win':'lose');
+  }
+  function next(){
+    if(phase==='ready')reveal();
+    else if(phase==='preview')hideCard();
+    else if(phase==='quiz'&&answered){if(question===card.questions.length-1)finish();else{question++;answered=false;chosen=-1;render();$('#grid button').focus({preventScroll:true});}}
+    else if(phase==='result'){if(!MemoryCards.stars(correct,card.questions.length))start(level);else if(level===MemoryCards.COUNT)showLevels();else start(level+1);}
+  }
+  function renderLevels(){
+    const first=page*25+1,last=Math.min(MemoryCards.COUNT,first+24);
+    $('#pageLabel').textContent=first+'–'+last+' из '+MemoryCards.COUNT;
+    $('#prevPage').disabled=page===0;$('#nextPage').disabled=last===MemoryCards.COUNT;
+    $('#levelsProgress').textContent='Пройдено '+Object.keys(best).length+' из '+MemoryCards.COUNT+' · ★ показывает лучший результат';
+    const grid=$('#levelGrid');grid.replaceChildren();
+    for(let n=first;n<=last;n++){
+      const b=document.createElement('button');b.type='button';b.className=(best[n]?'done ':'')+(n===level?'current':'');
+      b.textContent=n;if(best[n]){const small=document.createElement('small');small.textContent='★'.repeat(best[n]);b.append(small);}
+      b.setAttribute('aria-label','Уровень '+n+(best[n]?', '+best[n]+' звезды':'')+(n===level?', текущий':''));
+      b.addEventListener('click',()=>start(n));grid.append(b);
+    }
+  }
+  function showLevels(){page=Math.floor((level-1)/25);$('#levelInput').value='';$('#levelError').textContent='';renderLevels();pauseTimer();$('#levelsDialog').showModal();}
+  $('#primary').addEventListener('click',next);
+  $('#secondary').addEventListener('click',()=>start(level));
+  $('#restartButton').addEventListener('click',()=>start(level));
+  $('#levelButton').addEventListener('click',showLevels);
+  $('#helpButton').addEventListener('click',()=>{pauseTimer();$('#helpDialog').showModal();});
+  $('#soundButton').addEventListener('click',()=>{sound=!sound;sfx.sync();render();save();});
+  document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
+  $('#helpDialog').addEventListener('close',()=>{helpSeen=true;save();resumeTimer();});
+  $('#levelsDialog').addEventListener('close',resumeTimer);
+  $('#prevPage').addEventListener('click',()=>{if(page>0){page--;renderLevels();}});
+  $('#nextPage').addEventListener('click',()=>{if(page<3){page++;renderLevels();}});
+  $('#jumpForm').addEventListener('submit',e=>{e.preventDefault();const n=Number($('#levelInput').value);if(!Number.isInteger(n)||n<1||n>MemoryCards.COUNT){$('#levelError').textContent='Введи номер от 1 до 100.';return;}start(n);});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){pauseTimer();sfx.stop();save();}else resumeTimer();});
+  window.addEventListener('pagehide',save);
+  render();if(!helpSeen)$('#helpDialog').showModal();
+  if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{}));
+})();
+</script>
+</body>
+</html>

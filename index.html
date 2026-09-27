@@ -140,6 +140,18 @@ const GAMES = [
       const count = Array.isArray(d.completed) ? new Set(d.completed.filter(n => Number.isInteger(n) && n >= 1 && n <= 1000)).size : 0;
       return count ? 'пройдено ' + count + ' из 1000' : 'уровень ' + (d.level || 1) + ' из 1000';
     }
+  },
+  {
+    file: 'memory-cards.html',
+    icon: 'memory',
+    name: 'Лесные карточки',
+    desc: 'Запомни девять лесных символов и найди их места на закрытой карточке',
+    progress(){
+      const d = read('memorycards.v1');
+      if (!d) return null;
+      const count = d.best && typeof d.best === 'object' ? Object.keys(d.best).length : 0;
+      return count ? 'пройдено ' + count + ' из 100' : 'уровень ' + (d.level || 1) + ' из 100';
+    }
   }
 ];
 

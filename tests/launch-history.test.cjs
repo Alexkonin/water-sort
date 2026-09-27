@@ -32,12 +32,12 @@ test('frequent games lead based on the latest 30 openings; ties keep the default
   for(let i=0;i<10;i++) launches.record('water-sort.html',saved);
   assert.equal(launches.read(saved).length,30);
   assert.deepEqual(launches.rank(games,launches.read(saved)).map(g=>g.file),
-    ['forest-lights.html','water-sort.html','tower-defense.html','arrow-escape.html','mahjong.html']);
+    ['forest-lights.html','water-sort.html','tower-defense.html','arrow-escape.html','mahjong.html','memory-cards.html']);
   for(let i=0;i<30;i++) launches.record('tower-defense.html',saved);
   assert.deepEqual(launches.read(saved),Array(30).fill('tower-defense.html'));
   assert.deepEqual(launches.rank(games,launches.read(saved)).map(g=>g.file),launches.FILES);
   assert.deepEqual(launches.rank(games,['forest-lights.html','arrow-escape.html']).map(g=>g.file),
-    ['arrow-escape.html','forest-lights.html','tower-defense.html','water-sort.html','mahjong.html']);
+    ['arrow-escape.html','forest-lights.html','tower-defense.html','water-sort.html','mahjong.html','memory-cards.html']);
 });
 
 test('damaged or unavailable local storage falls back to the default order',()=>{

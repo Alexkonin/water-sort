@@ -28,9 +28,9 @@
   .puzzle-card{background:var(--cream);border:1px solid #ffffe522;border-radius:25px;box-shadow:0 14px 35px #061b1930;display:flex;flex-direction:column;flex:1;min-height:160px;overflow:hidden;color:var(--ink)}
   .board-top{display:flex;align-items:center;justify-content:space-between;padding:13px 18px 0;font-size:12px;flex-shrink:0;color:#6d795f;min-height:39px}
   #count{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600}
-  #viewport{position:relative;overflow:auto;overscroll-behavior:contain;flex:1;min-height:0;scrollbar-width:thin;scrollbar-color:#b3bea3 transparent;touch-action:pan-x pan-y}
-  #boardFrame{display:flex;align-items:center;justify-content:center;margin:auto;min-width:100%;min-height:100%;padding:10px}
-  #board{display:block;flex-shrink:0;overflow:hidden;touch-action:pan-x pan-y}
+  #viewport{position:relative;overflow:hidden;flex:1;min-height:0;touch-action:none}
+  #boardFrame{display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:10px}
+  #board{display:block;flex-shrink:0;overflow:hidden;touch-action:none}
   .arrow{color:#36584a;cursor:pointer;outline:none}
   .arrow .body{fill:none;stroke:currentColor;stroke-width:.16;stroke-linecap:round;stroke-linejoin:round}
   .arrow .head{fill:currentColor;stroke:none}
@@ -41,12 +41,9 @@
   @media(hover:hover){.arrow:hover{color:#8a702e}}
   #board[data-busy="true"] .arrow{pointer-events:none}
   .guide-ray{stroke:#b78328;stroke-width:.07;stroke-dasharray:.18 .2;pointer-events:none;opacity:.7}
-  .board-bottom{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 14px 12px;flex-shrink:0}
-  .progress-track{flex:1;max-width:160px;height:3px;background:#d8ddc7;border-radius:4px;overflow:hidden}
+  .board-bottom{padding:0 14px 12px;flex-shrink:0}
+  .progress-track{width:100%;height:3px;background:#d8ddc7;border-radius:4px;overflow:hidden}
   #progress{height:100%;width:0;background:#729269;transition:width .25s}
-  .zoom{display:flex;align-items:center;gap:2px}
-  .zoom button{border:0;background:none;color:#65775a;min-width:35px;height:35px;display:grid;place-items:center;border-radius:10px}
-  .zoom svg{width:17px;height:17px}.zoom #fit{font-size:11px;min-width:43px;font-variant-numeric:tabular-nums}
   #status{min-height:34px;margin:0;text-align:center;font-size:13px;line-height:1.35;display:flex;align-items:center;justify-content:center;color:var(--muted)}
   #status.error{color:#f3b4a1}
   .controls{display:grid;grid-template-columns:1fr 1fr;gap:9px;flex-shrink:0}
@@ -88,16 +85,16 @@
   <main class="puzzle-card" aria-label="Игровое поле">
     <div class="board-top"><span id="count"></span><div class="lives" id="lives" role="img" aria-label="Осталось 3 попытки"></div></div>
     <div id="viewport"><div id="boardFrame"><svg id="board" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="Стрелки. Нажми на линию, чтобы выпустить её с поля."></svg></div></div>
-    <div class="board-bottom"><div class="progress-track" role="progressbar" aria-label="Поле очищено" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="progress"></div></div><div class="zoom"><button id="zoomOut" aria-label="Уменьшить поле"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=51#minus"/></svg></button><button id="fit" aria-label="Уместить поле целиком">100%</button><button id="zoomIn" aria-label="Увеличить поле"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=51#add"/></svg></button></div></div>
+    <div class="board-bottom"><div class="progress-track" role="progressbar" aria-label="Поле очищено" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="progress"></div></div></div>
   </main>
   <p id="status" role="status" aria-live="polite">Нажми на стрелку, перед которой свободно.</p>
   <div class="controls"><button class="control" id="grid" aria-pressed="false"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=51#grid"/></svg>Сетка</button><button class="control" id="hint"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=51#hint"/></svg>Подсказка</button></div>
 </div>
-<dialog id="helpDialog" aria-labelledby="helpTitle"><button class="close" data-close aria-label="Закрыть справку"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=51#close"/></svg></button><h2 id="helpTitle">Освободи все стрелки</h2><div class="help-picture"><svg viewBox="0 0 120 90" aria-hidden="true"><path d="M12 70V40H63V20" fill="none" stroke="#36584a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="m63 9-7 12h14Z" fill="#36584a"/><path d="M90 75V52H80V33H104" fill="none" stroke="#b78328" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="m115 33-12-7v14Z" fill="#b78328"/></svg><span>Сначала проверь путь перед наконечником.</span></div><ol class="help-list"><li>Нажми на любую часть линии. Стрелка выходит в сторону своего наконечника, а хвост следует за ней.</li><li>Другая линия на пути? Сначала освободи её. За столкновение теряется одна из трёх попыток.</li><li>Убери все стрелки с поля. Подсказка покажет свободную, а сетка поможет проверить направление.</li></ol><p>Можно увеличивать поле кнопкой «+» и прокручивать его. С клавиатуры: Tab — выбрать стрелку, Enter — выпустить.</p><button class="cta" data-close>Понятно, играем</button></dialog>
+<dialog id="helpDialog" aria-labelledby="helpTitle"><button class="close" data-close aria-label="Закрыть справку"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=51#close"/></svg></button><h2 id="helpTitle">Освободи все стрелки</h2><div class="help-picture"><svg viewBox="0 0 120 90" aria-hidden="true"><path d="M12 70V40H63V20" fill="none" stroke="#36584a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="m63 9-7 12h14Z" fill="#36584a"/><path d="M90 75V52H80V33H104" fill="none" stroke="#b78328" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="m115 33-12-7v14Z" fill="#b78328"/></svg><span>Сначала проверь путь перед наконечником.</span></div><ol class="help-list"><li>Нажми на любую часть линии. Стрелка выходит в сторону своего наконечника, а хвост следует за ней.</li><li>Другая линия на пути? Сначала освободи её. За столкновение теряется одна из трёх попыток.</li><li>Убери все стрелки с поля. Подсказка покажет свободную, а сетка поможет проверить направление.</li></ol><p>С клавиатуры: Tab — выбрать стрелку, Enter — выпустить.</p><button class="cta" data-close>Понятно, играем</button></dialog>
 <dialog id="levelsDialog" aria-labelledby="levelsTitle"><button class="close" data-close aria-label="Закрыть выбор уровня"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=51#close"/></svg></button><h2 id="levelsTitle">Выбери уровень</h2><div class="level-pages"><button id="prevPage" aria-label="Предыдущие уровни">‹</button><span id="pageLabel"></span><button id="nextPage" aria-label="Следующие уровни">›</button></div><div class="level-grid" id="levelGrid"></div><p class="level-summary" id="completed"></p></dialog>
 <dialog id="resultDialog" aria-labelledby="resultTitle"><svg id="resultIcon" class="ui-icon" aria-hidden="true"><use href="icons.svg?v=51#sprout"/></svg><h2 id="resultTitle" tabindex="-1"></h2><div id="stars" aria-label=""></div><p id="resultText"></p><button class="cta" id="resultPrimary"></button><button class="ghost" id="resultSecondary">Выбрать уровень</button></dialog>
 <script src="sound.js?v=51"></script>
 <script src="arrow-escape.js?v=51"></script>
-<script src="arrow-escape-ui.js?v=58"></script>
+<script src="arrow-escape-ui.js?v=59"></script>
 </body>
 </html>

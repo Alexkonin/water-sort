@@ -2,7 +2,7 @@
   'use strict';
   const G=ArrowEscape, KEY='arrowescape.v1', $=s=>document.querySelector(s), NS='http://www.w3.org/2000/svg';
   let saved={};try{saved=JSON.parse(localStorage.getItem(KEY)||'{}');}catch{}
-  let state=G.restore(saved),busy=false,epoch=0,frame=0,hintId=null,zoom=1,page=0;
+  let state=G.restore(saved),busy=false,epoch=0,frame=0,hintId=null,page=0;
   const reduced=matchMedia('(prefers-reduced-motion: reduce)'), sfx=GameAudio.create({enabled:()=>state.sound});
   const board=$('#board'), groups=new Map();
   function svg(tag,attrs={}){const el=document.createElementNS(NS,tag);for(const [k,v]of Object.entries(attrs))el.setAttribute(k,v);return el;}
@@ -41,7 +41,7 @@
       group.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tap(arrow.id);}});
       board.append(group);groups.set(arrow.id,group);paintArrow(group,arrow);
     }
-    update();sizeBoard();$('#viewport').scrollTo(0,0);
+    update();sizeBoard();
   }
   function update(){
     const total=state.puzzle.arrows.length,removed=total-state.remaining.length,percent=Math.round(removed/total*100);
@@ -64,10 +64,8 @@
   }
   function sizeBoard(){
     const viewport=$('#viewport'), p=state.puzzle,ratio=(p.width+1)/(p.height+1);
-    const width=Math.max(40,Math.min(viewport.clientWidth-20,(viewport.clientHeight-20)*ratio))*zoom;
+    const width=Math.max(40,Math.min(viewport.clientWidth-20,(viewport.clientHeight-20)*ratio));
     board.style.width=width+'px';board.style.height=width/ratio+'px';
-    $('#boardFrame').style.width=(width+20)+'px';$('#boardFrame').style.height=(width/ratio+20)+'px';
-    $('#fit').textContent=Math.round(zoom*100)+'%';$('#zoomOut').disabled=zoom<=1;$('#zoomIn').disabled=zoom>=2.5;
   }
   function animate(arrow,success,done){
     const token=epoch,group=groups.get(arrow.id),[dx,dy]=G.direction(arrow),head=arrow.cells.at(-1),p=state.puzzle;
@@ -107,7 +105,7 @@
   }
   function loadLevel(level){
     document.querySelectorAll('dialog[open]').forEach(d=>d.close());sfx.stop();
-    state.level=level;state.puzzle=G.generate(level);state.remaining=state.puzzle.arrows.map(a=>a.id);state.lives=G.LIVES;state.hints=0;zoom=1;
+    state.level=level;state.puzzle=G.generate(level);state.remaining=state.puzzle.arrows.map(a=>a.id);state.lives=G.LIVES;state.hints=0;
     build();save();tell('Нажми на стрелку, перед которой свободно.');
   }
   function openDialog(id){
@@ -155,21 +153,8 @@
     clearHint();hintId=free[0];state.hints++;groups.get(hintId).classList.add('hinted');
     const arrow=state.puzzle.arrows.find(a=>a.id===hintId),head=arrow.cells.at(-1),dir=G.direction(arrow),length=Math.max(state.puzzle.width,state.puzzle.height);
     const guide=svg('path',{class:'guide-ray',d:path([head,[head[0]+dir[0]*length,head[1]+dir[1]*length]])});board.insertBefore(guide,board.firstChild);
-    // Подводим стрелку только внутри игрового поля. scrollIntoView может
-    // прокрутить и документ целиком, даже если у страницы overflow:hidden.
-    const viewport=$('#viewport'), target=groups.get(hintId).getBoundingClientRect(), visible=viewport.getBoundingClientRect();
-    if(target.left<visible.left)viewport.scrollLeft+=target.left-visible.left;
-    else if(target.right>visible.right)viewport.scrollLeft+=target.right-visible.right;
-    if(target.top<visible.top)viewport.scrollTop+=target.top-visible.top;
-    else if(target.bottom>visible.bottom)viewport.scrollTop+=target.bottom-visible.bottom;
     tell('Золотая стрелка может выйти. Нажми на неё.');sfx.play('unlock');save();
   };
-  function changeZoom(next){
-    const viewport=$('#viewport'),old=zoom,cx=(viewport.scrollLeft+viewport.clientWidth/2),cy=(viewport.scrollTop+viewport.clientHeight/2);
-    zoom=Math.max(1,Math.min(2.5,next));sizeBoard();
-    viewport.scrollLeft=cx*zoom/old-viewport.clientWidth/2;viewport.scrollTop=cy*zoom/old-viewport.clientHeight/2;
-  }
-  $('#zoomIn').onclick=()=>changeZoom(zoom+.5);$('#zoomOut').onclick=()=>changeZoom(zoom-.5);$('#fit').onclick=()=>changeZoom(1);
   new ResizeObserver(sizeBoard).observe($('#viewport'));
   addEventListener('pagehide',save);
   // If a completed or exhausted board is restored, present its action again.

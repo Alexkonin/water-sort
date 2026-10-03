@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "runner",
+  "name": "Вихрёк",
+  "description": "сухой лист, подхваченный крошечным смерчем; быстрый, но хлипкий",
+  "source": {
+    "source": "tower-defense.html",
+    "sha256": "f6351607e03252b40420b43fdebf399f00a754e99b5c8da5358b7bb2877a5401",
+    "snapshotDate": "2026-10-03",
+    "note": "Снимок текущих правил; числа базовые, без множителей уровня и волны. Источник боевого поведения — tower-defense.html."
+  },
+  "status": {
+    "inGame": true,
+    "newDesign": "Не разработан",
+    "customAnimation": "Есть текущая походка; новая авторская анимация не разработана"
+  },
+  "baseStats": {
+    "hp": 26,
+    "speedCellsPerSecond": 2.6,
+    "armor": 0,
+    "bounty": 7,
+    "castleDamage": 1,
+    "attackIntervalSeconds": 1.2,
+    "radiusCells": 0.26
+  },
+  "availableFromMap": 1,
+  "spawnRules": "(L, W) => (W >= 2 || L >= 1) ? 2 + Math.round(W * 0.35 + L * 0.15) : 0",
+  "origin": null,
+  "traits": {},
+  "traitDescriptions": [],
+  "intro": null,
+  "skins": []
+}

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "tank",
+  "name": "Камнеспин",
+  "description": "валун, поросший мхом, на коротких лапах; слабые удары о него гаснут",
+  "source": {
+    "source": "tower-defense.html",
+    "sha256": "f6351607e03252b40420b43fdebf399f00a754e99b5c8da5358b7bb2877a5401",
+    "snapshotDate": "2026-10-03",
+    "note": "Снимок текущих правил; числа базовые, без множителей уровня и волны. Источник боевого поведения — tower-defense.html."
+  },
+  "status": {
+    "inGame": true,
+    "newDesign": "Не разработан",
+    "customAnimation": "Есть текущая походка; новая авторская анимация не разработана"
+  },
+  "baseStats": {
+    "hp": 95,
+    "speedCellsPerSecond": 0.95,
+    "armor": 5,
+    "bounty": 15,
+    "castleDamage": 2,
+    "attackIntervalSeconds": 2.2,
+    "radiusCells": 0.34
+  },
+  "availableFromMap": 1,
+  "spawnRules": "(L, W, late) => (W >= 4 || L >= 2) ? 1 + Math.round(late * (1 + L * 0.22)) : 0",
+  "origin": null,
+  "traits": {},
+  "traitDescriptions": [],
+  "intro": "в броне — слабые удары гаснут, бей пушкой и мортирой",
+  "skins": []
+}

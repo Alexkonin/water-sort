@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "id": "boss",
+  "name": "Хранитель",
+  "description": "дух-хранитель этих мест; в финале карты выходит сам, а с 5-й — ещё и в середине",
+  "source": {
+    "source": "tower-defense.html",
+    "sha256": "f6351607e03252b40420b43fdebf399f00a754e99b5c8da5358b7bb2877a5401",
+    "snapshotDate": "2026-10-03",
+    "note": "Снимок текущих правил; числа базовые, без множителей уровня и волны. Источник боевого поведения — tower-defense.html."
+  },
+  "status": {
+    "inGame": true,
+    "newDesign": "Не разработан",
+    "customAnimation": "Есть текущая походка; новая авторская анимация не разработана"
+  },
+  "baseStats": {
+    "hp": 430,
+    "speedCellsPerSecond": 0.8,
+    "armor": 6,
+    "bounty": 70,
+    "castleDamage": 1,
+    "attackIntervalSeconds": 2,
+    "radiusCells": 0.44
+  },
+  "availableFromMap": 1,
+  "spawnRules": "(L, W, late, nW, final) => final ? { n: 1 + Math.min(2, Math.floor(L / 4)), gap: 2.2 }\n                                          : (L >= 5 && W === Math.floor(nW / 2)) ? { n: 1, gap: 1 } : 0",
+  "origin": null,
+  "traits": {},
+  "traitDescriptions": [],
+  "intro": null,
+  "skins": [
+    {
+      "name": "Хозяин леса",
+      "color": "#6d9e4a"
+    },
+    {
+      "name": "Белая маска",
+      "color": "#e8e2d4"
+    },
+    {
+      "name": "Речной змей",
+      "color": "#4aa8c8"
+    },
+    {
+      "name": "Громовой бык",
+      "color": "#b08cf0"
+    }
+  ]
+}

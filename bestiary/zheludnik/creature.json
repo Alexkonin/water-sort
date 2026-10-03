@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "acorn",
+  "name": "Желудник",
+  "description": "жёлудь-крепыш в толстой скорлупе; пока цел — неспешен, треснет — побежит",
+  "source": {
+    "source": "tower-defense.html",
+    "sha256": "f6351607e03252b40420b43fdebf399f00a754e99b5c8da5358b7bb2877a5401",
+    "snapshotDate": "2026-10-03",
+    "note": "Снимок текущих правил; числа базовые, без множителей уровня и волны. Источник боевого поведения — tower-defense.html."
+  },
+  "status": {
+    "inGame": true,
+    "newDesign": "Не разработан",
+    "customAnimation": "Есть текущая походка; новая авторская анимация не разработана"
+  },
+  "baseStats": {
+    "hp": 200,
+    "speedCellsPerSecond": 0.85,
+    "armor": 14,
+    "bounty": 34,
+    "castleDamage": 2,
+    "attackIntervalSeconds": 2.2,
+    "radiusCells": 0.36
+  },
+  "availableFromMap": 98,
+  "spawnRules": "(L, W, late) => W >= 4 ? 1 + Math.round(late * (1.5 + (L - 97) * 0.02)) : 0",
+  "origin": null,
+  "traits": {
+    "crack": {
+      "at": 0.5,
+      "armor": 0,
+      "sp": 1.7
+    }
+  },
+  "traitDescriptions": [
+    "скорлупа держит, пока цел; ниже половины здоровья трескается — броня спадает, зато бежит в 1,7 раза быстрее"
+  ],
+  "intro": "скорлупу берёт только мортира; треснувший теряет броню, но бежит",
+  "skins": []
+}

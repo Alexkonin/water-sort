@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "ghost",
+  "name": "Туманник",
+  "description": "клок тумана в белой маске; стелется над дорогой и не чувствует холода",
+  "source": {
+    "source": "tower-defense.html",
+    "sha256": "f6351607e03252b40420b43fdebf399f00a754e99b5c8da5358b7bb2877a5401",
+    "snapshotDate": "2026-10-03",
+    "note": "Снимок текущих правил; числа базовые, без множителей уровня и волны. Источник боевого поведения — tower-defense.html."
+  },
+  "status": {
+    "inGame": true,
+    "newDesign": "Не разработан",
+    "customAnimation": "Есть текущая походка; новая авторская анимация не разработана"
+  },
+  "baseStats": {
+    "hp": 30,
+    "speedCellsPerSecond": 2,
+    "armor": 0,
+    "bounty": 9,
+    "castleDamage": 1,
+    "attackIntervalSeconds": 1.2,
+    "radiusCells": 0.28
+  },
+  "availableFromMap": 9,
+  "spawnRules": "(L, W, late) => W >= 3 ? 3 + Math.round(late * (3 + L * 0.3)) : 0",
+  "origin": null,
+  "traits": {
+    "noSlow": {}
+  },
+  "traitDescriptions": [
+    "не мёрзнет: мороз его не замедляет"
+  ],
+  "intro": "не мёрзнет — мороз против него пуст, нужны пушка и молния",
+  "skins": []
+}

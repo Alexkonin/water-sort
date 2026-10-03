@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "shade",
+  "name": "Тенник",
+  "description": "тень без хозяина; в толпе её не разглядеть, а одна она робеет",
+  "source": {
+    "source": "tower-defense.html",
+    "sha256": "f6351607e03252b40420b43fdebf399f00a754e99b5c8da5358b7bb2877a5401",
+    "snapshotDate": "2026-10-03",
+    "note": "Снимок текущих правил; числа базовые, без множителей уровня и волны. Источник боевого поведения — tower-defense.html."
+  },
+  "status": {
+    "inGame": true,
+    "newDesign": "Не разработан",
+    "customAnimation": "Есть текущая походка; новая авторская анимация не разработана"
+  },
+  "baseStats": {
+    "hp": 60,
+    "speedCellsPerSecond": 1.6,
+    "armor": 0,
+    "bounty": 36,
+    "castleDamage": 1,
+    "attackIntervalSeconds": 1.3,
+    "radiusCells": 0.28
+  },
+  "availableFromMap": 110,
+  "spawnRules": "(L, W, late) => W >= 3 ? 2 + Math.round(late * (2 + (L - 109) * 0.02)) : 0",
+  "origin": null,
+  "traits": {
+    "veil": {
+      "r": 0.9
+    }
+  },
+  "traitDescriptions": [
+    "тень: башни не видят его, пока рядом идёт другой враг"
+  ],
+  "intro": "прячется за спинами — башни не видят его, пока рядом кто-то ещё",
+  "skins": []
+}

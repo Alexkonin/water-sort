@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "grunt",
+  "name": "Уголёк",
+  "description": "маленький угольный дух с тёплой трещинкой; бережно несёт огонёк в ладонях",
+  "source": {
+    "source": "tower-defense.html",
+    "sha256": "f6351607e03252b40420b43fdebf399f00a754e99b5c8da5358b7bb2877a5401",
+    "snapshotDate": "2026-10-03",
+    "note": "Снимок текущих правил; числа базовые, без множителей уровня и волны. Источник боевого поведения — tower-defense.html."
+  },
+  "status": {
+    "inGame": true,
+    "newDesign": "В игре",
+    "customAnimation": "Ходьба, ожидание, атака и повороты подключены к Towers"
+  },
+  "baseStats": {
+    "hp": 36,
+    "speedCellsPerSecond": 1.35,
+    "armor": 0,
+    "bounty": 8,
+    "castleDamage": 1,
+    "attackIntervalSeconds": 1.6,
+    "radiusCells": 0.3
+  },
+  "availableFromMap": 1,
+  "spawnRules": "(L, W) => 4 + Math.round(W * 0.6 + L * 0.2)",
+  "origin": null,
+  "traits": {},
+  "traitDescriptions": [],
+  "intro": null,
+  "skins": [],
+  "animation": {
+    "renderer": "animations/ugolek.js",
+    "duration": 0.72,
+    "contact": 0.46,
+    "damageTiming": "Сохранён исходный таймер осады"
+  }
+}

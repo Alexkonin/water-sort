@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "straw",
+  "name": "Соломенник",
+  "description": "сноп соломы, который однажды встал и пошёл; подпоясан верёвкой, глаза-угольки",
+  "source": {
+    "source": "tower-defense.html",
+    "sha256": "f6351607e03252b40420b43fdebf399f00a754e99b5c8da5358b7bb2877a5401",
+    "snapshotDate": "2026-10-03",
+    "note": "Снимок текущих правил; числа базовые, без множителей уровня и волны. Источник боевого поведения — tower-defense.html."
+  },
+  "status": {
+    "inGame": true,
+    "newDesign": "Не разработан",
+    "customAnimation": "Есть текущая походка; новая авторская анимация не разработана"
+  },
+  "baseStats": {
+    "hp": 110,
+    "speedCellsPerSecond": 1.2,
+    "armor": 0,
+    "bounty": 39,
+    "castleDamage": 1,
+    "attackIntervalSeconds": 1.5,
+    "radiusCells": 0.32
+  },
+  "availableFromMap": 56,
+  "spawnRules": "(L, W, late) => W >= 2 ? 2 + Math.round(late * (1.5 + (L - 55) * 0.02)) : 0",
+  "origin": null,
+  "traits": {
+    "weak": {
+      "shot": 0.5,
+      "splash": 2
+    }
+  },
+  "traitDescriptions": [
+    "пушка ×0,5, мортира ×2"
+  ],
+  "intro": "пули вязнут в соломе, зато мортира разносит его в клочья",
+  "skins": []
+}

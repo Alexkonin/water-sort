@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "mole",
+  "name": "Кротень",
+  "description": "подслеповатый подземный дух с розовым носом; под землёй ему спокойнее, чем наверху",
+  "source": {
+    "source": "tower-defense.html",
+    "sha256": "f6351607e03252b40420b43fdebf399f00a754e99b5c8da5358b7bb2877a5401",
+    "snapshotDate": "2026-10-03",
+    "note": "Снимок текущих правил; числа базовые, без множителей уровня и волны. Источник боевого поведения — tower-defense.html."
+  },
+  "status": {
+    "inGame": true,
+    "newDesign": "Не разработан",
+    "customAnimation": "Есть текущая походка; новая авторская анимация не разработана"
+  },
+  "baseStats": {
+    "hp": 120,
+    "speedCellsPerSecond": 1.05,
+    "armor": 2,
+    "bounty": 38,
+    "castleDamage": 1,
+    "attackIntervalSeconds": 1.6,
+    "radiusCells": 0.33
+  },
+  "availableFromMap": 48,
+  "spawnRules": "(L, W, late) => W >= 3 ? 1 + Math.round(late * (1 + (L - 47) * 0.02)) : 0",
+  "origin": null,
+  "traits": {
+    "burrow": {
+      "over": 3,
+      "under": 2
+    }
+  },
+  "traitDescriptions": [
+    "ныряет под землю на 2 с из каждых 5: под землёй его не достать"
+  ],
+  "intro": "уходит под землю — там его не достать; лови на поверхности",
+  "skins": []
+}

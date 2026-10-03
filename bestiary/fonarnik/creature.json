@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "lantern",
+  "name": "Фонарник",
+  "description": "ночной мотылёк-дух с бумажным фонарём; на его свет тянутся все, кто идёт рядом",
+  "source": {
+    "source": "tower-defense.html",
+    "sha256": "f6351607e03252b40420b43fdebf399f00a754e99b5c8da5358b7bb2877a5401",
+    "snapshotDate": "2026-10-03",
+    "note": "Снимок текущих правил; числа базовые, без множителей уровня и волны. Источник боевого поведения — tower-defense.html."
+  },
+  "status": {
+    "inGame": true,
+    "newDesign": "Не разработан",
+    "customAnimation": "Есть текущая походка; новая авторская анимация не разработана"
+  },
+  "baseStats": {
+    "hp": 34,
+    "speedCellsPerSecond": 1.5,
+    "armor": 0,
+    "bounty": 20,
+    "castleDamage": 1,
+    "attackIntervalSeconds": 1.4,
+    "radiusCells": 0.28
+  },
+  "availableFromMap": 32,
+  "spawnRules": "(L, W, late) => W >= 3 ? (late < 0.6 ? 1 : 2) : 0",
+  "origin": null,
+  "traits": {
+    "haste": {
+      "r": 1.2,
+      "k": 0.25
+    }
+  },
+  "traitDescriptions": [
+    "свет фонаря: враги рядом идут на 25% быстрее"
+  ],
+  "intro": "фонарь подгоняет всех вокруг — сними его первым",
+  "skins": []
+}

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "spore",
+  "name": "Спорка",
+  "description": "крошечная спора дождевика; одна — пустяк, четыре — уже толпа",
+  "source": {
+    "source": "tower-defense.html",
+    "sha256": "f6351607e03252b40420b43fdebf399f00a754e99b5c8da5358b7bb2877a5401",
+    "snapshotDate": "2026-10-03",
+    "note": "Снимок текущих правил; числа базовые, без множителей уровня и волны. Источник боевого поведения — tower-defense.html."
+  },
+  "status": {
+    "inGame": true,
+    "newDesign": "Не разработан",
+    "customAnimation": "Есть текущая походка; новая авторская анимация не разработана"
+  },
+  "baseStats": {
+    "hp": 8,
+    "speedCellsPerSecond": 2.4,
+    "armor": 0,
+    "bounty": 2,
+    "castleDamage": 1,
+    "attackIntervalSeconds": 1,
+    "radiusCells": 0.16
+  },
+  "availableFromMap": 25,
+  "spawnRules": null,
+  "origin": "выходит из дождевика",
+  "traits": {},
+  "traitDescriptions": [],
+  "intro": null,
+  "skins": []
+}

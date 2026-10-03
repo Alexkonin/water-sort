@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "seedmother",
+  "name": "Семянница",
+  "description": "старый одуванчик с лицом; куда ни пойдёт — сеет за собой пушинок",
+  "source": {
+    "source": "tower-defense.html",
+    "sha256": "f6351607e03252b40420b43fdebf399f00a754e99b5c8da5358b7bb2877a5401",
+    "snapshotDate": "2026-10-03",
+    "note": "Снимок текущих правил; числа базовые, без множителей уровня и волны. Источник боевого поведения — tower-defense.html."
+  },
+  "status": {
+    "inGame": true,
+    "newDesign": "Не разработан",
+    "customAnimation": "Есть текущая походка; новая авторская анимация не разработана"
+  },
+  "baseStats": {
+    "hp": 220,
+    "speedCellsPerSecond": 0.75,
+    "armor": 2,
+    "bounty": 48,
+    "castleDamage": 2,
+    "attackIntervalSeconds": 2.4,
+    "radiusCells": 0.4
+  },
+  "availableFromMap": 86,
+  "spawnRules": "(L, W, late) => W >= 5 ? 1 + Math.round(late * (0.5 + (L - 85) * 0.02)) : 0",
+  "origin": null,
+  "traits": {
+    "spawner": {
+      "type": "swarm",
+      "every": 2.2,
+      "max": 8
+    }
+  },
+  "traitDescriptions": [
+    "каждые 2,2 с выпускает пушинку, не больше 8 за жизнь"
+  ],
+  "intro": "на ходу выпускает пушинок — чем дольше живёт, тем больше их",
+  "skins": []
+}

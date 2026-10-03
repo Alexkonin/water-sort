@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 1,
+  "provenance": {
+    "source": "tower-defense.html",
+    "sha256": "f6351607e03252b40420b43fdebf399f00a754e99b5c8da5358b7bb2877a5401",
+    "snapshotDate": "2026-10-03",
+    "note": "Снимок текущих правил; числа базовые, без множителей уровня и волны. Источник боевого поведения — tower-defense.html."
+  },
+  "creatures": [
+    {
+      "id": "grunt",
+      "slug": "ugolek",
+      "name": "Уголёк",
+      "folder": "ugolek",
+      "designStatus": "in-game",
+      "spawnedOnly": false,
+      "skins": []
+    },
+    {
+      "id": "runner",
+      "slug": "vihrek",
+      "name": "Вихрёк",
+      "folder": "vihrek",
+      "designStatus": "current-game",
+      "spawnedOnly": false,
+      "skins": []
+    },
+    {
+      "id": "tank",
+      "slug": "kamnespin",
+      "name": "Камнеспин",
+      "folder": "kamnespin",
+      "designStatus": "current-game",
+      "spawnedOnly": false,
+      "skins": []
+    },
+    {
+      "id": "swarm",
+      "slug": "pushinka",
+      "name": "Пушинка",
+      "folder": "pushinka",
+      "designStatus": "current-game",
+      "spawnedOnly": false,
+      "skins": []
+    },
+    {
+      "id": "ghost",
+      "slug": "tumannik",
+      "name": "Туманник",
+      "folder": "tumannik",
+      "designStatus": "current-game",
+      "spawnedOnly": false,
+      "skins": []
+    },
+    {
+      "id": "golem",
+      "slug": "dreven",
+      "name": "Древень",
+      "folder": "dreven",
+      "designStatus": "current-game",
+      "spawnedOnly": false,
+      "skins": []
+    },
+    {
+      "id": "puffball",
+      "slug": "dozhdevik",
+      "name": "Дождевик",
+      "folder": "dozhdevik",
+      "designStatus": "current-game",
+      "spawnedOnly": false,
+      "skins": []
+    },
+    {
+      "id": "spore",
+      "slug": "sporka",
+      "name": "Спорка",
+      "folder": "sporka",
+      "designStatus": "current-game",
+      "spawnedOnly": true,
+      "skins": []
+    },
+    {
+      "id": "lantern",
+      "slug": "fonarnik",
+      "name": "Фонарник",
+      "folder": "fonarnik",
+      "designStatus": "current-game",
+      "spawnedOnly": false,
+      "skins": []
+    },
+    {
+      "id": "dew",
+      "slug": "rosnik",
+      "name": "Росник",
+      "folder": "rosnik",
+      "designStatus": "current-game",
+      "spawnedOnly": false,
+      "skins": []
+    },
+    {
+      "id": "mole",
+      "slug": "kroten",
+      "name": "Кротень",
+      "folder": "kroten",
+      "designStatus": "current-game",
+      "spawnedOnly": false,
+      "skins": []
+    },
+    {
+      "id": "straw",
+      "slug": "solomennik",
+      "name": "Соломенник",
+      "folder": "solomennik",
+      "designStatus": "current-game",
+      "spawnedOnly": false,
+      "skins": []
+    },
+    {
+      "id": "drummer",
+      "slug": "gulen",
+      "name": "Гулень",
+      "folder": "gulen",
+      "designStatus": "current-game",
+      "spawnedOnly": false,
+      "skins": []
+    },
+    {
+      "id": "leaper",
+      "slug": "skakunok",
+      "name": "Скакунок",
+      "folder": "skakunok",
+      "designStatus": "current-game",
+      "spawnedOnly": false,
+      "skins": []
+    },
+    {
+      "id": "seedmother",
+      "slug": "semyannitsa",
+      "name": "Семянница",
+      "folder": "semyannitsa",
+      "designStatus": "current-game",
+      "spawnedOnly": false,
+      "skins": []
+    },
+    {
+      "id": "acorn",
+      "slug": "zheludnik",
+      "name": "Желудник",
+      "folder": "zheludnik",
+      "designStatus": "current-game",
+      "spawnedOnly": false,
+      "skins": []
+    },
+    {
+      "id": "shade",
+      "slug": "tennik",
+      "name": "Тенник",
+      "folder": "tennik",
+      "designStatus": "current-game",
+      "spawnedOnly": false,
+      "skins": []
+    },
+    {
+      "id": "boss",
+      "slug": "hranitel",
+      "name": "Хранитель",
+      "folder": "hranitel",
+      "designStatus": "current-game",
+      "spawnedOnly": false,
+      "skins": [
+        {
+          "name": "Хозяин леса",
+          "color": "#6d9e4a"
+        },
+        {
+          "name": "Белая маска",
+          "color": "#e8e2d4"
+        },
+        {
+          "name": "Речной змей",
+          "color": "#4aa8c8"
+        },
+        {
+          "name": "Громовой бык",
+          "color": "#b08cf0"
+        }
+      ]
+    }
+  ]
+}

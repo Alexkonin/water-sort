@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "drummer",
+  "name": "Гулень",
+  "description": "толстый лесной дух с полым бревном вместо барабана; под его гул соседи не чувствуют ударов",
+  "source": {
+    "source": "tower-defense.html",
+    "sha256": "f6351607e03252b40420b43fdebf399f00a754e99b5c8da5358b7bb2877a5401",
+    "snapshotDate": "2026-10-03",
+    "note": "Снимок текущих правил; числа базовые, без множителей уровня и волны. Источник боевого поведения — tower-defense.html."
+  },
+  "status": {
+    "inGame": true,
+    "newDesign": "Не разработан",
+    "customAnimation": "Есть текущая походка; новая авторская анимация не разработана"
+  },
+  "baseStats": {
+    "hp": 150,
+    "speedCellsPerSecond": 0.9,
+    "armor": 3,
+    "bounty": 58,
+    "castleDamage": 2,
+    "attackIntervalSeconds": 2.2,
+    "radiusCells": 0.36
+  },
+  "availableFromMap": 65,
+  "spawnRules": "(L, W, late) => W >= 4 ? (late < 0.6 ? 1 : 2) : 0",
+  "origin": null,
+  "traits": {
+    "drum": {
+      "r": 1.4,
+      "armor": 3
+    }
+  },
+  "traitDescriptions": [
+    "барабан: враги рядом получают +3 к броне"
+  ],
+  "intro": "бьёт в барабан, и соседи под гул держат удар — глуши его мортирой",
+  "skins": []
+}

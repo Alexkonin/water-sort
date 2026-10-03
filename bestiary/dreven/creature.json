@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "golem",
+  "name": "Древень",
+  "description": "старый пень, который решил дойти до замка; в дупле тлеет огонёк",
+  "source": {
+    "source": "tower-defense.html",
+    "sha256": "f6351607e03252b40420b43fdebf399f00a754e99b5c8da5358b7bb2877a5401",
+    "snapshotDate": "2026-10-03",
+    "note": "Снимок текущих правил; числа базовые, без множителей уровня и волны. Источник боевого поведения — tower-defense.html."
+  },
+  "status": {
+    "inGame": true,
+    "newDesign": "Не разработан",
+    "customAnimation": "Есть текущая походка; новая авторская анимация не разработана"
+  },
+  "baseStats": {
+    "hp": 260,
+    "speedCellsPerSecond": 0.7,
+    "armor": 9,
+    "bounty": 30,
+    "castleDamage": 3,
+    "attackIntervalSeconds": 2.6,
+    "radiusCells": 0.4
+  },
+  "availableFromMap": 15,
+  "spawnRules": "(L, W, late) => W >= 5 ? 1 + Math.round(late * (1 + L * 0.15)) : 0",
+  "origin": null,
+  "traits": {},
+  "traitDescriptions": [],
+  "intro": "в броне 9 — пробьёт только мортира или прокачанная пушка",
+  "skins": []
+}

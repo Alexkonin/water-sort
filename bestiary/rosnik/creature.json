@@ -5,7 +5,7 @@
   "description": "капля росы, в которой живёт кто-то маленький и добрый; лечит всех, кто идёт рядом",
   "source": {
     "source": "tower-defense.html",
-    "sha256": "066f85173dde0795ff4d8d110adf35c6bea12dbdea112833d16242c3f44f15b2",
+    "sha256": "9a362be9d36fa65600e1a08efafeca3c51efb2bb470e4a1c9652cea2961d653c",
     "snapshotDate": "2026-10-03",
     "note": "Снимок текущих правил; числа базовые, без множителей уровня и волны. Источник боевого поведения — tower-defense.html."
   },

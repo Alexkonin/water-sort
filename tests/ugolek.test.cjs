@@ -41,5 +41,5 @@ test('step phase follows travelled distance, independent of rendering time',()=>
 test('the new renderer is installed for offline play',()=>{
   const sw=fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8');
   assert.match(sw,/'\.\/bestiary\/ugolek\/animations\/ugolek\.js'/);
-  assert.match(html,/<script src="bestiary\/ugolek\/animations\/ugolek\.js\?v=73"><\/script>/);
+  assert.match(html,/<script src="bestiary\/ugolek\/animations\/ugolek\.js\?v=74"><\/script>/);
 });

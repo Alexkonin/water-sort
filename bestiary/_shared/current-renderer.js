@@ -1,4 +1,4 @@
-/* Exact game-art snapshot; source SHA-256: 066f85173dde0795ff4d8d110adf35c6bea12dbdea112833d16242c3f44f15b2. Viewer adapter below is preview-only. */
+/* Exact game-art snapshot; source SHA-256: 9a362be9d36fa65600e1a08efafeca3c51efb2bb470e4a1c9652cea2961d653c. Viewer adapter below is preview-only. */
 (function(){
 let G={t:0,foes:[],fx:[]};let CELL=40;const gradCache=new Map();const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function plural(n,a,b,c){n=Math.abs(n)%100;return n>=11&&n<=19?c:n%10===1?a:n%10>=2&&n%10<=4?b:c;}

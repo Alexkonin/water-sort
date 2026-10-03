@@ -56,31 +56,33 @@
     oval(c,.025,.205,.046,.035,'#bc935e',-.25);
     c.restore();
   }
-  // Fixed, unequal fissures: the silhouette never jitters as the coal smoulders.
+  // Follow the mascot's fissure: one bright junction, three sweeping arms,
+  // a few hairline splits. No repeated zigzag or comb of parallel offshoots.
   const fissures=[
-    [[-.43,-.04],[-.50,-.20],[-.43,-.36],[-.49,-.47],[-.46,-.66]],
-    [[-.43,-.04],[-.39,.12],[-.48,.26],[-.42,.43],[-.46,.58],[-.39,.67]],
-    [[-.43,-.04],[-.58,.07],[-.70,.04],[-.79,.12]],
-    [[-.50,-.20],[-.64,-.27],[-.67,-.38]],
-    [[-.42,.43],[-.28,.48],[-.23,.56]]
-  ].map((points,branch)=>{
+    {width:.085,points:[[-.43,.02],[-.40,-.19],[-.29,-.39],[-.30,-.55],[-.33,-.70]]},
+    {width:.080,points:[[-.43,.02],[-.32,.20],[-.28,.36],[-.20,.49],[-.19,.62]]},
+    {width:.060,points:[[-.43,.02],[-.60,.07],[-.68,.18],[-.78,.23],[-.88,.36]]},
+    {width:.025,points:[[-.40,-.19],[-.51,-.25],[-.55,-.35]]},
+    {width:.022,points:[[-.60,.07],[-.67,-.005],[-.76,-.025]]},
+    {width:.021,points:[[-.20,.49],[-.10,.54],[-.07,.61]]}
+  ].map(({points,width},branch)=>{
     let distance=0;
     const lengths=points.slice(1).map((b,i)=>Math.hypot(b[0]-points[i][0],b[1]-points[i][1]));
     const total=lengths.reduce((a,b)=>a+b,0);
     return lengths.map((length,i)=>{
       const along=(distance+length*.5)/total;distance+=length;
-      return {a:points[i],b:points[i+1],along,branch,width:(branch<2?.065:.036)*(1-along*.82)};
+      return {a:points[i],b:points[i+1],along,branch,width:width*(1-along*.9)};
     });
   }).flat();
   function drawFissure(c,time,seed,p){
     // Incommensurate slow waves move heat along the branches without flashing.
     const t=time*.85+seed*1.7;
     const breath=.5+.3*Math.sin(t*1.13)+.2*Math.sin(t*.47+1.2);
-    const halo=c.createRadialGradient(-.43,-.04,0,-.43,-.04,.66);
+    const halo=c.createRadialGradient(-.43,.02,0,-.43,.02,.66);
     halo.addColorStop(0,'rgba(255,125,28,'+(.10+breath*.07+p.wind*.03)+')');
     halo.addColorStop(.55,'rgba(228,85,12,.035)');halo.addColorStop(1,'rgba(228,85,12,0)');
-    oval(c,-.43,-.04,.69,.73,halo);
-    const core=c.createRadialGradient(-.43,-.04,0,-.43,-.04,.72);
+    oval(c,-.43,.02,.69,.73,halo);
+    const core=c.createRadialGradient(-.43,.02,0,-.43,.02,.72);
     core.addColorStop(0,'#fff7cd');core.addColorStop(.20,'#ffe7a1');
     core.addColorStop(.52,'#ffae45');core.addColorStop(1,'#9d3c14');
     c.save();c.lineJoin=c.lineCap='round';

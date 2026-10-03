@@ -56,6 +56,44 @@
     oval(c,.025,.205,.046,.035,'#bc935e',-.25);
     c.restore();
   }
+  // Fixed, unequal fissures: the silhouette never jitters as the coal smoulders.
+  const fissures=[
+    [[-.43,-.04],[-.50,-.20],[-.43,-.36],[-.49,-.47],[-.46,-.66]],
+    [[-.43,-.04],[-.39,.12],[-.48,.26],[-.42,.43],[-.46,.58],[-.39,.67]],
+    [[-.43,-.04],[-.58,.07],[-.70,.04],[-.79,.12]],
+    [[-.50,-.20],[-.64,-.27],[-.67,-.38]],
+    [[-.42,.43],[-.28,.48],[-.23,.56]]
+  ].map((points,branch)=>{
+    let distance=0;
+    const lengths=points.slice(1).map((b,i)=>Math.hypot(b[0]-points[i][0],b[1]-points[i][1]));
+    const total=lengths.reduce((a,b)=>a+b,0);
+    return lengths.map((length,i)=>{
+      const along=(distance+length*.5)/total;distance+=length;
+      return {a:points[i],b:points[i+1],along,branch,width:(branch<2?.065:.036)*(1-along*.82)};
+    });
+  }).flat();
+  function drawFissure(c,time,seed,p){
+    // Incommensurate slow waves move heat along the branches without flashing.
+    const t=time*.85+seed*1.7;
+    const breath=.5+.3*Math.sin(t*1.13)+.2*Math.sin(t*.47+1.2);
+    const halo=c.createRadialGradient(-.43,-.04,0,-.43,-.04,.66);
+    halo.addColorStop(0,'rgba(255,125,28,'+(.10+breath*.07+p.wind*.03)+')');
+    halo.addColorStop(.55,'rgba(228,85,12,.035)');halo.addColorStop(1,'rgba(228,85,12,0)');
+    oval(c,-.43,-.04,.69,.73,halo);
+    const core=c.createRadialGradient(-.43,-.04,0,-.43,-.04,.72);
+    core.addColorStop(0,'#fff7cd');core.addColorStop(.20,'#ffe7a1');
+    core.addColorStop(.52,'#ffae45');core.addColorStop(1,'#9d3c14');
+    c.save();c.lineJoin=c.lineCap='round';
+    for(const f of fissures){
+      const heat=.54+.23*Math.sin(t*1.31-f.along*4.4+f.branch*.83)
+        +.13*Math.sin(t*.73+f.along*6.1-f.branch*.57)+breath*.10;
+      c.beginPath();c.moveTo(...f.a);c.lineTo(...f.b);
+      c.globalAlpha=.12+heat*.12;c.strokeStyle='#f7771d';c.lineWidth=f.width*2.8;c.stroke();
+      c.globalAlpha=.70+heat*.24;c.strokeStyle='#cf6220';c.lineWidth=f.width;c.stroke();
+      c.globalAlpha=.68+heat*.31;c.strokeStyle=core;c.lineWidth=f.width*(.40+heat*.20);c.stroke();
+    }
+    c.restore();
+  }
   // Warm charcoal and ash; amber light comes from the ember and the crack.
   function draw(c,o={}){
     const p=pose(o), r=(o.size||40)/2.55;
@@ -73,10 +111,7 @@
     body(c);c.fillStyle='#201f1c';c.fill();c.lineWidth=.05;c.strokeStyle='#191815';c.stroke();
     const g=c.createLinearGradient(-.75,-.7,.65,.65);g.addColorStop(0,'#64605a');g.addColorStop(.48,'#383632');g.addColorStop(1,'#201f1c');body(c);c.fillStyle=g;c.fill();
     c.fillStyle='rgba(181,171,149,.24)';c.beginPath();c.moveTo(-.72,-.62);c.quadraticCurveTo(-.35,-.76,.15,-.47);c.quadraticCurveTo(-.13,-.57,-.46,-.40);c.quadraticCurveTo(-.59,-.38,-.72,-.62);c.fill();
-    // One large fork: readable at 24px, also present on the character's back.
-    c.lineJoin=c.lineCap='round';c.strokeStyle='#ec8a35';c.lineWidth=.07+p.wind*.025+p.flash*.02;
-    c.beginPath();c.moveTo(-.61,-.42);c.lineTo(-.37,-.14);c.lineTo(-.48,.20);c.lineTo(-.22,.48);c.moveTo(-.37,-.14);c.lineTo(-.10,-.27);c.stroke();
-    c.strokeStyle='#ffe2a0';c.lineWidth=.022+p.wind*.02;c.stroke();
+    drawFissure(c,o.time||0,o.seed||0,p);
     eye(c,-.30,p);eye(c,.30,p);
     c.strokeStyle='#191815';c.lineWidth=.038;c.beginPath();c.arc(.70,0,.078,-.85,.85);c.stroke();
     c.restore();

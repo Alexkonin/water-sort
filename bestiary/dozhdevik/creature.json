@@ -5,7 +5,7 @@
   "description": "гриб-дождевик на коротких ножках; тронешь — лопнет, и разбегутся споры",
   "source": {
     "source": "tower-defense.html",
-    "sha256": "eec71f04d7d53936b43737cc1cd3f61ecbcee4ad41bff25a385b2647109df2e1",
+    "sha256": "066f85173dde0795ff4d8d110adf35c6bea12dbdea112833d16242c3f44f15b2",
     "snapshotDate": "2026-10-03",
     "note": "Снимок текущих правил; числа базовые, без множителей уровня и волны. Источник боевого поведения — tower-defense.html."
   },

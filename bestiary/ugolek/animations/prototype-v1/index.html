@@ -11,7 +11,7 @@
 </div>
 <div class="row"><section class="card"><header><div class="label">ОДИН ПЕРСОНАЖ / ВОСЕМЬ НАПРАВЛЕНИЙ</div><h2>Узнаётся с любой стороны</h2></header><canvas class="strip" id="directions" aria-label="Уголёк повёрнут в восьми направлениях"></canvas></section><section class="card breakdown"><h2>Разобрать удар по фазам</h2><p>Подготовка · короткий контакт · мягкое возвращение.</p><label>Кадр <input type="range" min="0" max="100" value="0" id="frame" aria-label="Фаза атаки"><output id="frameValue">авто</output></label><div class="legend"><span>0% · собирается</span><span>46% · контакт</span><span>100% · готов</span></div><div class="subline"><button id="auto">Повторять удар</button><span class="status" id="status">Удары в демо: 0</span></div></section></div>
 <p class="foot"><strong>Текущий игровой персонаж:</strong> внешность упрощена под игру. Ходьба зависит от расстояния; замедление влияет и на шаг, и на атаку.<br>Вспышка у ворот — короткий эффект контакта. Дальней атаки нет. Эта же отрисовка используется в Towers.</p></main>
-<script src="../ugolek.js?v=74"></script><script>
+<script src="../ugolek.js?v=75"></script><script>
 const $=s=>document.querySelector(s), stages={};let running=!matchMedia('(prefers-reduced-motion: reduce)').matches,speed=1,size=32,time=0,distance=0,last=0,cycle=0,manual=null,hits=0,contactAge=99;
 $('#play').textContent=running?'Пауза':'Продолжить';
 function resize(){for(const id of ['walk','attack','field','directions']){const c=$('#'+id),b=c.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);c.width=Math.round(b.width*d);c.height=Math.round(b.height*d);const ctx=c.getContext('2d');ctx.setTransform(d,0,0,d,0,0);stages[id]={c,ctx,w:b.width,h:b.height};}render();}

@@ -66,35 +66,51 @@
     {width:.022,points:[[-.60,.07],[-.67,-.005],[-.76,-.025]]},
     {width:.021,points:[[-.20,.49],[-.10,.54],[-.07,.61]]}
   ].map(({points,width},branch)=>{
-    let distance=0;
-    const lengths=points.slice(1).map((b,i)=>Math.hypot(b[0]-points[i][0],b[1]-points[i][1]));
-    const total=lengths.reduce((a,b)=>a+b,0);
-    return lengths.map((length,i)=>{
-      const along=(distance+length*.5)/total;distance+=length;
-      return {a:points[i],b:points[i+1],along,branch,width:width*(1-along*.9)};
-    });
-  }).flat();
-  function drawFissure(c,time,seed,p){
-    // Incommensurate slow waves move heat along the branches without flashing.
-    const t=time*.85+seed*1.7;
-    const breath=.5+.3*Math.sin(t*1.13)+.2*Math.sin(t*.47+1.2);
-    const halo=c.createRadialGradient(-.43,.02,0,-.43,.02,.66);
-    halo.addColorStop(0,'rgba(255,125,28,'+(.10+breath*.07+p.wind*.03)+')');
-    halo.addColorStop(.55,'rgba(228,85,12,.035)');halo.addColorStop(1,'rgba(228,85,12,0)');
-    oval(c,-.43,.02,.69,.73,halo);
-    const core=c.createRadialGradient(-.43,.02,0,-.43,.02,.72);
-    core.addColorStop(0,'#fff7cd');core.addColorStop(.20,'#ffe7a1');
-    core.addColorStop(.52,'#ffae45');core.addColorStop(1,'#9d3c14');
-    c.save();c.lineJoin=c.lineCap='round';
-    for(const f of fissures){
-      const heat=.54+.23*Math.sin(t*1.31-f.along*4.4+f.branch*.83)
-        +.13*Math.sin(t*.73+f.along*6.1-f.branch*.57)+breath*.10;
-      c.beginPath();c.moveTo(...f.a);c.lineTo(...f.b);
-      c.globalAlpha=.12+heat*.12;c.strokeStyle='#f7771d';c.lineWidth=f.width*2.8;c.stroke();
-      c.globalAlpha=.70+heat*.24;c.strokeStyle='#cf6220';c.lineWidth=f.width;c.stroke();
-      c.globalAlpha=.68+heat*.31;c.strokeStyle=core;c.lineWidth=f.width*(.40+heat*.20);c.stroke();
+    // Bake a continuous tapered opening once, with gently uneven edges.
+    // Catmull–Rom interpolation removes the elbows between control points.
+    const samples=[],steps=10;
+    for(let i=0;i<points.length-1;i++){
+      const a=points[Math.max(0,i-1)],b=points[i],d=points[i+1],e=points[Math.min(points.length-1,i+2)];
+      for(let j=0;j<steps;j++){
+        const t=j/steps,t2=t*t,t3=t2*t;
+        samples.push([0,1].map(k=>.5*((2*b[k])+(-a[k]+d[k])*t+
+          (2*a[k]-5*b[k]+4*d[k]-e[k])*t2+(-a[k]+3*b[k]-3*d[k]+e[k])*t3)));
+      }
     }
-    c.restore();
+    samples.push(points[points.length-1]);
+    const left=[],right=[];
+    samples.forEach((point,i)=>{
+      const prev=samples[Math.max(0,i-1)],next=samples[Math.min(samples.length-1,i+1)];
+      const dx=next[0]-prev[0],dy=next[1]-prev[1],len=Math.hypot(dx,dy)||1;
+      const u=i/(samples.length-1);
+      const half=width*.43*Math.pow(1-u,1.2)*(1+.16*Math.sin(u*19+branch*2)+.07*Math.sin(u*41+branch));
+      left.push([point[0]-dy/len*half,point[1]+dx/len*half]);
+      right.push([point[0]+dy/len*half,point[1]-dx/len*half]);
+    });
+    return left.concat(right.reverse());
+  });
+  function drawFissure(c,time,seed,p){
+    const t=time*.85+seed*1.7;
+    const heat=.5+.3*Math.sin(t*1.13)+.2*Math.sin(t*.47+1.2);
+    // A single filled opening: no strokes, segment caps, outlines or halo.
+    c.beginPath();
+    for(const edge of fissures){
+      c.moveTo(...edge[0]);for(let i=1;i<edge.length;i++)c.lineTo(...edge[i]);c.closePath();
+    }
+    const core=c.createRadialGradient(-.43,.02,0,-.43,.02,.76);
+    core.addColorStop(0,'#fff1bd');
+    core.addColorStop(.13+heat*.07,'#ffd98b');
+    core.addColorStop(.48+heat*.12,'#ef963f');core.addColorStop(1,'#91451e');
+    c.fillStyle=core;c.fill();
+    // Slow travelling warmth stays entirely inside the same continuous opening.
+    const drift=.50+.22*Math.sin(t*.61)+.10*Math.sin(t*.37+1);
+    const warmth=c.createLinearGradient(-.52,-.76,-.24,.70);
+    warmth.addColorStop(0,'rgba(255,237,177,0)');
+    warmth.addColorStop(drift-.16,'rgba(255,237,177,0)');
+    warmth.addColorStop(drift,'rgba(255,244,206,'+(.16+heat*.22+p.wind*.05)+')');
+    warmth.addColorStop(drift+.16,'rgba(255,237,177,0)');
+    warmth.addColorStop(1,'rgba(255,237,177,0)');
+    c.fillStyle=warmth;c.fill();
   }
   // Warm charcoal and ash; amber light comes from the ember and the crack.
   function draw(c,o={}){

@@ -5,7 +5,7 @@ const CARD_SNAPSHOT = {
 grunt: {
     voice:'ember',
     name:'Уголёк', about:'маленький угольный дух с тёплой трещинкой; бережно несёт огонёк в ладонях',
-    hp:36, sp:1.35, armor:0, bounty:8, hit:1, atk:1.6, r:0.30, color:'#6b6070',
+    hp:36, sp:1.35, armor:0, bounty:8, hit:1, atk:1.6, r:0.30, color:'#45413a',
     gap:0.62, wave:(L, W) => 4 + Math.round(W * 0.6 + L * 0.2),
     attackAnim:{ duration:Ugolek.ATTACK_DURATION, contact:Ugolek.CONTACT },
     art(c,r,f){

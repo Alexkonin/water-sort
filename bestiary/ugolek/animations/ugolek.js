@@ -32,9 +32,9 @@
   }
   function eye(c,y,p){
     c.save();c.translate(.43,y);c.scale(1,p.blink*(1-p.wind*.32));
-    c.fillStyle='#25202c';c.beginPath();c.moveTo(-.24,0);c.quadraticCurveTo(-.02,-.25,.19,-.09);c.quadraticCurveTo(.26,.02,.13,.16);c.quadraticCurveTo(-.06,.25,-.24,0);c.fill();
+    c.fillStyle='#211f1b';c.beginPath();c.moveTo(-.24,0);c.quadraticCurveTo(-.02,-.25,.19,-.09);c.quadraticCurveTo(.26,.02,.13,.16);c.quadraticCurveTo(-.06,.25,-.24,0);c.fill();
     c.fillStyle='#fff0c8';c.beginPath();c.moveTo(-.185,0);c.quadraticCurveTo(-.005,-.17,.135,-.065);c.quadraticCurveTo(.195,.045,.095,.115);c.quadraticCurveTo(-.035,.175,-.185,0);c.fill();
-    oval(c,.064,.003,.087,.115,'#e4a73b');oval(c,.091,.004,.049,.087,'#221d29');oval(c,.085,-.047,.027,.032,'#fffcec');
+    oval(c,.064,.003,.087,.115,'#e4a73b');oval(c,.091,.004,.049,.087,'#191815');oval(c,.085,-.047,.027,.032,'#fffcec');
     c.restore();
   }
   function paw(c,hx,hy,side,root){
@@ -50,12 +50,13 @@
     c.quadraticCurveTo(x+.055,y-.045,x-.03,y-.065);
     c.quadraticCurveTo(x-.065,y-.015,x-.045,y+.04);c.closePath();
     const g=c.createLinearGradient(x,y,.07,.20);
-    g.addColorStop(0,'#4b4756');g.addColorStop(.60,'#6d6676');g.addColorStop(1,'#8c766f');
+    g.addColorStop(0,'#383631');g.addColorStop(.60,'#575147');g.addColorStop(1,'#866a4a');
     c.fillStyle=g;c.fill();
     // A soft solid thumb highlight gives volume without reading as another arc.
-    oval(c,.025,.205,.046,.035,'#a68c78',-.25);
+    oval(c,.025,.205,.046,.035,'#bc935e',-.25);
     c.restore();
   }
+  // Warm charcoal and ash; amber light comes from the ember and the crack.
   function draw(c,o={}){
     const p=pose(o), r=(o.size||40)/2.55;
     const hx=.95-p.wind*.08+p.thrust*.23, hy=p.step*.012;
@@ -64,20 +65,20 @@
     // Feet follow distance; both tuck in during the wind-up and brace at contact.
     for(const side of [-1,1]){
       const foot=p.step*side*.19;
-      oval(c,-.44+foot-p.wind*.05,side*(.76+p.thrust*.07),.28,.15,'#252633',side*.12);
-      oval(c,-.42+foot,side*.77,.15,.075,'#616074',side*.12);
+      oval(c,-.44+foot-p.wind*.05,side*(.76+p.thrust*.07),.28,.15,'#1f1e1b',side*.12);
+      oval(c,-.42+foot,side*.77,.15,.075,'#4d4942',side*.12);
     }
     c.save();c.translate(-p.wind*.12+p.thrust*.18,p.step*.065);
     c.rotate(p.lean);c.scale(1-p.wind*.10+p.thrust*.14,1+p.wind*.07-p.thrust*.07+p.breath*.008);
-    body(c);c.fillStyle='#252632';c.fill();c.lineWidth=.05;c.strokeStyle='#24232d';c.stroke();
-    const g=c.createLinearGradient(-.75,-.7,.65,.65);g.addColorStop(0,'#838197');g.addColorStop(.48,'#555365');g.addColorStop(1,'#35333f');body(c);c.fillStyle=g;c.fill();
-    c.fillStyle='rgba(180,174,195,.26)';c.beginPath();c.moveTo(-.72,-.62);c.quadraticCurveTo(-.35,-.76,.15,-.47);c.quadraticCurveTo(-.13,-.57,-.46,-.40);c.quadraticCurveTo(-.59,-.38,-.72,-.62);c.fill();
+    body(c);c.fillStyle='#201f1c';c.fill();c.lineWidth=.05;c.strokeStyle='#191815';c.stroke();
+    const g=c.createLinearGradient(-.75,-.7,.65,.65);g.addColorStop(0,'#64605a');g.addColorStop(.48,'#383632');g.addColorStop(1,'#201f1c');body(c);c.fillStyle=g;c.fill();
+    c.fillStyle='rgba(181,171,149,.24)';c.beginPath();c.moveTo(-.72,-.62);c.quadraticCurveTo(-.35,-.76,.15,-.47);c.quadraticCurveTo(-.13,-.57,-.46,-.40);c.quadraticCurveTo(-.59,-.38,-.72,-.62);c.fill();
     // One large fork: readable at 24px, also present on the character's back.
     c.lineJoin=c.lineCap='round';c.strokeStyle='#ec8a35';c.lineWidth=.07+p.wind*.025+p.flash*.02;
     c.beginPath();c.moveTo(-.61,-.42);c.lineTo(-.37,-.14);c.lineTo(-.48,.20);c.lineTo(-.22,.48);c.moveTo(-.37,-.14);c.lineTo(-.10,-.27);c.stroke();
     c.strokeStyle='#ffe2a0';c.lineWidth=.022+p.wind*.02;c.stroke();
     eye(c,-.30,p);eye(c,.30,p);
-    c.strokeStyle='#211c27';c.lineWidth=.038;c.beginPath();c.arc(.70,0,.078,-.85,.85);c.stroke();
+    c.strokeStyle='#191815';c.lineWidth=.038;c.beginPath();c.arc(.70,0,.078,-.85,.85);c.stroke();
     c.restore();
     // Counter-motion: hands steady the ember instead of following the body's sway.
     const glow=c.createRadialGradient(hx,hy,0,hx,hy,.55+p.wind*.08+p.flash*.15);

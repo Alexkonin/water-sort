@@ -1,4 +1,4 @@
-/* Exact game-art snapshot; source SHA-256: f6351607e03252b40420b43fdebf399f00a754e99b5c8da5358b7bb2877a5401. Viewer adapter below is preview-only. */
+/* Exact game-art snapshot; source SHA-256: eec71f04d7d53936b43737cc1cd3f61ecbcee4ad41bff25a385b2647109df2e1. Viewer adapter below is preview-only. */
 (function(){
 let G={t:0,foes:[],fx:[]};let CELL=40;const gradCache=new Map();const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function plural(n,a,b,c){n=Math.abs(n)%100;return n>=11&&n<=19?c:n%10===1?a:n%10>=2&&n%10<=4?b:c;}
@@ -390,7 +390,7 @@ const FOES = {
   grunt: {
     voice:'ember',
     name:'Уголёк', about:'маленький угольный дух с тёплой трещинкой; бережно несёт огонёк в ладонях',
-    hp:36, sp:1.35, armor:0, bounty:8, hit:1, atk:1.6, r:0.30, color:'#6b6070',
+    hp:36, sp:1.35, armor:0, bounty:8, hit:1, atk:1.6, r:0.30, color:'#45413a',
     gap:0.62, wave:(L, W) => 4 + Math.round(W * 0.6 + L * 0.2),
     attackAnim:{ duration:Ugolek.ATTACK_DURATION, contact:Ugolek.CONTACT },
     art(c,r,f){

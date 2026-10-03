@@ -16,7 +16,7 @@
 <script src="launch-history.js?v=60"></script>
 <script src="focus-mode.js?v=65"></script>
 <script src="sound.js?v=48"></script>
-<script src="bestiary/ugolek/animations/ugolek.js?v=71"></script>
+<script src="bestiary/ugolek/animations/ugolek.js?v=72"></script>
 <style>
   :root{--hint-bottom:110px;--line:rgba(202,216,179,.17);--muted:#bdc9b2}
   body{display:flex;align-items:center;background:radial-gradient(ellipse at 38% 25%,#423057 0%,#281c39 55%,#191222 100%)}
@@ -2239,7 +2239,7 @@ const FOES = {
   grunt: {
     voice:'ember',
     name:'Уголёк', about:'маленький угольный дух с тёплой трещинкой; бережно несёт огонёк в ладонях',
-    hp:36, sp:1.35, armor:0, bounty:8, hit:1, atk:1.6, r:0.30, color:'#6b6070',
+    hp:36, sp:1.35, armor:0, bounty:8, hit:1, atk:1.6, r:0.30, color:'#45413a',
     gap:0.62, wave:(L, W) => 4 + Math.round(W * 0.6 + L * 0.2),
     attackAnim:{ duration:Ugolek.ATTACK_DURATION, contact:Ugolek.CONTACT },
     art(c,r,f){

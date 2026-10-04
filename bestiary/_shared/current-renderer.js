@@ -86,114 +86,25 @@ const BOSS_SKINS = [
 const bossSkin = L => Math.floor(L / 3) % BOSS_SKINS.length;
 
 const BOSS_ART = [
-  function forestLord(c, r, f){                                                                    // рогатый хранитель леса
-    const p = 0.5 + 0.5 * Math.sin(G.t * 2 + f.ph);
-    let g = c.createRadialGradient(0, 0, r * 0.8, 0, 0, r * 1.7);
-    g.addColorStop(0, 'rgba(120,200,110,' + (0.14 + p * 0.1) + ')'); g.addColorStop(1, 'rgba(120,200,110,0)');
-    c.fillStyle = g; c.beginPath(); c.arc(0, 0, r * 1.7, 0, 7); c.fill();
-    legs(c, r, stepPhase(f), 2, 0.4, '#3c5c2c', 0.2, 0.5);
-    c.fillStyle = '#e4d9bd';                                                                        // налитые ветвистые рога
-    for (const s of [-1, 1]){
-      c.beginPath();
-      c.moveTo(r * 0.3, s * r * 0.3);
-      c.quadraticCurveTo(r * 1.0, s * r * 0.85, r * 1.5, s * r * 0.5);                               // основная ветвь
-      c.lineTo(r * 1.52, s * r * 0.78);
-      c.quadraticCurveTo(r * 1.05, s * r * 1.18, r * 0.9, s * r * 1.5);                              // отросток вверх
-      c.lineTo(r * 0.62, s * r * 1.42);
-      c.quadraticCurveTo(r * 0.78, s * r * 0.95, r * 0.3, s * r * 0.62);
-      c.closePath(); c.fill();
-      c.beginPath();                                                                                 // второй отросток
-      c.moveTo(r * 1.15, s * r * 0.72); c.lineTo(r * 1.72, s * r * 1.0); c.lineTo(r * 1.5, s * r * 1.12);
-      c.closePath(); c.fill();
-    }
-    c.fillStyle = grad(c, 'bossF', r, () => { const g = c.createRadialGradient(-r * 0.3, -r * 0.4, r * 0.1, 0, 0, r * 1.15);
-      g.addColorStop(0, '#a8d88a'); g.addColorStop(0.5, '#6d9e4a'); g.addColorStop(1, '#27411c'); return g; });
-    c.beginPath(); c.ellipse(0, 0, r * 1.1, r * 0.98, 0, 0, 7); c.fill();
-    c.fillStyle = 'rgba(60,110,50,.5)';                                                             // мох на спине
-    for (const [dx, dy, rr2] of [[-0.5, -0.4, 0.3], [-0.1, -0.55, 0.22], [-0.7, 0.15, 0.24]]) { c.beginPath(); c.arc(dx * r, dy * r, rr2 * r, 0, 7); c.fill(); }
-    gloss(c, -r * 0.4, -r * 0.45, r * 0.32, r * 0.14, 0.25);
-    c.fillStyle = 'rgba(232,226,200,.9)';                                                           // бледная морда
-    c.beginPath(); c.ellipse(r * 0.62, 0, r * 0.46, r * 0.42, 0, 0, 7); c.fill();
-    roundEyes(c, r * 0.6, r * 0.24, r * 0.16, '#2a1f10');
-    c.fillStyle = 'rgba(60,48,28,.7)'; c.beginPath(); c.ellipse(r * 0.98, 0, r * 0.11, r * 0.07, 0, 0, 7); c.fill();
+  function forestLord(c,r,f){
+    const attack=f.siege?ForestLord.attackProgress(f.atk,f.attackAfter||0):null;let target;
+    if(f.siege){const gate=siegeFrame().b,q=foePos(f),h=foeHeading(f),dx=(gate.x-q.x)*CELL,dy=(gate.y-q.y)*CELL;target={x:dx*Math.cos(h)+dy*Math.sin(h),y:-dx*Math.sin(h)+dy*Math.cos(h)};}
+    ForestLord.draw(c,{size:r*3,time:G.t,distance:f.d,seed:f.ph,shadow:false,target,state:f.siege?(attack===null?'idle':'attack'):'walk',attack});
   },
-  function whiteMask(c, r, f){                                                                     // высокий дух в белой маске
-    const sway = Math.sin(G.t * 2.2 + f.ph) * 0.06;
-    c.rotate(sway);
-    c.strokeStyle = 'rgba(20,18,30,.75)'; c.lineWidth = Math.max(1.5, r * 0.1); c.lineCap = 'round';  // длинные тонкие руки
-    for (const s of [-1, 1]){
-      c.beginPath(); c.moveTo(-r * 0.2, s * r * 0.5);
-      c.quadraticCurveTo(r * 0.5, s * r * (1.1 + sway * 2), r * 0.95, s * r * 0.75); c.stroke();
-    }
-    c.fillStyle = grad(c, 'bossM', r, () => { const g = c.createLinearGradient(0, -r, 0, r * 1.2);
-      g.addColorStop(0, '#5a5366'); g.addColorStop(0.5, '#2e2a3c'); g.addColorStop(1, '#141220'); return g; });
-    c.beginPath();                                                                                  // тёмный текучий балахон
-    c.moveTo(r * 0.75, 0); c.quadraticCurveTo(r * 0.7, -r * 0.95, -r * 0.2, -r * 0.85);
-    c.quadraticCurveTo(-r * 1.15, -r * 0.5, -r * 1.1, 0);
-    c.quadraticCurveTo(-r * 1.15, r * 0.5, -r * 0.2, r * 0.85);
-    c.quadraticCurveTo(r * 0.7, r * 0.95, r * 0.75, 0); c.closePath(); c.fill();
-    c.fillStyle = '#efe9db'; c.beginPath(); c.ellipse(r * 0.6, 0, r * 0.46, r * 0.56, 0, 0, 7); c.fill();  // маска
-    c.strokeStyle = 'rgba(120,100,80,.5)'; c.lineWidth = Math.max(1, r * 0.03); c.stroke();
-    c.fillStyle = '#2b2333';                                                                        // прорези и метки
-    for (const s of [-1, 1]){ c.beginPath(); c.ellipse(r * 0.68, s * r * 0.2, r * 0.09, r * 0.13, 0, 0, 7); c.fill(); }
-    c.fillStyle = '#b05a4a';
-    for (const s of [-1, 1]){ c.fillRect(r * 0.42, s * r * 0.3 - r * 0.02, r * 0.16, r * 0.05); }
-    c.fillStyle = 'rgba(40,32,48,.9)'; c.beginPath(); c.ellipse(r * 0.75, 0, r * 0.06, r * 0.16, 0, 0, 7); c.fill();
+  function whiteMask(c,r,f){
+    const attack=f.siege?WhiteMask.attackProgress(f.atk,f.attackAfter||0):null;let target;
+    if(f.siege){const gate=siegeFrame().b,q=foePos(f),h=foeHeading(f),dx=(gate.x-q.x)*CELL,dy=(gate.y-q.y)*CELL;target={x:dx*Math.cos(h)+dy*Math.sin(h),y:-dx*Math.sin(h)+dy*Math.cos(h)};}
+    WhiteMask.draw(c,{size:r*3,time:G.t,distance:f.d,seed:f.ph,shadow:false,target,state:f.siege?(attack===null?'idle':'attack'):'walk',attack});
   },
-  function riverSerpent(c, r, f){                                                                  // текучий речной змей
-    const w = Math.sin(G.t * 4 + f.ph);
-    c.strokeStyle = grad(c, 'bossR', r, () => { const g = c.createLinearGradient(-r * 2, 0, r, 0);
-      g.addColorStop(0, 'rgba(74,168,200,.2)'); g.addColorStop(0.6, '#4aa8c8'); g.addColorStop(1, '#bfe9f5'); return g; });
-    c.lineWidth = r * 0.75; c.lineCap = 'round'; c.lineJoin = 'round';
-    c.beginPath(); c.moveTo(r * 0.7, 0);                                                            // тело волной
-    for (let i = 1; i <= 5; i++){ const x = r * (0.7 - i * 0.52), y = Math.sin(w * 1.2 + i * 0.9) * r * 0.42 * (i / 5); c.lineTo(x, y); }
-    c.stroke();
-    c.lineWidth = r * 0.3; c.strokeStyle = 'rgba(220,245,255,.45)';                                 // светлый гребень
-    c.beginPath(); c.moveTo(r * 0.6, -r * 0.1);
-    for (let i = 1; i <= 5; i++){ const x = r * (0.6 - i * 0.52), y = Math.sin(w * 1.2 + i * 0.9) * r * 0.42 * (i / 5) - r * 0.12; c.lineTo(x, y); }
-    c.stroke();
-    c.fillStyle = '#7fd0e8'; c.beginPath(); c.ellipse(r * 0.85, 0, r * 0.55, r * 0.42, 0, 0, 7); c.fill();   // голова
-    c.strokeStyle = '#bfe9f5'; c.lineWidth = Math.max(1, r * 0.05);                                 // усы
-    for (const s of [-1, 1]){ c.beginPath(); c.moveTo(r * 1.2, s * r * 0.12); c.quadraticCurveTo(r * 1.8, s * r * (0.3 + w * 0.15), r * 2.0, s * r * 0.05); c.stroke(); }
-    c.fillStyle = '#e8f7ff';                                                                        // рожки-плавники
-    for (const s of [-1, 1]){ c.beginPath(); c.moveTo(r * 0.7, s * r * 0.3); c.lineTo(r * 0.55, s * r * 0.85); c.lineTo(r * 0.95, s * r * 0.45); c.closePath(); c.fill(); }
-    roundEyes(c, r * 1.0, r * 0.22, r * 0.14, '#123b4a');
+  function riverSerpent(c,r,f){
+    const attack=f.siege?RiverSerpent.attackProgress(f.atk,f.attackAfter||0):null;let target;
+    if(f.siege){const gate=siegeFrame().b,q=foePos(f),h=foeHeading(f),dx=(gate.x-q.x)*CELL,dy=(gate.y-q.y)*CELL;target={x:dx*Math.cos(h)+dy*Math.sin(h),y:-dx*Math.sin(h)+dy*Math.cos(h)};}
+    RiverSerpent.draw(c,{size:r*3,time:G.t,distance:f.d,seed:f.ph,shadow:false,target,state:f.siege?(attack===null?'idle':'attack'):'walk',attack});
   },
-  function thunderOx(c, r, f){                                                                     // бык-гроза в туче
-    const p = 0.5 + 0.5 * Math.sin(G.t * 9 + f.ph), bolt = Math.sin(G.t * 7 + f.ph) > 0.75;
-    let g = c.createRadialGradient(0, 0, r * 0.6, 0, 0, r * 1.8);
-    g.addColorStop(0, 'rgba(176,140,240,' + (0.22 + p * 0.16) + ')'); g.addColorStop(1, 'rgba(120,90,200,0)');
-    c.fillStyle = g; c.beginPath(); c.arc(0, 0, r * 1.8, 0, 7); c.fill();
-    legs(c, r, stepPhase(f), 2, 0.38, '#3a2a58', 0.22, 0.5);
-    c.fillStyle = '#f4ecff';                                                                        // тяжёлые изогнутые рога
-    for (const s of [-1, 1]){
-      c.beginPath();
-      c.moveTo(r * 0.35, s * r * 0.35);
-      c.quadraticCurveTo(r * 1.35, s * r * 0.7, r * 1.45, s * r * 1.5);                              // внешняя дуга
-      c.lineTo(r * 1.12, s * r * 1.45);
-      c.quadraticCurveTo(r * 1.05, s * r * 0.95, r * 0.4, s * r * 0.68);                             // внутренняя дуга
-      c.closePath(); c.fill();
-      c.fillStyle = 'rgba(120,95,175,.35)';                                                          // тень на роге
-      c.beginPath(); c.moveTo(r * 0.4, s * r * 0.55); c.quadraticCurveTo(r * 1.08, s * r * 0.9, r * 1.16, s * r * 1.42);
-      c.lineTo(r * 1.12, s * r * 1.45); c.quadraticCurveTo(r * 1.05, s * r * 0.95, r * 0.4, s * r * 0.68); c.closePath(); c.fill();
-      c.fillStyle = '#f4ecff';
-    }
-    c.fillStyle = grad(c, 'bossT', r, () => { const g = c.createRadialGradient(-r * 0.3, -r * 0.4, r * 0.1, 0, 0, r * 1.15);
-      g.addColorStop(0, '#d9c6ff'); g.addColorStop(0.45, '#8f6fd8'); g.addColorStop(1, '#2b1d4a'); return g; });
-    c.beginPath();                                                                                  // туловище-туча
-    for (let i = 0; i < 7; i++){ const a = i / 7 * 6.283, rr2 = r * (0.95 + 0.18 * Math.sin(i * 2.3 + G.t)); c.lineTo(Math.cos(a) * rr2 * 1.05, Math.sin(a) * rr2 * 0.9); }
-    c.closePath(); c.fill();
-    gloss(c, -r * 0.4, -r * 0.5, r * 0.3, r * 0.13, 0.3);
-    if (bolt){                                                                                      // разряды из тучи
-      c.strokeStyle = '#fff6a0'; c.lineWidth = Math.max(1.5, r * 0.07); c.lineCap = 'round';
-      for (const s of [-1, 1]){
-        c.beginPath(); c.moveTo(-r * 0.3, s * r * 0.6); c.lineTo(-r * 0.55, s * r * 1.0); c.lineTo(-r * 0.3, s * r * 1.0); c.lineTo(-r * 0.6, s * r * 1.45); c.stroke();
-      }
-    }
-    roundEyes(c, r * 0.6, r * 0.32, r * 0.17, '#2a1a4a');
-    c.fillStyle = '#2a1a4a'; c.beginPath(); c.ellipse(r * 0.95, 0, r * 0.12, r * 0.2, 0, 0, 7); c.fill();  // морда
-    c.fillStyle = 'rgba(255,255,255,.5)';
-    for (const s of [-1, 1]){ c.beginPath(); c.arc(r * 0.98, s * r * 0.08, r * 0.045, 0, 7); c.fill(); }
+  function thunderOx(c,r,f){
+    const attack=f.siege?ThunderBull.attackProgress(f.atk,f.attackAfter||0):null;let target;
+    if(f.siege){const gate=siegeFrame().b,q=foePos(f),h=foeHeading(f),dx=(gate.x-q.x)*CELL,dy=(gate.y-q.y)*CELL;target={x:dx*Math.cos(h)+dy*Math.sin(h),y:-dx*Math.sin(h)+dy*Math.cos(h)};}
+    ThunderBull.draw(c,{size:r*3,time:G.t,distance:f.d,seed:f.ph,shadow:false,target,state:f.siege?(attack===null?'idle':'attack'):'walk',attack});
   }
 ];
 
@@ -722,7 +633,7 @@ const FOES = {
     gap:2.2, wave:(L, W, late, nW, final) => final ? { n: 1 + Math.min(2, Math.floor(L / 4)), gap: 2.2 }
                                           : (L >= 5 && W === Math.floor(nW / 2)) ? { n: 1, gap: 1 } : 0,
     step:1.5, dust:true,
-    gait(f){ const ph = (f.d * 1.5) % 1; return { bob: Math.abs(Math.sin(ph * Math.PI)) * f.r * CELL * 0.12, sq: 0 }; },
+    gait(f){ if((f.skin||0)<=3)return {bob:0,sq:0}; const ph = (f.d * 1.5) % 1; return { bob: Math.abs(Math.sin(ph * Math.PI)) * f.r * CELL * 0.12, sq: 0 }; },
     art(c, r, f){ BOSS_ART[f.skin || 0](c, r, f); }
   }
 };

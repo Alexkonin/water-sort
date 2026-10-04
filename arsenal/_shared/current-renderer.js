@@ -13,6 +13,7 @@ const TOWERS = {
             splash:1.20, color:'#d99a73', about:'взрыв по площади' }
 };
 const TW_ORDER = ['gun','frost','tesla','mortar'];
+const teslaCrownY = lvl => -.28 - (lvl - 1) * .045;
 /* Числа абсолютны относительно первого разряда, не перемножаются.
    Все пять разрядов доступны на любой карте; ограничение — только золото.
    Специализация растёт отдельно: частота / замедление / цепь / взрыв. */
@@ -253,135 +254,201 @@ const GunDesign = (() => {
   return {body,live,names,palettes};
 })();
 
+// Upright coil tower in the original game's pictorial style.
+const TeslaDesign = (() => {
+  const names=['Искра','Катушка','Разряд','Гроза','Шторм'];
+  function ball(c,x,y,r){
+    const g=c.createRadialGradient(x-r*.35,y-r*.4,r*.08,x,y,r);
+    g.addColorStop(0,'#fff9d5');g.addColorStop(.4,'#d9e3a6');g.addColorStop(1,'#7e9452');
+    c.fillStyle=g;c.beginPath();c.arc(x,y,r,0,7);c.fill();c.strokeStyle='#4c613e';c.lineWidth=.012;c.stroke();
+  }
+  function sides(lvl){return lvl<3?[]:[[-.22,lvl===3?-.13:lvl===4?-.28:-.36],[.22,lvl===3?-.13:lvl===4?-.28:-.36]];}
+  function body(c,s,lvl,silhouette=false){
+    c.save();
+    if(silhouette)c.filter='brightness(0) invert(.85)';
+    // Tighter footing: the tower, not the empty platform, dominates the icon.
+    if(!silhouette)platform(c,s,['#a1ad8b','#5c7355'],'#2d4535',.78+(lvl-1)*.035);
+    c.scale(s,s);
+    const y=teslaCrownY(lvl),w=.095+(lvl-1)*.011;
+    const metal=c.createLinearGradient(-.16,0,.16,0);
+    metal.addColorStop(0,'#e0c18a');metal.addColorStop(.3,'#b59561');metal.addColorStop(1,'#675137');
+    const ceramic=c.createLinearGradient(-w,0,w,0);
+    ceramic.addColorStop(0,'#b6cbb5');ceramic.addColorStop(.45,'#7f9e88');ceramic.addColorStop(1,'#435f4e');
+    // Feet and compact stone socket, with a clear top and short front face.
+    c.fillStyle='#354d39';rr(c,-.16,.035,.32,.115,.025);c.fill();
+    c.fillStyle='#7d9270';rr(c,-.17,.005,.34,.085,.025);c.fill();
+    c.strokeStyle='#c2cbaa';c.lineWidth=.012;c.beginPath();c.moveTo(-.135,.02);c.lineTo(.135,.02);c.stroke();
+    // Side columns rise from the socket; no floating beads or rectangular cage.
+    for(const [x,top] of sides(lvl)){
+      c.strokeStyle='#354b36';c.lineWidth=lvl>=4?.072:.053;c.lineJoin='round';
+      c.beginPath();c.moveTo(x*.38,.055);c.lineTo(x,-.04);c.lineTo(x,top);c.stroke();
+      c.strokeStyle='#9cab7d';c.lineWidth=lvl>=4?.044:.027;c.stroke();
+      c.fillStyle=metal;
+      if(lvl>=4)for(let j=0;j<3;j++){c.beginPath();c.ellipse(x,top+.045+j*.037,.047,.015,0,0,7);c.fill();}
+      ball(c,x,top,lvl===5?.069:lvl===4?.058:.047);
+    }
+    // Ceramic core and sparse, thick copper windings remain legible at 40px.
+    c.fillStyle=ceramic;rr(c,-w*.65,y+.035,w*1.3,-y+.015,.025);c.fill();
+    const count=lvl===1?3:lvl===2?4:5;
+    for(let i=0;i<count;i++){
+      const yy=-.015-i*(-y-.09)/(count-1),r=w*(lvl===1?1.02:1.2);
+      c.fillStyle='#584933';c.beginPath();c.ellipse(0,yy+.015,r,.028,0,0,7);c.fill();
+      c.fillStyle=metal;c.beginPath();c.ellipse(0,yy,r,.025,0,0,7);c.fill();
+      c.strokeStyle='#edd49e85';c.lineWidth=.008;c.beginPath();c.ellipse(0,yy,r*.88,.017,0,Math.PI,Math.PI*1.85);c.stroke();
+    }
+    // A solid tapered lower housing gives heavy ranks their own silhouette.
+    if(lvl>=4){
+      c.fillStyle='#4b644a';poly(c,[[-.15,.055],[-.12,-.105],[.12,-.105],[.15,.055]]);c.fill();
+      c.strokeStyle=lvl===5?'#d9c181':'#9eb087';c.lineWidth=.016;c.stroke();
+      c.strokeStyle='#263f32';c.lineWidth=.014;
+      for(const x of [-.047,.047]){c.beginPath();c.moveTo(x,-.074);c.lineTo(x,.022);c.stroke();}
+    }
+    // Neck: the emitter visibly sits on the winding rather than floating.
+    c.fillStyle='#516849';rr(c,-.066,y+.025,.132,.07,.014);c.fill();
+    c.fillStyle=metal;c.beginPath();c.ellipse(0,y+.06,.104,.028,0,0,7);c.fill();
+    if(lvl===5){
+      // Open fork behind the head: a distinctive crown, not a closed cage.
+      for(const side of [-1,1]){
+        c.strokeStyle='#526646';c.lineWidth=.046;c.lineJoin='round';c.beginPath();
+        c.moveTo(side*.22,-.36);c.lineTo(side*.195,y-.035);c.lineTo(side*.14,y-.10);c.stroke();
+        c.strokeStyle='#cfbd80';c.lineWidth=.02;c.stroke();
+      }
+    }
+    const r=lvl===1?.088:lvl===2?.12:lvl===3?.12:lvl===4?.133:.145;
+    ball(c,0,y,r);
+    // The second rank gets a broad conducting torus; the others keep the orb.
+    if(lvl===2){
+      c.strokeStyle='#665534';c.lineWidth=.045;c.beginPath();c.ellipse(0,y+.018,.157,.048,0,0,Math.PI);c.stroke();
+      c.strokeStyle='#c9b277';c.lineWidth=.026;c.stroke();
+    }
+    c.restore();
+  }
+  function live(c,s,t,time=0){
+    const lvl=t.lvl,y=teslaCrownY(lvl),r=.09+(lvl-1)*.012;
+    const charge=Math.max(0,Math.min(1,1-(t.cool||0))),flash=Math.max(0,Math.min(1,(t.flash||0)/.07));
+    c.save();c.scale(s,s);
+    const g=c.createRadialGradient(0,y,0,0,y,r*2);
+    g.addColorStop(0,`rgba(227,237,169,${.08+charge*.15+flash*.4})`);g.addColorStop(1,'rgba(227,237,169,0)');c.fillStyle=g;c.beginPath();c.arc(0,y,r*2,0,7);c.fill();
+    if(lvl>=3&&(flash||Math.sin(time*2.3)>.96))for(const [x,sy] of sides(lvl)){
+      c.strokeStyle=flash?'#fffad7':'rgba(214,232,158,.5)';c.lineWidth=flash?.022:.012;c.beginPath();c.moveTo(x,sy);c.lineTo(x*.6,sy+(y-sy)*.25-.02);c.lineTo(x*.45,sy+(y-sy)*.7+.015);c.lineTo(0,y);c.stroke();
+    }
+    if(flash){c.fillStyle='#fffbe0';c.beginPath();c.arc(0,y,r*.58,0,7);c.fill();}
+    c.restore();
+  }
+  return {body,live,names,crownY:teslaCrownY};
+})();
+
+const MortarDesign = (() => {
+  const names=['Ядро','Гром','Осадная','Вулкан','Метеор'];
+  function body(c,s,lvl,sil=false){
+    if(sil)return;
+    platform(c,s,['#a5a58a','#646c51'],'#303f30',.9+(lvl-1)*.035);
+    c.save();c.scale(s,s);
+    if(lvl>=4)for(const x of [-1,1])for(const y of [-1,1]){
+      c.fillStyle=lvl===5?'#c7b780':'#8e9875';rr(c,x*.26-.045,y*.24-.055,.09,.11,.015);c.fill();
+      c.strokeStyle='#3b4d37';c.lineWidth=.018;c.stroke();
+    }
+    c.fillStyle='#334631';c.beginPath();c.arc(0,0,.205,0,7);c.fill();
+    c.strokeStyle='#999f79';c.lineWidth=.025;c.stroke();c.restore();
+  }
+  function live(c,s,t,sil=false){
+    const lvl=t.lvl,aim=t.aim??-Math.PI/2,L=.32+lvl*.025,w=.27+lvl*.022,back=-(t.recoil||0)*.09;
+    c.save();c.scale(s,s);c.rotate(aim);if(sil)c.filter='brightness(0) invert(.85)';
+    const metal=c.createLinearGradient(0,-w*.65,0,w*.65);metal.addColorStop(0,'#d4ccaa');metal.addColorStop(.4,'#979875');metal.addColorStop(1,'#475b40');
+    const band=c.createLinearGradient(0,-w,0,w);band.addColorStop(0,'#dfb58a');band.addColorStop(1,'#896749');
+    const box=(x,y,ww,h,r,col)=>{c.fillStyle=col;rr(c,x,y,ww,h,r);c.fill();c.strokeStyle='#34452f';c.lineWidth=.018;c.stroke();};
+    // Distinct support architecture, not a row of rank-count rings.
+    box(-.22,-.18,.39,.36,.09,metal);
+    if(lvl>=3){
+      c.fillStyle='#7e8865';poly(c,[[-.26,-.16],[-.13,-.215],[.12,-.215],[.20,-.16],[.20,.16],[.12,.215],[-.13,.215],[-.26,.16]]);c.fill();c.strokeStyle='#34452f';c.lineWidth=.018;c.stroke();
+    }
+    if(lvl===5)for(const side of [-1,1]){
+      c.fillStyle='#b9b48b';poly(c,[[.08,side*.24],[.30,side*.24],[.34,side*.32],[-.12,side*.32],[-.21,side*.25]]);c.fill();c.strokeStyle='#3b4e37';c.lineWidth=.018;c.stroke();
+    }
+    // The same angular support rails remain exposed at every rank from II.
+    // Armour grows between them; later ranks thicken and reinforce the rails.
+    if(lvl>=2)for(const side of [-1,1]){
+      const y=side*.28,h=lvl>=4?.10:.07,end=lvl===5?.29:lvl>=4?.25:.20;
+      box(-.14,side>0?.17:-.28,.065,.11,.006,metal);
+      c.fillStyle=metal;poly(c,[[-.23,y-h/2],[end-.035,y-h/2],[end,y],[end-.035,y+h/2],[-.23,y+h/2],[-.255,y]]);c.fill();
+      c.strokeStyle='#34452f';c.lineWidth=.018;c.stroke();
+      if(lvl>=4){c.strokeStyle=lvl===5?'#e3c48c':'#b9bd95';c.lineWidth=.016;c.beginPath();c.moveTo(-.19,y);c.lineTo(end-.055,y);c.stroke();}
+    }
+    // Wide, short barrel and a deep open mouth keep it distinct from the gun.
+    box(back-.11,-w/2,L+.11,w,w*.30,metal);
+    box(back+.015,-w*.57,.075,w*1.14,.017,band);
+    if(lvl>=3)box(back+L*.53,-w*.55,.06,w*1.1,.015,band);
+    c.fillStyle=band;c.beginPath();c.ellipse(back+L,0,w*.32,w*.61,0,0,7);c.fill();c.strokeStyle='#4c5138';c.lineWidth=.018;c.stroke();
+    c.fillStyle='#1d2a20';c.beginPath();c.ellipse(back+L+.007,0,w*.225,w*.45,0,0,7);c.fill();
+    c.strokeStyle='#7b7956';c.lineWidth=.012;c.beginPath();c.ellipse(back+L+.007,0,w*.225,w*.45,0,-Math.PI/2,Math.PI/2);c.stroke();
+    if(t.flash>0&&!sil)muzzleFlash(c,L,.36*(t.flash/.07),'rgba(255,245,217,.95)','rgba(240,175,93,.65)');
+    c.restore();
+  }
+  return {body,live,names,muzzle:lvl=>.32+lvl*.025};
+})();
+
+const FrostDesign = (() => {
+  const names=['Осколок','Кристалл','Иней','Метель','Вечная зима'];
+  const height=lvl=>.34+(lvl-1)*.045;
+  function shard(c,x,y,w,h){
+    c.fillStyle='#def5e7';poly(c,[[x,y-h],[x-w,y-h*.27],[x,y+.035]]);c.fill();
+    c.fillStyle='#72bead';poly(c,[[x,y-h],[x+w,y-h*.27],[x,y+.035]]);c.fill();
+    c.strokeStyle='#366c60';c.lineWidth=.011;poly(c,[[x,y-h],[x-w,y-h*.27],[x,y+.035],[x+w,y-h*.27]]);c.stroke();
+    c.strokeStyle='#f3fff29c';c.lineWidth=.011;c.beginPath();c.moveTo(x-w*.4,y-h*.40);c.lineTo(x-w*.15,y-h*.72);c.stroke();
+  }
+  function body(c,s,lvl,sil=false){
+    c.save();if(sil)c.filter='brightness(0) invert(.85)';
+    if(!sil)platform(c,s,['#a5b799','#5b7964'],'#2c493b',.8+(lvl-1)*.035);
+    c.scale(s,s);
+    // Each new crystal is retained in later ranks, at the same attachment.
+    if(lvl>=4)for(const side of [-1,1])shard(c,side*.115,-.10,.05,lvl===5?.37:.31);
+    c.fillStyle='#3c6554';c.beginPath();c.ellipse(0,.07,.21,.105,0,0,7);c.fill();
+    c.fillStyle='#a3c4ac';c.beginPath();c.ellipse(0,.03,.21,.085,0,0,7);c.fill();
+    if(lvl>=2)for(const side of [-1,1]){
+      c.strokeStyle='#587c65';c.lineWidth=.048;c.beginPath();c.moveTo(side*.1,.08);c.lineTo(side*.215,.02);c.stroke();
+      shard(c,side*.215,.01,lvl===2?.045:.063,lvl===2?.16:lvl===3?.285:lvl===4?.31:.34);
+    }
+    shard(c,0,.025,.10+(lvl-1)*.009,height(lvl));
+    // Three restrained stone clasps hold the crystal above the socket.
+    for(const side of [-1,1]){
+      c.fillStyle=lvl>=3?'#91ae8d':'#7e9e81';poly(c,[[side*.065,.055],[side*.115,.055],[side*.12,-.065],[side*.075,-.10]]);c.fill();
+      c.strokeStyle='#395c48';c.lineWidth=.011;c.stroke();
+    }
+    if(lvl>=3){c.strokeStyle='#c3dcc5';c.lineWidth=.018;c.beginPath();c.ellipse(0,.052,.185,.07,0,0,Math.PI);c.stroke();}
+    if(lvl===5){
+      // Ice crown grows outside the existing socket and never hides the shards.
+      c.fillStyle='#95d0bc';poly(c,[[-.27,.075],[-.30,-.04],[-.22,.01],[-.13,.135],[0,.175],[.13,.135],[.22,.01],[.30,-.04],[.27,.075],[.15,.195],[0,.225],[-.15,.195]]);c.fill();
+      c.strokeStyle='#daf3df';c.lineWidth=.014;c.stroke();
+    }
+    c.restore();
+  }
+  function live(c,s,t,time=0){
+    const y=-height(t.lvl)*.47,p=.5+.5*Math.sin(time*2),flash=Math.max(0,Math.min(1,(t.flash||0)/.07));
+    c.save();c.scale(s,s);const g=c.createRadialGradient(0,y,0,0,y,.21+flash*.06);
+    g.addColorStop(0,`rgba(192,244,224,${.10+p*.07+flash*.32})`);g.addColorStop(1,'rgba(153,225,202,0)');
+    c.fillStyle=g;c.beginPath();c.arc(0,y,.21+flash*.06,0,7);c.fill();
+    if(flash){c.strokeStyle=`rgba(226,255,244,${flash})`;c.lineWidth=.02;c.beginPath();c.ellipse(0,.02,.18+(1-flash)*.2,.07+(1-flash)*.07,0,0,7);c.stroke();}
+    c.restore();
+  }
+  return {body,live,names,height};
+})();
+
 const TOWER_ART = {
   gun: {
     body(c,s,lvl){GunDesign.body(c,s,lvl);},
     live(c,s,t){GunDesign.live(c,s,t);}
   },
   frost: {
-    body(c, s, lvl){
-      const k = 1 + (lvl - 1) * 0.045, r = s * 0.17 * k, h = s * 0.42 * k, w = s * 0.12 * k;
-      platform(c, s, ['#99b9ab', '#446f64'], '#24473e', k);
-      tierArmor(c, s, lvl, '#8ad7c3');
-      if (lvl >= 2) iceShard(c, s, -s * 0.18, -s * 0.04, s * (lvl >= 4 ? 0.29 : 0.18));
-      if (lvl >= 3) iceShard(c, s, s * 0.18, -s * 0.04, s * (lvl >= 4 ? 0.29 : 0.18));
-      if (lvl === 5){
-        iceShard(c, s, -s * 0.1, -s * 0.18, s * 0.3);
-        iceShard(c, s, s * 0.1, -s * 0.18, s * 0.3);
-      }
-      c.fillStyle = '#37685e'; poly(c, hexagon(0, s * 0.05, r)); c.fill();
-      let g = c.createLinearGradient(-r, -r, r, r);
-      g.addColorStop(0, '#e1f4e9'); g.addColorStop(1, '#68b6ad');
-      c.fillStyle = g; poly(c, hexagon(0, 0, r)); c.fill();
-      c.fillStyle = '#e9faf0'; poly(c, [[0, -h], [-w, -s * 0.08], [0, s * 0.02]]); c.fill();          // светлая грань
-      c.fillStyle = '#7acabd'; poly(c, [[0, -h], [w, -s * 0.08], [0, s * 0.02]]); c.fill();           // тёмная грань
-      c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = Math.max(1, s * 0.02);
-      c.beginPath(); c.moveTo(-w * 0.4, -h * 0.5); c.lineTo(-w * 0.15, -h * 0.88); c.stroke();
-      studs(c, s, lvl);
-    },
-    live(c, s, t){
-      const k = 1 + (t.lvl - 1) * 0.045, p = 0.5 + 0.5 * Math.sin(G.t * 3 + t.x);
-      const g = c.createRadialGradient(0, -s * 0.2, 0, 0, -s * 0.2, s * 0.34);
-      g.addColorStop(0, 'rgba(153,225,202,' + (0.22 + p * 0.12) + ')'); g.addColorStop(1, 'rgba(153,225,202,0)');
-      c.fillStyle = g; c.beginPath(); c.arc(0, -s * 0.2, s * 0.34, 0, 7); c.fill();
-      if (t.lvl >= 4){
-        c.strokeStyle = 'rgba(155,222,193,' + (0.25 + p * 0.2) + ')'; c.lineWidth = Math.max(1, s * 0.025);
-        c.beginPath(); c.ellipse(0, -s * 0.09, s * 0.34, s * 0.14, 0, 0, Math.PI * 2); c.stroke();
-      }
-      const n = t.lvl + 1;
-      for (let i = 0; i < n; i++){
-        const a = G.t * 1.6 + i * Math.PI * 2 / n;
-        c.save(); c.translate(Math.cos(a) * s * 0.27 * k, -s * 0.18 + Math.sin(a) * s * 0.1); c.rotate(a * 2);
-        c.fillStyle = '#c8eee0'; poly(c, [[0, -s * 0.055], [s * 0.03, 0], [0, s * 0.055], [-s * 0.03, 0]]); c.fill();
-        c.restore();
-      }
-    }
+    body(c,s,lvl){FrostDesign.body(c,s,lvl);},
+    live(c,s,t){FrostDesign.live(c,s,t,G.t);}
   },
   tesla: {
-    body(c, s, lvl){
-      const k = 1 + (lvl - 1) * 0.045, pw = s * 0.1 * k, top = -s * 0.26 * k, coils = 2 + lvl;
-      platform(c, s, ['#a39061', '#60563a'], '#353a26', k);
-      tierArmor(c, s, lvl, '#d6e7a0');
-      if (lvl >= 3) for (const side of [-1, 1]){
-        const x = side * s * 0.23, y = -s * (lvl >= 4 ? 0.28 : 0.12);
-        c.fillStyle = '#aa7847'; rr(c, x - s * 0.028, y, s * 0.056, -y + s * 0.08, s * 0.02); c.fill();
-        c.fillStyle = '#eef3c5'; c.beginPath(); c.arc(x, y, s * (lvl === 5 ? 0.075 : 0.05), 0, 7); c.fill();
-      }
-      let g = c.createLinearGradient(-pw / 2, 0, pw / 2, 0);
-      g.addColorStop(0, '#d9a25a'); g.addColorStop(0.5, '#8a5a24'); g.addColorStop(1, '#46290d');
-      c.fillStyle = g; rr(c, -pw / 2, top, pw, s * 0.34 * k, pw * 0.3); c.fill();
-      for (let i = 0; i < coils; i++){
-        g = c.createLinearGradient(-pw, 0, pw, 0);
-        g.addColorStop(0, '#f5c076'); g.addColorStop(1, '#70431a');
-        c.fillStyle = g; c.beginPath(); c.ellipse(0, s * 0.02 - i * (s * 0.26 * k) / coils, pw * 1.15, pw * 0.42, 0, 0, 7); c.fill();
-      }
-      studs(c, s, lvl);
-    },
-    live(c, s, t){
-      const k = 1 + (t.lvl - 1) * 0.045, R = s * 0.13 * k, y = -s * 0.3 * k;
-      if (t.lvl >= 4){
-        c.strokeStyle = 'rgba(224,237,173,.75)'; c.lineWidth = Math.max(1, s * 0.022);
-        for (const side of [-1, 1]){
-          c.beginPath(); c.moveTo(side * s * 0.23, -s * 0.28);
-          c.lineTo(side * s * 0.14, -s * (0.32 + 0.035 * Math.sin(G.t * 12)));
-          c.lineTo(0, y); c.stroke();
-        }
-      }
-      // заряд: свечение нарастает к выстрелу, а в момент выстрела вспыхивает
-      const charge = 1 - clamp(t.cool * towerStats(t).rate, 0, 1), p = charge * 0.7 + (t.flash > 0 ? 0.6 : 0);
-      let g = c.createRadialGradient(0, y, 0, 0, y, R * (2.4 + p));
-      g.addColorStop(0, 'rgba(217,234,156,' + (0.2 + p * 0.35) + ')'); g.addColorStop(1, 'rgba(175,204,109,0)');
-      c.fillStyle = g; c.beginPath(); c.arc(0, y, R * (2.4 + p), 0, 7); c.fill();
-      g = c.createRadialGradient(-R * 0.35, y - R * 0.35, R * 0.1, 0, y, R);
-      g.addColorStop(0, '#ffffff'); g.addColorStop(0.45, '#dbe9a5'); g.addColorStop(1, '#829e49');
-      c.fillStyle = g; c.beginPath(); c.arc(0, y, R, 0, 7); c.fill();
-      c.strokeStyle = 'rgba(240,246,199,.8)'; c.lineWidth = Math.max(1, s * 0.02);
-      for (let i = 0; i < t.lvl; i++){                                                              // разряды
-        const a = G.t * 9 + i * 2.1 + t.x, ax = Math.cos(a) * R, ay = y + Math.sin(a) * R;
-        c.beginPath(); c.moveTo(ax, ay);
-        c.lineTo(ax + Math.cos(a + 0.6) * R * 0.5, ay + Math.sin(a + 0.6) * R * 0.5);
-        c.lineTo(ax + Math.cos(a - 0.2) * R * 0.95, ay + Math.sin(a - 0.2) * R * 0.95); c.stroke();
-      }
-    }
+    body(c,s,lvl){TeslaDesign.body(c,s,lvl);},
+    live(c,s,t){TeslaDesign.live(c,s,t,G.t);}
   },
   mortar: {
-    body(c, s, lvl){
-      const k = 1 + (lvl - 1) * 0.045, w = s * 0.5 * k, h = s * 0.3 * k;
-      platform(c, s, ['#a4987c', '#625d46'], '#393b2b', k);
-      tierArmor(c, s, lvl, '#d99a73');
-      if (lvl >= 2) for (const side of [-1, 1]){
-        c.fillStyle = '#b5b297'; rr(c, side * s * 0.29 - s * 0.05, -s * 0.24, s * 0.1, s * 0.43, s * 0.03); c.fill();
-        if (lvl >= 3){
-          c.fillStyle = lvl === 5 ? '#ebd499' : '#d99a73';
-          for (let j = 0; j < (lvl === 5 ? 3 : 2); j++){
-            c.beginPath(); c.arc(side * s * 0.29, -s * (0.17 - j * 0.1), s * 0.037, 0, 7); c.fill();
-          }
-        }
-      }
-      c.fillStyle = '#2c3327'; rr(c, -w / 2, -h / 2 + s * 0.08, w, h, s * 0.06); c.fill();            // борт
-      const g = c.createLinearGradient(0, -h / 2, 0, h / 2);
-      g.addColorStop(0, '#d4ceb2'); g.addColorStop(0.5, '#969273'); g.addColorStop(1, '#515940');
-      c.fillStyle = g; rr(c, -w / 2, -h / 2 + s * 0.04, w, h, s * 0.06); c.fill();
-      c.fillStyle = 'rgba(255,255,255,.5)';
-      for (const [rx, ry] of [[-0.4, -0.3], [0.4, -0.3], [-0.4, 0.3], [0.4, 0.3]]){
-        c.beginPath(); c.arc(rx * w / 2 * 0.9, s * 0.04 + ry * h / 2 * 0.9, s * 0.022, 0, 7); c.fill();
-      }
-      studs(c, s, lvl);
-    },
-    live(c, s, t){
-      const k = 1 + (t.lvl - 1) * 0.045, L = s * (0.32 + t.lvl * 0.025), w = s * (0.24 + t.lvl * 0.018);
-      c.rotate(t.aim == null ? -Math.PI / 2 : t.aim);
-      const back = -(t.recoil || 0) * s * 0.09;
-      c.fillStyle = 'rgba(0,0,0,.35)'; rr(c, back - s * 0.04, -w / 2 + s * 0.035, L + s * 0.06, w, w * 0.25); c.fill();  // тень ствола
-      const g = c.createLinearGradient(0, -w / 2, 0, w / 2);
-      g.addColorStop(0, '#e4dcc0'); g.addColorStop(0.45, '#a39d7d'); g.addColorStop(1, '#3d4732');
-      c.fillStyle = g; rr(c, back - s * 0.06, -w / 2, L + s * 0.06, w, w * 0.25); c.fill();
-      for (let i = 0; i < t.lvl; i++){ c.fillStyle = i ? '#ead184' : '#eee7cd'; c.fillRect(back + L * 0.18 + i * L * 0.58 / Math.max(1, t.lvl - 1), -w / 2, w * 0.13, w); }
-      c.fillStyle = '#19231b'; c.beginPath(); c.ellipse(back + L, 0, w * 0.24, w * 0.5, 0, 0, 7); c.fill();     // жерло
-      c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = Math.max(1, s * 0.02); c.stroke();
-      c.fillStyle = '#4a523c'; c.beginPath(); c.ellipse(back + L - w * 0.06, 0, w * 0.13, w * 0.32, 0, 0, 7); c.fill();
-      if (t.flash > 0) muzzleFlash(c, L, s * 0.36 * (t.flash / 0.07), 'rgba(255,240,200,.9)', 'rgba(255,150,40,.7)');
-    }
+    body(c,s,lvl){MortarDesign.body(c,s,lvl);},
+    live(c,s,t){MortarDesign.live(c,s,t);}
   }
 };
 
@@ -395,7 +462,7 @@ function towerStats(t){
     splash:role.splash ? role.splash[i] : b.splash };
 }
 
-return {GunDesign,TOWERS,TOWER_TIERS,CASTLE_TIERS,towerStats,draw(c,type,lvl,s,time,aim,hp){
+return {GunDesign,TeslaDesign,MortarDesign,FrostDesign,TOWERS,TOWER_TIERS,CASTLE_TIERS,towerStats,draw(c,type,lvl,s,time,aim,hp){
 CELL=s;G.t=time; c.save();
 if(type==='castle'){G.castle={lvl,aim,flash:0};G.lives=CASTLE_TIERS[lvl].hp*hp;drawCastle(c,0,0);}
 else {const t={type,lvl,x:0,aim,cool:0,flash:0,recoil:0};TOWER_ART[type].body(c,s,lvl);TOWER_ART[type].live(c,s,t);}

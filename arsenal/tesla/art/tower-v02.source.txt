@@ -1,0 +1,58 @@
+const TeslaDesign = (() => {
+  const names=['Искра','Катушка','Разряд','Гроза','Шторм'];
+  function ball(c,x,y,r){
+    const g=c.createRadialGradient(x-r*.35,y-r*.4,r*.08,x,y,r);
+    g.addColorStop(0,'#fff9d5');g.addColorStop(.4,'#d9e3a6');g.addColorStop(1,'#7e9452');
+    c.fillStyle=g;c.beginPath();c.arc(x,y,r,0,7);c.fill();c.strokeStyle='#4c613e';c.lineWidth=.012;c.stroke();
+  }
+  function sides(lvl){return lvl<3?[]:[[-.22,lvl===3?-.13:lvl===4?-.28:-.36],[.22,lvl===3?-.13:lvl===4?-.28:-.36]];}
+  function body(c,s,lvl,silhouette=false){
+    c.save();
+    if(silhouette)c.filter='brightness(0) invert(.85)';
+    if(!silhouette)platform(c,s,['#a3ad89','#647856'],'#304736',1+(lvl-1)*.025);
+    c.scale(s,s);
+    const y=teslaCrownY(lvl),w=.075+(lvl-1)*.012;
+    // A single vertical column, with a visibly taller and heavier winding.
+    c.fillStyle='#485d42';rr(c,-.15,.015,.3,.14,.035);c.fill();
+    c.fillStyle='#b5ba8f';rr(c,-.13,-.015,.26,.085,.025);c.fill();
+    for(const [x,top] of sides(lvl)){
+      c.strokeStyle='#63774f';c.lineWidth=.065;c.lineJoin='round';c.beginPath();c.moveTo(x*.35,.03);c.lineTo(x,.03);c.lineTo(x,top);c.stroke();
+      c.strokeStyle='#c5a773';c.lineWidth=.028;c.stroke();
+      ball(c,x,top,lvl===5?.066:.048);
+    }
+    const shaft=c.createLinearGradient(-w,0,w,0);shaft.addColorStop(0,'#ceb581');shaft.addColorStop(.5,'#907147');shaft.addColorStop(1,'#534732');
+    c.fillStyle=shaft;rr(c,-w/2,y,w,-y+.04,.015);c.fill();
+    for(let i=0;i<3+lvl;i++){
+      const yy=-.035-i*(-y-.06)/(2+lvl),r=w*(lvl>=2?1.25:1.05);
+      c.fillStyle='#675138';c.beginPath();c.ellipse(0,yy+.012,r,.027,0,0,7);c.fill();
+      c.fillStyle='#c1a16b';c.beginPath();c.ellipse(0,yy,r,.023,0,0,7);c.fill();
+      c.strokeStyle='#e1cb934f';c.lineWidth=.008;c.stroke();
+    }
+    if(lvl>=4){
+      // A broad collar distinguishes the heavy tower from the open third rank.
+      c.fillStyle='#596f4b';rr(c,-.115,-.11,.23,.13,.02);c.fill();
+      c.strokeStyle=lvl===5?'#dfc782':'#b0bb85';c.lineWidth=.018;c.stroke();
+    }
+    if(lvl===2){c.strokeStyle='#7f925f';c.lineWidth=.026;c.beginPath();c.ellipse(0,y+.065,.13,.037,0,0,7);c.stroke();}
+    if(lvl===5){
+      c.strokeStyle='#c9ba78';c.lineWidth=.027;
+      c.beginPath();c.moveTo(-.22,-.36);c.lineTo(-.15,y-.045);c.lineTo(.15,y-.045);c.lineTo(.22,-.36);c.stroke();
+    }
+    ball(c,0,y,lvl===1?.09:lvl===2?.115:lvl===3?.115:lvl===4?.13:.14);
+    c.restore();
+  }
+  function live(c,s,t,time=0){
+    const lvl=t.lvl,y=teslaCrownY(lvl),r=.09+(lvl-1)*.012;
+    const charge=Math.max(0,Math.min(1,1-(t.cool||0))),flash=Math.max(0,Math.min(1,(t.flash||0)/.07));
+    c.save();c.scale(s,s);
+    const g=c.createRadialGradient(0,y,0,0,y,r*2);
+    g.addColorStop(0,`rgba(227,237,169,${.08+charge*.15+flash*.4})`);g.addColorStop(1,'rgba(227,237,169,0)');c.fillStyle=g;c.beginPath();c.arc(0,y,r*2,0,7);c.fill();
+    if(lvl>=3&&(flash||Math.sin(time*2.3)>.96))for(const [x,sy] of sides(lvl)){
+      c.strokeStyle=flash?'#fffad7':'rgba(214,232,158,.5)';c.lineWidth=flash?.022:.012;c.beginPath();c.moveTo(x,sy);c.lineTo(x*.6,sy+(y-sy)*.25-.02);c.lineTo(x*.45,sy+(y-sy)*.7+.015);c.lineTo(0,y);c.stroke();
+    }
+    if(flash){c.fillStyle='#fffbe0';c.beginPath();c.arc(0,y,r*.58,0,7);c.fill();}
+    c.restore();
+  }
+  return {body,live,names,crownY:teslaCrownY};
+})();
+

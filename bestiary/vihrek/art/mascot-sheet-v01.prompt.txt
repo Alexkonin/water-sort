@@ -1,0 +1,12 @@
+Status: concept proposal, not approved or integrated into the game.
+Generated with built-in image_gen on 2026-10-04.
+
+Use case: stylized-concept
+Asset type: 3D character concept sheet for a cozy fantasy tower defense bestiary.
+Primary request: Create a polished 3D concept sheet for "Вихрёк", a tiny mischievous sentient dry leaf carried by a miniature whirlwind, fast but fragile. This is a proposal, not a finished 3D mesh.
+Scene/backdrop: warm ivory studio background, subtle soft contact shadows, uncluttered premium character design presentation.
+Subject: one consistent appealing leaf creature. Its entire head/body is a single curled, delicate, broad teardrop leaf with a pointed tip bent back like a windswept tuft, fine natural branching veins, a few irregular dry edges, muted yellow-green olive center and golden ochre dry curled edges. Large expressive warm brown eyes integrated into the leaf face, small asymmetric playful smile. Leaf sides curl forward slightly like tiny gestures but NO separate human arms or hands. No legs or feet: below the leaf is a small tapered airy spiral of translucent pale blue-white wind, with just two or three tiny leaf fragments caught in it. Wind remains transparent, light, restrained, physically volumetric; not a solid ice pedestal, not a smoke monster. Compact readable silhouette for a small game character.
+Style/medium: warm cinematic stylized 3D animation render, tactile natural materials, rounded appealing shapes, soft bounced light and delicate subsurface light through thin leaf edges. Same visual family as a warm lovable charcoal creature with expressive amber eyes in a cozy fantasy bestiary. Not flat vector, not anime, not plastic gloss.
+Composition: landscape character model sheet. Large hero three-quarter view on left occupying about 45% width. Upper right smaller consistent side and back views. Lower right three smaller expressive poses: curious hover, joyful fast forward swoosh with tilted leaf body, startled wobble. All six depictions clearly SAME character with consistent leaf anatomy, proportions, colors, eyes, no redesign. Keep margins and airy spacing. Show full whirlwind base in every view.
+Text verbatim at top left: "ВИХРЁК". Smaller subtitle "Маленький дух быстрого ветра". Elegant legible dark brown Cyrillic typography. No other labels, no watermarks.
+Mood: lovable restless forest sprite, cheeky rather than aggressive. Preserve botanical leaf identity and vulnerability.

@@ -7,16 +7,16 @@
   'use strict';
   const TAU=Math.PI*2, clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
   const smooth=x=>{x=clamp(x);return x*x*(3-2*x);};
-  const ATTACK_DURATION=.72, CONTACT=.46;
+  const ATTACK_DURATION=.72, CONTACT=.46, RELEASE=.16;
   function pose(o={}){
     const time=o.time||0, seed=o.seed||0, walking=o.state==='walk';
     const phase=(o.distance||0)/.68*TAU+seed;
     const step=walking?Math.sin(phase):0, bob=walking?Math.sin(phase*2):0;
     const active=o.state==='attack', p=clamp(o.attack||0);
-    const wind=active?(p<.32?smooth(p/.32):1-smooth((p-.32)/.14)):0;
-    const thrust=active?(p<CONTACT?smooth((p-.32)/.14):1-smooth((p-CONTACT)/.38)):0;
+    const wind=active?(p<.10?smooth(p/.10):1-smooth((p-.10)/.10)):0;
+    const thrust=active?(p<RELEASE?smooth((p-.10)/.06):1-smooth((p-RELEASE)/.25)):0;
     const flash=active?Math.max(0,1-Math.abs(p-CONTACT)/.12):0;
-    return {step,bob,wind,thrust,flash,breath:Math.sin(time*2.3+seed),
+    return {step,bob,wind,thrust,flash,ember:active&&p>=RELEASE?.72+.28*smooth((p-CONTACT)/(1-CONTACT)):1,breath:Math.sin(time*2.3+seed),
       lean:step*.07,blink:((time+seed*2)%5.7)>5.54?0.12:1};
   }
   function oval(c,x,y,rx,ry,fill,angle=0){c.fillStyle=fill;c.beginPath();c.ellipse(x,y,rx,ry,angle,0,TAU);c.fill();}
@@ -137,9 +137,11 @@
     const glow=c.createRadialGradient(hx,hy,0,hx,hy,.55+p.wind*.08+p.flash*.15);
     glow.addColorStop(0,'rgba(255,169,61,'+(.40+p.wind*.16)+')');glow.addColorStop(1,'rgba(255,151,48,0)');
     oval(c,hx,hy,.58,.58,glow);
+    c.save();c.translate(hx,hy);c.scale(p.ember,p.ember);c.translate(-hx,-hy);
     oval(c,hx,hy,.205+p.wind*.02+p.flash*.045,.215+p.flash*.02,'#cf652a');
     oval(c,hx+.01,hy,.155+p.flash*.035,.17+p.flash*.03,'#ffb442');
     oval(c,hx+.025,hy-.018,.083+p.wind*.035+p.flash*.025,.10+p.wind*.02,'#fff0b3');
+    c.restore();
     for(const side of [-1,1]){
       // The root follows the body; the mitten tip steadies the ember.
       const rx=.79*(1-p.wind*.10+p.thrust*.14);
@@ -149,11 +151,32 @@
         y:p.step*.065+rx*Math.sin(p.lean)+ry*Math.cos(p.lean)
       });
     }
-    // Short contact flare only. No projectile, range or extra gameplay damage.
-    if(p.flash>0){
-      c.globalAlpha=p.flash;c.strokeStyle='#ffe0a0';c.lineWidth=.06;
-      c.beginPath();c.arc(hx+.20,hy,.25+p.flash*.12,-1.08,1.08);c.stroke();
-      for(let i=0;i<3;i++){const a=(i-1)*.55;oval(c,hx+.35+Math.cos(a)*.18,Math.sin(a)*.34,.045,.025,'#ffc46a',a);}
+    const releasePose=pose({state:'attack',attack:RELEASE});
+    const from={x:.95-releasePose.wind*.08+releasePose.thrust*.23,y:0};
+    const to=o.target?{x:o.target.x/r,y:o.target.y/r}:{x:2.7,y:0};
+    drawShot(c,{progress:o.state==='attack'?o.attack:null,from,to,size:.115});
+
+    c.restore();
+  }
+  function shotPose(progress,from,to){
+    if(progress==null||progress<RELEASE||progress>CONTACT)return null;
+    const t=clamp((progress-RELEASE)/(CONTACT-RELEASE));
+    return {x:from.x+(to.x-from.x)*t,y:from.y+(to.y-from.y)*t-Math.sin(Math.PI*t)*Math.hypot(to.x-from.x,to.y-from.y)*.16,t};
+  }
+  function drawShot(c,{progress,from,to,size}){
+    const shot=shotPose(progress,from,to);
+    c.save();
+    if(shot){
+      for(let i=3;i>=0;i--){
+        const q=shotPose(Math.max(RELEASE,progress-i*.016),from,to);
+        c.globalAlpha=1-i*.23;oval(c,q.x,q.y,size*(1-i*.17),size*(.8-i*.12),i?'#f6a23a':'#ffcb61');
+      }
+      c.globalAlpha=1;oval(c,shot.x,shot.y,size*.45,size*.40,'#fff4c9');
+    }
+    if(progress!=null&&progress>=CONTACT&&progress<CONTACT+.15){
+      const k=(progress-CONTACT)/.15;c.globalAlpha=1-k;c.strokeStyle='#ffd88a';c.lineWidth=size*.30;
+      c.beginPath();c.arc(to.x,to.y,size*(1+k*2),0,TAU);c.stroke();
+      for(let i=0;i<5;i++){const a=i*TAU/5;oval(c,to.x+Math.cos(a)*size*(1+k*3),to.y+Math.sin(a)*size*(1+k*3),size*.22,size*.17,'#ffc05a');}
     }
     c.restore();
   }
@@ -162,5 +185,5 @@
     const before=ATTACK_DURATION*CONTACT;
     return remaining>=0 && remaining<=before ? CONTACT-remaining/ATTACK_DURATION : null;
   }
-  root.Ugolek={draw,pose,attackProgress,ATTACK_DURATION,CONTACT};
+  root.Ugolek={draw,pose,attackProgress,ATTACK_DURATION,CONTACT,RELEASE,shotPose,drawShot};
 })(typeof module==='object'?module.exports:window);

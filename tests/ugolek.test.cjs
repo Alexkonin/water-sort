@@ -41,5 +41,23 @@ test('step phase follows travelled distance, independent of rendering time',()=>
 test('the new renderer is installed for offline play',()=>{
   const sw=fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8');
   assert.match(sw,/'\.\/bestiary\/ugolek\/animations\/ugolek\.js'/);
-  assert.match(html,/<script src="bestiary\/ugolek\/animations\/ugolek\.js\?v=75"><\/script>/);
+  assert.match(html,/<script src="bestiary\/ugolek\/animations\/ugolek\.js\?v=88"><\/script>/);
+});
+test('ember separates at release, reaches the gate at damage and leaves fire in the hands',()=>{
+ const from={x:1.1,y:0},to={x:4,y:2};
+ assert.equal(Ugolek.shotPose(Ugolek.RELEASE-.001,from,to),null);
+ assert.deepEqual(Ugolek.shotPose(Ugolek.RELEASE,from,to),{...from,t:0});
+ const hit=Ugolek.shotPose(Ugolek.CONTACT,from,to);assert.ok(Math.hypot(hit.x-to.x,hit.y-to.y)<1e-10);
+ const middle=Ugolek.shotPose((Ugolek.RELEASE+Ugolek.CONTACT)/2,from,to);assert.ok(middle.y<(from.y+to.y)/2);
+ assert.equal(Ugolek.shotPose(Ugolek.CONTACT+.001,from,to),null);
+ assert.ok(Ugolek.pose({state:'attack',attack:Ugolek.RELEASE}).ember>0);
+ assert.equal(Ugolek.pose({state:'attack',attack:1}).ember,1);
+});
+test('Vihrek gust keeps siege damage deadlines under frost and cancels on death',()=>{
+ for(const slow of [0,.45,.65]){
+  const h=setup('runner',slow),expected=[];let timer=h.b.atk*.6;
+  for(let i=0;i<400;i++){const dt=.02;timer-=dt*(1-slow);h.step(dt);if(timer<=0){expected.push(h.G.t);timer=h.b.atk;}}
+  assert.deepEqual(h.hits.map(x=>x.t),expected);assert.ok(h.hits.every(x=>x.n===1));assert.equal(h.f.lunge,0);
+ }
+ const h=setup('runner');h.step(.4);h.f.dead=true;for(let i=0;i<100;i++)h.step(.02);assert.equal(h.hits.length,0);
 });

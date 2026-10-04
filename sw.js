@@ -1,12 +1,12 @@
 // Офлайн-кэш. Меняй CACHE при каждом обновлении игры — старая версия сотрётся.
-const CACHE = 'games-v91';
+const CACHE = 'games-v118';
 /* Все страницы сборника кладём в кэш сразу при установке: переход из меню
    в игру должен работать офлайн с первого раза, а не после того, как игру
    один раз открыли онлайн. Добавляешь игру — дописываешь её сюда и в GAMES
    в index.html. */
 const ASSETS = [
   './', './index.html', './shell.css', './palette.css', './icons.svg', './sound.js', './launch-history.js', './focus-mode.js',
-  './water-sort.html', './tower-defense.html', './bestiary/ugolek/animations/ugolek.js', './bestiary/vihrek/animations/vihrek.js', './bestiary/kamnespin/animations/kamnespin.js', './bestiary/pushinka/animations/pushinka.js',
+  './water-sort.html', './tower-defense.html', './bestiary/ugolek/animations/ugolek.js', './bestiary/vihrek/animations/vihrek.js', './bestiary/kamnespin/animations/kamnespin.js', './bestiary/pushinka/animations/pushinka.js', './bestiary/tumannik/animations/tumannik.js', './bestiary/dreven/animations/dreven.js', './bestiary/dozhdevik/animations/dozhdevik.js', './bestiary/fonarnik/animations/svetlyachok.js', './bestiary/rosnik/animations/rosnik.js', './bestiary/kroten/animations/kroten.js', './bestiary/solomennik/animations/solomennik.js', './bestiary/gulen/animations/gulen.js', './bestiary/skakunok/animations/skakunok.js', './bestiary/semyannitsa/animations/semyannitsa.js', './bestiary/zheludnik/animations/zheludnik.js', './bestiary/tennik/animations/tennik.js',
   './forest-lights.html', './forest-lights.js', './forest-lights-levels.js',
   './arrow-escape.html', './arrow-escape.js', './arrow-escape-ui.js',
   './mahjong.html', './mahjong.css', './mahjong.js', './mahjong-ui.js',

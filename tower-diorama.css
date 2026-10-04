@@ -1,0 +1,19 @@
+body{background:radial-gradient(ellipse at 40% 15%,#405c46,#1c362e 65%,#102720)}
+#app{height:100dvh;max-width:620px}
+#cv{background:transparent;box-shadow:none;border-radius:16px}
+.diorama-links{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px}
+.diorama-links a{color:#b4c5a6;text-decoration:none}
+.diorama-links button{font:inherit;font-weight:650;color:#efdcaa;background:#ffffff08;border:1px solid #bdc99844;border-radius:8px;padding:7px 10px;cursor:pointer}
+.diorama-links button[aria-pressed=true]{background:#d5bb6d;color:#21382b}
+.diorama-links a:focus-visible,.diorama-links button:focus-visible{outline:2px solid #ead184;outline-offset:3px}
+#app .hdr-title{color:#f5e9c9}
+@media(min-width:600px) and (min-aspect-ratio:1/1){
+  #app{max-width:calc(var(--board-height)*.90 + var(--panel-width) + 56px)}
+  .command-panel{background:linear-gradient(145deg,#45604777,#21382e88);border-color:#b6c0932c}
+  .panel-heading{display:flex}.diorama-links{font-size:11px}
+}
+@media(max-height:700px) and (max-width:599px){
+  #app{gap:4px;padding-top:4px;padding-bottom:4px}
+  .control-slot{height:126px;grid-template-rows:46px minmax(0,1fr);gap:4px}
+  footer{gap:4px}.diorama-links button{padding:4px 8px}.go,.spd{min-height:40px}
+}

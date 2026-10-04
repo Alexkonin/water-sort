@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path');
 const G=require('../arrow-escape.js');
 
 test('100 reproducible levels have connected, non-overlapping arrows and a full legal solution',()=>{
-  const unique=new Set();let early=0,late=0;
+  const unique=new Set();let early=0,late=0,lateArrows=0,lateFree=0;
   for(let n=1;n<=G.LEVELS;n++){
     const p=G.generate(n),occupied=new Map();
     assert.deepEqual(p,G.generate(n));unique.add(JSON.stringify(p.arrows));
@@ -27,9 +27,15 @@ test('100 reproducible levels have connected, non-overlapping arrows and a full 
     }
     assert.equal(occupied.size,0);
     if(n<=10)early+=p.arrows.reduce((s,a)=>s+a.cells.length,0);
-    if(n>90)late+=p.arrows.reduce((s,a)=>s+a.cells.length,0);
+    if(n>90){
+      late+=p.arrows.reduce((s,a)=>s+a.cells.length,0);
+      lateArrows+=p.arrows.length;
+      lateFree+=G.available(p,p.arrows.map(a=>a.id)).length;
+    }
   }
   assert.equal(unique.size,G.LEVELS);assert.ok(late>early*2);
+  assert.ok(lateArrows>=300,'late levels should have a dense field of arrows');
+  assert.ok(lateFree/lateArrows<.42,'most arrows should initially be blocked');
 });
 
 test('blocking uses the full forward lane, including distant pieces and the arrow itself',()=>{

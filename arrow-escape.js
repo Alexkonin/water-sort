@@ -1,7 +1,7 @@
 /* Rules and deterministic levels shared by the browser and the catalog checks. */
 (function(root){
   'use strict';
-  const VERSION=1, LEVELS=100, LIVES=3;
+  const VERSION=2, LEVELS=100, LIVES=3;
   const DIRS=[[1,0],[0,1],[-1,0],[0,-1]];
   const key=p=>p[0]+','+p[1];
   const inside=(p,w,h)=>p[0]>=0&&p[1]>=0&&p[0]<w&&p[1]<h;
@@ -43,15 +43,14 @@
     }
     return true;
   }
-  function generate(number){
-    const level=Math.max(1,Math.min(LEVELS,Math.floor(Number(number)||1)));
+  function candidate(level,variant){
     const tier=level<4?0:level<13?1:level<31?2:level<61?3:4;
-    const width=[7,9,11,13,15][tier],height=[9,11,13,17,19][tier];
+    const width=[7,9,11,15,17][tier],height=[9,11,13,19,21][tier];
     const shapes=['rectangle','leaf','diamond','circle','heart'];
     const shape=level<6?'rectangle':shapes[Math.floor((level-6)/3)%shapes.length];
-    const random=rng(level*7919+1103),mask=[];
+    const random=rng(level*7919+1103+variant*104729),mask=[];
     for(let y=0;y<height;y++)for(let x=0;x<width;x++)if(inShape(x,y,width,height,shape))mask.push([x,y]);
-    const allowed=new Set(mask.map(key)),occupied=new Set(),arrows=[];
+    const allowed=new Set(mask.map(key)),occupied=new Set(),lanes=new Map(),arrows=[];
     // Build the removal sequence backwards. Every newly placed arrow can exit
     // past all previously placed ones; later additions may block it. Reversing
     // construction therefore always yields a legal complete solution.
@@ -63,7 +62,7 @@
       const line=ray({cells:[neck,head]},width,height),exit=new Set(line.map(key));
       if(line.some(p=>occupied.has(key(p))))continue;
       const backward=[head,neck],used=new Set(backward.map(key));
-      const target=3+Math.floor(random()*([5,8,12,17,23][tier]));
+      const target=3+Math.floor(random()*([5,7,9,11,14][tier]));
       let last=[-dir[0],-dir[1]];
       while(backward.length<target){
         const p=backward.at(-1),choices=DIRS.filter(d=>{
@@ -71,15 +70,49 @@
           return allowed.has(k)&&!occupied.has(k)&&!used.has(k)&&!exit.has(k);
         });
         if(!choices.length)break;
-        const straight=choices.find(d=>d[0]===last[0]&&d[1]===last[1]);
-        const d=straight&&random()<.47?straight:choices[Math.floor(random()*choices.length)];
+        // Crossing an earlier arrow's open exit lane creates an actual
+        // dependency, rather than merely filling another empty cell.
+        const weights=choices.map(d=>{
+          const q=[p[0]+d[0],p[1]+d[1]];
+          return (1+Math.min(4,lanes.get(key(q))||0)*4)*(d[0]===last[0]&&d[1]===last[1]?1.45:1);
+        });
+        let pick=random()*weights.reduce((sum,weight)=>sum+weight,0),index=0;
+        while(index<weights.length-1&&pick>=weights[index])pick-=weights[index++];
+        const d=choices[index];
         const next=[p[0]+d[0],p[1]+d[1]];
         backward.push(next);used.add(key(next));last=d;
       }
       const cells=backward.reverse();cells.forEach(p=>occupied.add(key(p)));
       arrows.push({id:arrows.length,cells});
+      for(const p of line){const k=key(p);lanes.set(k,(lanes.get(k)||0)+1);}
     }
     return {level,width,height,shape,arrows};
+  }
+  function difficulty(puzzle){
+    const occupied=new Map();
+    for(const arrow of puzzle.arrows)for(const cell of arrow.cells)occupied.set(key(cell),arrow.id);
+    let blocked=0,dependencies=0;
+    for(const arrow of puzzle.arrows){
+      const other=new Set(ray(arrow,puzzle.width,puzzle.height).map(cell=>occupied.get(key(cell))).filter(id=>id!==undefined&&id!==arrow.id));
+      if(other.size)blocked++;
+      dependencies+=other.size;
+    }
+    const free=puzzle.arrows.length-blocked;
+    const cells=puzzle.arrows.reduce((sum,a)=>sum+a.cells.length,0);
+    const area=puzzle.width*puzzle.height;
+    return blocked*5+dependencies*2+puzzle.arrows.length*1.5+cells/area*15-free*5;
+  }
+  function generate(number){
+    const level=Math.max(1,Math.min(LEVELS,Math.floor(Number(number)||1)));
+    // Keep the opening levels approachable, then choose the most entangled
+    // solvable layout from several reproducible candidates.
+    const variants=level<4?1:level<13?6:level<31?12:20;
+    let best=null,bestScore=-Infinity;
+    for(let variant=0;variant<variants;variant++){
+      const puzzle=candidate(level,variant),score=difficulty(puzzle);
+      if(score>bestScore){best=puzzle;bestScore=score;}
+    }
+    return best;
   }
   // A fixed-length piece of the tail→head polyline followed by a straight exit
   // ray gives the snake-like motion, including a reversible collision bounce.

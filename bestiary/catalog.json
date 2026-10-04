@@ -82,7 +82,7 @@
     {
       "id": "lantern",
       "slug": "fonarnik",
-      "name": "Фонарник",
+      "name": "Светлячок",
       "folder": "fonarnik",
       "designStatus": "current-game",
       "spawnedOnly": false,

@@ -4,7 +4,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
-const html=fs.readFileSync(require('node:path').join(__dirname,'../tower-defense.html'),'utf8');
+const html=fs.readFileSync(require('node:path').join(__dirname,'..',process.env.TOWER_GAME || 'tower-defense.html'),'utf8');
 const script=html.match(/<script>([\s\S]*?)<\/script>/)[1];
 function section(from,to){return script.slice(script.indexOf(from),script.indexOf(to,script.indexOf(from)));}
 function setup(){
@@ -187,10 +187,12 @@ test('persistent inspection supports direct tower, castle and build selection wi
   h.G.selected=first;h.G.armed=null;
   let pointer;
   h.c.COLS=9;h.c.ROWS=13;
-  h.c.cv={getBoundingClientRect:()=>({left:0,top:0,width:90,height:130}),
+  const projection=process.env.TOWER_GAME==='tower-diorama.html'?require('../tower-diorama-geometry.js'):null;
+  if(projection)h.c.DioramaGeometry=projection;
+  h.c.cv={getBoundingClientRect:()=>({left:0,top:0,width:projection?projection.width*10:90,height:projection?projection.height*10:130}),
     addEventListener:(name,fn)=>{if(name==='pointerdown')pointer=fn;}};
   vm.runInContext(section('function cellAt(ev){',"$('#btnUp').addEventListener"),h.c);
-  const tap=(x,y)=>pointer({clientX:x*10+5,clientY:y*10+5,preventDefault(){}});
+  const tap=(x,y)=>{const p=projection?projection.project(x+.5,y+.5,0,10):{x:x*10+5,y:y*10+5};pointer({clientX:p.x,clientY:p.y,preventDefault(){}});};
   tap(1,1);assert.equal(h.G.selected,first,'repeat tap preserves inspection');
   tap(4,4);assert.equal(h.G.selected,first,'empty cell preserves inspection');
   tap(2,1);assert.equal(h.G.selected,second,'another tower switches inspection directly');

@@ -32,7 +32,7 @@ test('death during anticipation cancels contact and damage',()=>{
   h.f.dead=true;for(let i=0;i<30;i++)h.step(.1);assert.equal(h.hits.length,0);
 });
 test('other creatures retain their existing lunge and damage',()=>{
-  const h=setup('tank');while(!h.hits.length)h.step(.02);assert.equal(h.f.lunge,1);assert.equal(h.hits[0].n,2);assert.equal(h.f.attackAfter,0);
+  const h=setup('golem');while(!h.hits.length)h.step(.02);assert.equal(h.f.lunge,1);assert.equal(h.hits[0].n,3);assert.equal(h.f.attackAfter,0);
 });
 test('step phase follows travelled distance, independent of rendering time',()=>{
   const a=Ugolek.pose({state:'walk',distance:3,seed:1,time:0}),b=Ugolek.pose({state:'walk',distance:3,seed:1,time:40});

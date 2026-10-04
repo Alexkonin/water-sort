@@ -232,6 +232,14 @@ const fmtN = v => String(Math.round(v * 10) / 10).replace('.', ',');
    секунду, hold — этим шагом не двигать (сам прыгает). Ауры не складываются —
    берётся сильнейшая: два фонаря рядом не делают толпу вдвое быстрее. */
 const TRAITS = {
+  tinyTarget:{
+    about:()=> 'маленькая цель: пушка/баллиста 35%, стрелы/мороз 80%, молния и взрыв без промахов; мороз повышает точность, у ворот 100%',
+    accuracy(f,p,kind){
+      if(f.siege)return 1;
+      const base=({ball:.35,heavy:.35,arrow:.80,ice:.80})[kind]??1;
+      return base+(1-base)*Math.max(0,Math.min(1,f.slow||0));
+    }
+  },
   noSlow: {
     about: () => 'не мёрзнет: мороз его не замедляет',
     slow: () => 0
@@ -436,19 +444,14 @@ const FOES = {
     acc:['пушинку', 'пушинки', 'пушинок'],
     hp:14, sp:1.90, armor:0, bounty:4, hit:1, atk:1.3, r:0.20, color:'#e8e0c8',
     gap:0.25, wave:(L, W, late) => (W >= 5 || L >= 3) ? 5 + Math.round(late * (4 + L * 0.5)) : 0,
-    gait(f){ return { bob: (0.5 + 0.5 * Math.sin(G.t * 14 + f.ph)) * f.r * CELL * 0.35, sq: 0 }; },
-    art(c, r, f){
-      const bob = Math.sin(G.t * 6 + f.ph);
-      c.strokeStyle = 'rgba(245,240,220,.7)'; c.lineWidth = Math.max(1, r * 0.09); c.lineCap = 'round';
-      for (let i = 0; i < 9; i++){                                                                    // зонтик
-        const a = -2.4 + i * 0.6 + bob * 0.08;
-        c.beginPath(); c.moveTo(-r * 0.15, 0); c.lineTo(-r * 0.15 + Math.cos(a) * r * 1.15, Math.sin(a) * r * 1.15); c.stroke();
-      }
-      c.fillStyle = 'rgba(250,246,230,.35)'; c.beginPath(); c.arc(-r * 0.35, 0, r * 0.75, 0, 7); c.fill();
-      c.fillStyle = grad(c, 'swarm', r, () => { const g = c.createRadialGradient(-r * 0.1, -r * 0.2, r * 0.05, r * 0.3, 0, r * 0.8);
-        g.addColorStop(0, '#fff6d8'); g.addColorStop(0.6, '#d9c48a'); g.addColorStop(1, '#8a723c'); return g; });
-      c.beginPath(); c.ellipse(r * 0.4, 0, r * 0.62, r * 0.4, 0, 0, 7); c.fill();                     // семечко
-      roundEyes(c, r * 0.6, r * 0.17, r * 0.15);
+    traits:{tinyTarget:{}},
+    intro:'маленькая цель: пушка попадает в 35% случаев; молния — без промахов',
+    attackAnim:{duration:.8,contact:.52},
+    art(c,r,f){
+      const attack=f.siege?Pushinka.attackProgress(f.atk,f.attackAfter||0):null;
+      const target=undefined;
+      Pushinka.draw(c,{size:r*3,time:G.t,distance:f.d,seed:f.ph,shadow:false,target,evade:f.evade||0,
+        state:f.siege?(attack===null?'idle':'attack'):'walk',attack});
     }
   },
   // Туманник: полупрозрачный дух в маске, стелется над землёй. Не мёрзнет —

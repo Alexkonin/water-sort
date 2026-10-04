@@ -34,7 +34,7 @@ function setup(){
     foe(x=.8,y=.5){const f={type:'dummy',pos:{x,y},d:x,r:.1,hp:10000,slow:0,slowT:0};G.foes.push(f);return f;}};
 }
 test('all four types upgrade to 5 on every map; max cannot charge or upgrade again',()=>{
-  for(let lv=0;lv<120;lv++)for(const type of ['gun','frost','tesla','mortar']){
+  for(let lv=0;lv<Number(script.match(/const TOTAL_LEVELS = (\d+)/)[1]);lv++)for(const type of ['gun','frost','tesla','mortar']){
     const h=setup();h.G.lv=lv;const t=h.tower(type);let spent=h.eval(`TOWERS.${type}.cost`);
     for(let tier=2;tier<=5;tier++){
       const cost=h.eval('upCost(G.selected)'),before=h.G.gold;assert.ok(cost>0);h.$('#btnUp').click();

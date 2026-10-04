@@ -166,7 +166,7 @@
   @media(prefers-reduced-motion:reduce){.twr,.go,.wave-track span{transition:none}.stat.hurt,.stat.gain{animation:none}}
 
   /* ---------- выбор уровня ---------- */
-  /* Поле перехода по номеру: при 120 картах листать сетку до нужной долго */
+  /* Поле перехода по номеру: при большом числе карт листать сетку до нужной долго */
   .lvlPick{display:flex;gap:8px;margin-bottom:12px}
   .lvlPick input{
     flex:1 1 auto;min-width:0;border:0;border-radius:14px;padding:0 14px;min-height:46px;
@@ -178,7 +178,10 @@
     background:rgba(255,255,255,.14);color:#fff;font-size:14px;font-weight:800;
   }
   .lvlPick button:active{transform:scale(.95)}
-  /* Сетка карт прокручивается сама: иначе 120 кнопок растягивают карточку,
+  .mapPages{align-items:center;justify-content:space-between}
+  .mapPages span{font-size:14px;font-weight:700}
+  .mapPages button:disabled{opacity:.3;cursor:default}
+  /* Сетка карт прокручивается сама: иначе кнопки растягивают карточку,
      и кнопка «Закрыть» уезжает за нижнюю кромку экрана. */
   .mapGrid{
     display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;
@@ -297,10 +300,15 @@
   <div class="card">
     <div class="big"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=48#levels"/></svg></div>
     <h2>Выбор уровня</h2>
-    <p>Все уровни открыты. Чем дальше номер, тем длиннее дорога и злее волны</p>
+    <p>Все 1000 уровней открыты. Выберите карту или введите её номер</p>
     <div class="lvlPick">
-      <input id="lvInput" type="number" min="1" inputmode="numeric" placeholder="номер">
+      <input id="lvInput" type="number" min="1" max="1000" inputmode="numeric" aria-label="Номер уровня" placeholder="1–1000">
       <button id="btnGoLv">Перейти</button>
+    </div>
+    <div class="lvlPick mapPages">
+      <button id="btnMapsPrev" aria-label="Предыдущие уровни">←</button>
+      <span id="mapPageRange" aria-live="polite"></span>
+      <button id="btnMapsNext" aria-label="Следующие уровни">→</button>
     </div>
     <div class="mapGrid" id="mapGrid"></div>
     <button class="ghost" id="btnCloseMaps">Закрыть</button>
@@ -472,11 +480,13 @@ const START_LIVES = CASTLE_TIERS[1].hp;
    первую волну пятью пушками против втрое более крепких врагов —
    не сложность, а заведомый проигрыш. Растёт медленнее здоровья
    (2.8x против 3.9x к последней карте), поэтому кривая всё равно вверх. */
-/* Сложность растёт до последнего уровня — полки нет. Первая дюжина набирает
-   быстро, дальше вдвое медленнее: к 24-й карте кривая проходит через выверенные
-   прогонами значения. Пять разрядов дают запас мощности в пределах конечного
-   поля; с ростом дохода игрок может позволить себе больше старших башен. */
-const lvlRamp = L => L <= 11 ? L : L <= HAND_MAPS - 1 ? 11 + (L - 11) * 0.5 : 17 + (L - HAND_MAPS + 1) * 0.21;
+/* Новые карты расширяют набор маршрутов. После 120-й сохраняем параметры
+   поздней игры: поле и пять разрядов башен имеют конечную мощность. */
+const balanceLevel = L => Math.min(L, 119);
+const lvlRamp = level => {
+  const L = balanceLevel(level);
+  return L <= 11 ? L : L <= HAND_MAPS - 1 ? 11 + (L - 11) * 0.5 : 17 + (L - HAND_MAPS + 1) * 0.21;
+};
 /* Часть роста, которая чувствуется С ПЕРВОЙ ВОЛНЫ, выходит на полку, и только
    концовка уровня растёт дальше. Иначе на сотом уровне первая волна встречала
    игрока при семи башнях: множитель уровня умножал и её тоже, а заработать он
@@ -488,7 +498,10 @@ const OPEN_CAP = 20;
    вместо 1160, здоровье врагов почти не изменилось, и выверенная карта стала
    проваливаться. До конца рукотворных карт значения ровно прежние, дальше растут
    вдвое медленнее — иначе к сотому уровню золота хватало бы на всё сразу. */
-const startGold = L => 240 + 40 * (L <= HAND_MAPS - 1 ? L : (HAND_MAPS - 1) + (L - HAND_MAPS + 1) * 0.5);
+const startGold = level => {
+  const L = balanceLevel(level);
+  return 240 + 40 * (L <= HAND_MAPS - 1 ? L : (HAND_MAPS - 1) + (L - HAND_MAPS + 1) * 0.5);
+};
 const WAVE_BONUS  = 35;          // за зачищенную волну
 const SAVE_KEY    = 'towerdef.v1';
 
@@ -510,7 +523,7 @@ function waveGroups(L, W){
   for (const type of FOE_ORDER){
     const b = FOES[type];
     if (!b.wave || L < (b.from || 0)) continue;
-    const w = b.wave(L, W, late, nW, final);
+    const w = b.wave(balanceLevel(L), W, late, nW, final);
     const n = typeof w === 'number' ? w : w.n;
     if (n > 0) g.push({ type, n, gap: typeof w === 'number' ? b.gap : w.gap });
   }
@@ -576,7 +589,7 @@ function writeSave(){
 }
 loadSave();
 // открыт уровень 0 и каждый следующий за пройденным
-/* Замков нет: любой уровень открыт сразу. Запирать 120 карт за прохождением
+/* Замков нет: любой уровень открыт сразу. Запирать все карты за прохождением
    предыдущей — значит заставлять переигрывать, чтобы добраться до интересной;
    звёзды и так показывают, что пройдено. */
 const unlocked = () => true;
@@ -655,7 +668,7 @@ function atDist(path, d){
 }
 
 /* ============ генератор карт ============
-   Двадцать четыре карты нарисованы руками — у них характер и имена. Сто с лишним
+   Двадцать четыре карты нарисованы руками — у них характер и имена. Тысячу
    руками не нарисовать, поэтому дальше работает генератор: раскладка по сиду от
    номера уровня, у всех игроков карта N одинаковая. Тот же приём, что в «Разлей».
 
@@ -758,7 +771,8 @@ const NAME_B = ['лог','брод','овраг','увал','ручей','рас
 
 function generateMap(lv){                    // lv — индекс уровня, с нуля
   const k = lv - HAND_MAPS;
-  const name = NAME_A[k % NAME_A.length] + ' ' + NAME_B[Math.floor(k / NAME_A.length) % NAME_B.length];
+  const region = Math.floor(k / (NAME_A.length * NAME_B.length));
+  const name = NAME_A[k % NAME_A.length] + ' ' + NAME_B[Math.floor(k / NAME_A.length) % NAME_B.length] + (region ? ' · ' + (region + 1) : '');
   for (let attempt = 0; attempt < 60; attempt++){
     const rnd = mulberry32((Math.imul(lv + 1, 2654435761) ^ (attempt * 7919)) >>> 0);
     /* Длина у всех генерированных карт примерно одна, и это важнее, чем кажется.
@@ -800,7 +814,7 @@ function generateMap(lv){                    // lv — индекс уровня
 }
 
 const HAND_MAPS = MAPS.length;               // сколько карт нарисовано руками
-const TOTAL_LEVELS = 120;
+const TOTAL_LEVELS = 1000;
 for (let lv = HAND_MAPS; lv < TOTAL_LEVELS; lv++) MAPS.push(generateMap(lv));
 
 /* ============ состояние ============ */
@@ -1439,82 +1453,138 @@ function headingAt(path, d){
 }
 
 /* ---- статический слой ---- */
+// Layout uses world cells only: resizing changes resolution, never the scenery.
+function meadowPlan(level, paths, roadKey, blocked){
+  const rnd = mulberry32(level * 7919 + 17);
+  const patches = Array.from({length:7}, () => ({
+    x:rnd()*COLS, y:rnd()*ROWS, rx:1.5+rnd()*1.8, ry:1.2+rnd()*1.8,
+    light:rnd()>.5, radii:Array.from({length:8},()=>.75+rnd()*.35)
+  }));
+  const roadDistance = (x,y) => Math.min(...paths.flatMap(p=>p.seg.map(s=>{
+    const dx=s.to.x-s.from.x,dy=s.to.y-s.from.y;
+    const t=clamp(((x-s.from.x)*dx+(y-s.from.y)*dy)/(dx*dx+dy*dy),0,1);
+    return Math.hypot(x-s.from.x-t*dx,y-s.from.y-t*dy);
+  })));
+  const landmarks = paths.flatMap(p=>[p.pts[0],p.pts[p.pts.length-1]]);
+  const plants=[];
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
+    if(roadKey.has(x+','+y)||blocked.has(x+','+y))continue;
+    const edge=x===0||y===0||x===COLS-1||y===ROWS-1;
+    if(rnd()>(edge?.64:.23))continue;
+    const px=x+(rnd()<.5?.14:.86),py=y+(rnd()<.5?.14:.86);
+    const kind=rnd()<.18?'flower':edge&&rnd()<.45?'leaves':'grass';
+    const radius=kind==='leaves'?.17:kind==='flower'?.105:.10;
+    if(roadDistance(px,py)<.49+radius||landmarks.some(p=>Math.hypot(px-p.x,py-p.y)<.8))continue;
+    plants.push({x:px,y:py,kind,radius,angle:rnd()*.8-.4,light:rnd()>.5});
+  }
+  return {patches,plants};
+}
 function buildTerrain(){
   if (!G.path) return;
-  const W = COLS * CELL, H = ROWS * CELL;
-  const { c, x } = offscreen(W, H);
-  const rnd = mulberry32(G.lv * 7919 + 17);
-  let g;
-
-  // земля
-  g = x.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, '#375347'); g.addColorStop(1, '#203c35');
-  x.fillStyle = g; x.fillRect(0, 0, W, H);
-  // неровности: крупные мягкие пятна светлее и темнее
-  for (let i = 0; i < 16; i++){
-    const bx = rnd() * W, by = rnd() * H, br = CELL * (1.5 + rnd() * 2.5), light = rnd() > 0.5;
-    g = x.createRadialGradient(bx, by, 0, bx, by, br);
-    g.addColorStop(0, light ? 'rgba(180,201,132,.10)' : 'rgba(0,0,0,.18)');
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    x.fillStyle = g; x.beginPath(); x.arc(bx, by, br, 0, 7); x.fill();
+  const W=COLS*CELL,H=ROWS*CELL,{c,x}=offscreen(W,H);
+  const plan=meadowPlan(G.lv,G.paths,G.roadKey,G.blocked);
+  const rnd=mulberry32(G.lv*3571+91);
+  let g=x.createLinearGradient(0,0,W*.3,H);
+  g.addColorStop(0,'#788e4e');g.addColorStop(1,'#647d43');
+  x.fillStyle=g;x.fillRect(0,0,W,H);
+  // Broad, quiet meadow shapes: no granular texture under the actors.
+  for(const patch of plan.patches){
+    const pts=patch.radii.map((r,i)=>{const a=i*Math.PI/4;return [(patch.x+Math.cos(a)*patch.rx*r)*CELL,(patch.y+Math.sin(a)*patch.ry*r)*CELL];});
+    x.beginPath();x.moveTo((pts[7][0]+pts[0][0])/2,(pts[7][1]+pts[0][1])/2);
+    for(let i=0;i<8;i++){const p=pts[i],q=pts[(i+1)%8];x.quadraticCurveTo(p[0],p[1],(p[0]+q[0])/2,(p[1]+q[1])/2);}
+    x.closePath();x.fillStyle=patch.light?'#a2b76620':'#354f3020';x.fill();
   }
-
-  // площадки под башни: приподнятые каменные плитки
-  for (let yy = 0; yy < ROWS; yy++) for (let xx = 0; xx < COLS; xx++){
-    const k = xx + ',' + yy;
-    if (G.roadKey.has(k) || G.blocked.has(k)) continue;
-    const X = xx * CELL, Y = yy * CELL, m = CELL * 0.11, s = CELL - m * 2, r = CELL * 0.2;
-    x.fillStyle = 'rgba(0,0,0,.24)';
-    rr(x, X + m, Y + m + CELL * 0.045, s, s, r); x.fill();                     // тень плитки
-    g = x.createLinearGradient(X + m, Y + m, X + m + s, Y + m + s);
-    g.addColorStop(0, 'rgba(255,255,255,.12)'); g.addColorStop(1, 'rgba(255,255,255,.035)');
-    x.fillStyle = g; rr(x, X + m, Y + m, s, s, r); x.fill();                    // верх
-    x.strokeStyle = 'rgba(255,255,255,.10)'; x.lineWidth = 1;
-    rr(x, X + m + 0.5, Y + m + 0.5, s - 1, s - 1, r); x.stroke();               // кромка
-  }
-
-  // камни на заблокированных клетках
-  for (const k of G.blocked){
-    const [xx, yy] = k.split(',').map(Number);
-    const cx = (xx + 0.5) * CELL, cy = (yy + 0.5) * CELL, pts = [], n = 6 + Math.floor(rnd() * 2);
-    for (let i = 0; i < n; i++){
-      const a = (i / n) * Math.PI * 2, rad = CELL * (0.28 + rnd() * 0.12);
-      pts.push([cx + Math.cos(a) * rad, cy + Math.sin(a) * rad * 0.85]);
-    }
-    softShadow(x, cx + CELL * 0.05, cy + CELL * 0.16, CELL * 0.42, CELL * 0.2, 0.55);
-    g = x.createLinearGradient(cx - CELL * 0.3, cy - CELL * 0.3, cx + CELL * 0.3, cy + CELL * 0.3);
-    g.addColorStop(0, '#a0ae8b'); g.addColorStop(0.55, '#6d8068'); g.addColorStop(1, '#3e574c');
-    x.fillStyle = g; poly(x, pts); x.fill();
-    x.strokeStyle = 'rgba(255,255,255,.18)'; x.lineWidth = 1; x.stroke();
-  }
-
-  // дороги: ров-тень, тёмный борт, полотно, светлая середина — слой за слоем по
-  // всем дорогам сразу, иначе борт притока ложился бы поверх полотна главной
-  const trace = (P, dy) => {
-    x.beginPath(); x.moveTo(P[0].x * CELL, P[0].y * CELL + dy);
-    for (let i = 1; i < P.length; i++) x.lineTo(P[i].x * CELL, P[i].y * CELL + dy);
+  const trace=(target,dy=0)=>{
+    target.beginPath();
+    for(const p of G.paths){target.moveTo(p.pts[0].x*CELL,p.pts[0].y*CELL+dy);for(const q of p.pts.slice(1))target.lineTo(q.x*CELL,q.y*CELL+dy);}
   };
-  x.lineCap = 'round'; x.lineJoin = 'round';
-  for (const [col, w, dy] of [['rgba(0,0,0,.5)', 0.96, 0.07], ['#283c30', 0.9, 0], ['#8a8960', 0.74, 0], ['#a6a077', 0.46, 0]]){
-    x.strokeStyle = col; x.lineWidth = CELL * w;
-    for (const p of G.paths){ trace(p.pts, CELL * dy); x.stroke(); }
+  // A shared, seeded edge follows all routes, including junctions.
+  const edge=[],seen=new Set();
+  for(const path of G.paths)for(const seg of path.seg){
+    const steps=Math.ceil(seg.len/.09);
+    for(let i=0;i<=steps;i++){
+      const t=i/steps,px=seg.from.x+(seg.to.x-seg.from.x)*t,py=seg.from.y+(seg.to.y-seg.from.y)*t;
+      const key=px.toFixed(3)+','+py.toFixed(3);
+      if(!seen.has(key)){seen.add(key);edge.push({x:px,y:py,r:.405+rnd()*.027});}
+    }
   }
-  // гравий: по каждой дороге, но общий хвост притока (он же главная) не засыпаем дважды
-  const graveled = new Set();
-  for (const p of G.paths) for (let d = 0; d < p.len; d += 0.085){
-    const pt = atDist(p, d), ck = Math.floor(pt.x) + ',' + Math.floor(pt.y);
-    if (p !== G.path && G.path.cellKey.has(ck)) continue;
-    const h = headingAt(p, d), off = (rnd() - 0.5) * 0.62, big = rnd() < 0.15;
-    const gx = (pt.x + Math.cos(h + Math.PI / 2) * off) * CELL, gy = (pt.y + Math.sin(h + Math.PI / 2) * off) * CELL;
-    x.fillStyle = rnd() < 0.5 ? 'rgba(255,255,255,' + (big ? .10 : .05) + ')' : 'rgba(0,0,0,' + (big ? .32 : .18) + ')';
-    x.beginPath(); x.arc(gx, gy, CELL * (big ? 0.045 : 0.026), 0, 7); x.fill();
+  const roadShape=(target,pad=0,dy=0)=>{
+    trace(target,dy*CELL);target.lineCap='round';target.lineJoin='round';
+    target.lineWidth=(.79+pad*2)*CELL;target.stroke();
+    target.beginPath();
+    for(const p of edge){target.moveTo((p.x+p.r+pad)*CELL,(p.y+dy)*CELL);target.arc(p.x*CELL,(p.y+dy)*CELL,(p.r+pad)*CELL,0,Math.PI*2);}
+    target.fill();
+  };
+  for(const [color,pad,dy] of [['#30482735',.065,.04],['#8e7950',.065,0],['#aa8c5b',.038,0]]){
+    x.fillStyle=x.strokeStyle=color;roadShape(x,pad,dy);
   }
-
-  // виньетка — поле темнеет к краям, взгляд собирается к центру
-  g = x.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.72);
-  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.36)');
-  x.fillStyle = g; x.fillRect(0, 0, W, H);
-  terrain = { cv: c, lv: G.lv, cell: CELL };
+  // Irregular fitted stones: jittered Voronoi cells avoid a brick-row pattern.
+  // The complete pavement is masked once, so branches share the same stones.
+  const paving=offscreen(W,H),pc=paving.x,sites=[];
+  for(let yy=-.5;yy<ROWS+.7;yy+=.38){
+    for(let xx=-.6+rnd()*.3;xx<COLS+.7;xx+=.34+rnd()*.32)
+      sites.push({x:xx+(rnd()-.5)*.16,y:yy+(rnd()-.5)*.22});
+  }
+  pc.fillStyle='#bfa16d';pc.fillRect(0,0,W,H);
+  for(const site of sites){
+    let polygon=[[site.x-1,site.y-1],[site.x+1,site.y-1],[site.x+1,site.y+1],[site.x-1,site.y+1]];
+    for(const other of sites){
+      const dx=other.x-site.x,dy=other.y-site.y;
+      if(other===site||Math.abs(dx)>1.4||Math.abs(dy)>1.4)continue;
+      const limit=(other.x*other.x+other.y*other.y-site.x*site.x-site.y*site.y)/2;
+      const clipped=[];
+      for(let i=0;i<polygon.length;i++){
+        const a=polygon[i],b=polygon[(i+1)%polygon.length],da=a[0]*dx+a[1]*dy-limit,db=b[0]*dx+b[1]*dy-limit;
+        if(da<=0)clipped.push(a);
+        if((da<=0)!==(db<=0)){const t=da/(da-db);clipped.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]);}
+      }
+      polygon=clipped;if(!polygon.length)break;
+    }
+    if(polygon.length<3)continue;
+    const pts=polygon.map(p=>[(site.x+(p[0]-site.x)*.93)*CELL,(site.y+(p[1]-site.y)*.93)*CELL]);
+    const inset=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];
+    pc.beginPath();
+    const start=inset(pts[0],pts[pts.length-1],.4);pc.moveTo(...start);
+    for(let i=0;i<pts.length;i++){
+      const p=pts[i],q=pts[(i+1)%pts.length],end=inset(p,q,.4),next=inset(q,p,.4);
+      pc.quadraticCurveTo(p[0],p[1],end[0],end[1]);pc.lineTo(...next);
+    }
+    pc.closePath();
+    pc.fillStyle=['#dcc28c','#d9bc84','#e0c693','#d5b982','#e3c998'][Math.floor(rnd()*5)];pc.fill();
+    pc.strokeStyle='#f6dfa32b';pc.lineWidth=CELL*.014;pc.stroke();
+  }
+  const mask=offscreen(W,H);mask.x.fillStyle=mask.x.strokeStyle='#fff';roadShape(mask.x);
+  pc.globalCompositeOperation='destination-in';pc.drawImage(mask.c,0,0,W,H);
+  x.drawImage(paving.c,0,0,W,H);
+  // Low ground cover lives at cell corners, leaving tower bases unobstructed.
+  for(const plant of plan.plants){
+    x.save();x.translate(plant.x*CELL,plant.y*CELL);x.rotate(plant.angle);
+    const r=plant.radius*CELL;
+    if(plant.kind==='flower'){
+      for(let i=0;i<4;i++){const a=i*Math.PI/2;x.fillStyle='#ead6a0';x.beginPath();x.arc(Math.cos(a)*r*.65,Math.sin(a)*r*.65,r*.32,0,7);x.fill();}
+      x.fillStyle='#ac994e';x.beginPath();x.arc(0,0,r*.22,0,7);x.fill();
+    }else{
+      const n=plant.kind==='leaves'?4:3;
+      for(let i=0;i<n;i++){
+        x.save();x.rotate(plant.kind==='leaves'?i*Math.PI/2:(i-1)*.55);
+        x.fillStyle=i%2?'#8fa653':plant.light?'#789744':'#4f713d';
+        x.beginPath();x.ellipse(0,-r*.42,r*(plant.kind==='leaves'?.40:.23),r*.57,0,0,7);x.fill();x.restore();
+      }
+    }
+    x.restore();
+  }
+  // Only logical obstacles receive solid rocks; no new blocked cells are added.
+  for(const k of G.blocked){
+    const [xx,yy]=k.split(',').map(Number),cx=(xx+.5)*CELL,cy=(yy+.5)*CELL,pts=[];
+    for(let i=0;i<7;i++){const a=i*Math.PI*2/7,r=CELL*(.29+rnd()*.08);pts.push([cx+Math.cos(a)*r,cy+Math.sin(a)*r*.8]);}
+    x.fillStyle='#30472e55';x.beginPath();x.ellipse(cx+CELL*.04,cy+CELL*.17,CELL*.36,CELL*.17,0,0,7);x.fill();
+    g=x.createLinearGradient(cx-CELL*.3,cy-CELL*.3,cx+CELL*.3,cy+CELL*.3);
+    g.addColorStop(0,'#bcc3a2');g.addColorStop(1,'#788970');x.fillStyle=g;poly(x,pts);x.fill();
+    x.fillStyle='#789649';x.beginPath();x.ellipse(cx-CELL*.10,cy-CELL*.16,CELL*.15,CELL*.08,-.3,0,7);x.fill();
+  }
+  g=x.createRadialGradient(W/2,H/2,Math.min(W,H)*.4,W/2,H/2,Math.max(W,H)*.74);
+  g.addColorStop(0,'#183b2900');g.addColorStop(1,'#183b292b');x.fillStyle=g;x.fillRect(0,0,W,H);
+  terrain={cv:c,lv:G.lv,cell:CELL};
 }
 
 function drawCastle(c, cx, cy){
@@ -2707,7 +2777,7 @@ for (const k of FOE_ORDER) FOES[k].tr = Object.entries(FOES[k].traits || {});
 
 /* Карточка — публичный договор бестиария. Опечатка в названии повадки или
    порождаемого существа иначе всплывёт только на поздней карте посреди волны.
-   Проверяем и схему, и все 120×14 результатов wave сразу при загрузке. */
+   Проверяем и схему, и результаты всех волн wave сразу при загрузке. */
 function validateFoes(){
   let errors = 0;
   const fail = (type, text) => { errors++; console.error('Бестиарий · ' + type + ': ' + text); };
@@ -2728,7 +2798,7 @@ function validateFoes(){
     }
     if (!b.wave) continue;
     for (let L = Math.max(0, b.from || 0); L < TOTAL_LEVELS; L++) for (let W = 0; W < waveCount(L); W++){
-      const late = W / Math.max(1, waveCount(L) - 1), raw = b.wave(L, W, late, waveCount(L), W === waveCount(L) - 1);
+      const late = W / Math.max(1, waveCount(L) - 1), raw = b.wave(balanceLevel(L), W, late, waveCount(L), W === waveCount(L) - 1);
       const n = typeof raw === 'number' ? raw : raw && raw.n;
       const gap = typeof raw === 'number' ? b.gap : raw && raw.gap;
       if (!Number.isFinite(n) || n < 0 || Math.floor(n) !== n) fail(type, 'wave вернула неверное количество на уровне ' + (L + 1) + ', волна ' + (W + 1));
@@ -2909,10 +2979,11 @@ function draw(){
   ctx.drawImage(terrain.cv, 0, 0, COLS * CELL, ROWS * CELL);
 
   if (G.armed){                                                                                     // куда можно ставить
-    ctx.fillStyle = G.gold >= TOWERS[G.armed].cost ? 'rgba(255,210,63,.14)' : 'rgba(255,255,255,.05)';
+    ctx.fillStyle = G.gold >= TOWERS[G.armed].cost ? 'rgba(255,239,171,.18)' : 'rgba(255,255,255,.05)';
+    ctx.strokeStyle='rgba(255,241,185,.55)';ctx.lineWidth=1;
     for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++){
       if (!cellFree(x, y)) continue;
-      rr(ctx, px(x + 0.11), py(y + 0.11), CELL * 0.78, CELL * 0.78, CELL * 0.2); ctx.fill();
+      rr(ctx, px(x + 0.11), py(y + 0.11), CELL * 0.78, CELL * 0.78, CELL * 0.2); ctx.fill();ctx.stroke();
     }
   }
   for (const p of G.paths) drawPortal(p.pts[0].x, p.pts[0].y);
@@ -3241,12 +3312,13 @@ function closeAll(){
   showOverlay(null);
   G.paused = false;
 }
-function openMaps(){
-  prevOv = OVERLAYS.find(k => k !== 'ovMaps' && $('#' + k).classList.contains('show')) || null;
-  const grid = $('#mapGrid');
+const MAP_PAGE_SIZE = 50;
+let mapPage = 0;
+function renderMapPage(){
+  const grid = $('#mapGrid'), start = mapPage * MAP_PAGE_SIZE, end = Math.min(start + MAP_PAGE_SIZE, MAPS.length);
   grid.innerHTML = '';
-  MAPS.forEach((m, i) => {
-    const b = document.createElement('button');
+  MAPS.slice(start, end).forEach((m, offset) => {
+    const i = start + offset, b = document.createElement('button');
     const st = save.stars[i] || 0;
     b.className = (i === G.lv ? 'cur' : st ? 'done' : '');
     b.innerHTML = '<span class="n"></span><span class="nm"></span><span class="st"></span>';
@@ -3256,17 +3328,27 @@ function openMaps(){
     b.addEventListener('click', () => { startLevel(i); });
     grid.appendChild(b);
   });
+  $('#mapPageRange').textContent = (start + 1) + '–' + end + ' из ' + MAPS.length;
+  $('#btnMapsPrev').disabled = start === 0;
+  $('#btnMapsNext').disabled = end === MAPS.length;
+  grid.scrollTop = 0;
+}
+function openMaps(){
+  prevOv = OVERLAYS.find(k => k !== 'ovMaps' && $('#' + k).classList.contains('show')) || null;
+  mapPage = Math.floor(G.lv / MAP_PAGE_SIZE);
+  renderMapPage();
   $('#lvInput').value = G.lv + 1;
   showOverlay('ovMaps');
   sndTap();
-  // Прокручиваем только сетку: scrollIntoView на iOS сдвигал всю страницу,
-  // после чего игровое поле оставалось обрезанным до поворота телефона.
-  const cur = grid.children[G.lv];
+  // Scroll only the grid, leaving the game viewport in place on phones.
+  const grid = $('#mapGrid'), cur = grid.children[G.lv % MAP_PAGE_SIZE];
   if (cur){
     const gridRect = grid.getBoundingClientRect(), curRect = cur.getBoundingClientRect();
     grid.scrollTop += curRect.top - gridRect.top - (grid.clientHeight - curRect.height) / 2;
   }
 }
+$('#btnMapsPrev').addEventListener('click', () => { mapPage = Math.max(0, mapPage - 1); renderMapPage(); });
+$('#btnMapsNext').addEventListener('click', () => { mapPage = Math.min(Math.ceil(MAPS.length / MAP_PAGE_SIZE) - 1, mapPage + 1); renderMapPage(); });
 $('#title').addEventListener('click', openMaps);
 $('#title').addEventListener('keydown', e => {
   if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openMaps(); }

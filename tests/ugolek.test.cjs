@@ -31,8 +31,13 @@ test('death during anticipation cancels contact and damage',()=>{
   const h=setup();for(let i=0;i<8;i++)h.step(.1);assert.ok(Ugolek.attackProgress(h.f.atk,0)!==null);
   h.f.dead=true;for(let i=0;i<30;i++)h.step(.1);assert.equal(h.hits.length,0);
 });
-test('other creatures retain their existing lunge and damage',()=>{
-  const h=setup('golem');while(!h.hits.length)h.step(.02);assert.equal(h.f.lunge,1);assert.equal(h.hits[0].n,3);assert.equal(h.f.attackAfter,0);
+test('Dreven custom attack preserves damage timing without a duplicate generic lunge',()=>{
+  const h=setup('golem');while(!h.hits.length)h.step(.02);
+  assert.ok(Math.abs(h.hits[0].t-h.b.atk*.6)<=.020001);
+  assert.equal(h.hits.length,1);assert.equal(h.hits[0].n,3);
+  assert.equal(h.f.lunge,0);
+  assert.equal(h.f.attackAfter,h.b.attackAnim.duration*(1-h.b.attackAnim.contact));
+  h.step(.02);assert.equal(h.hits.length,1);
 });
 test('step phase follows travelled distance, independent of rendering time',()=>{
   const a=Ugolek.pose({state:'walk',distance:3,seed:1,time:0}),b=Ugolek.pose({state:'walk',distance:3,seed:1,time:40});

@@ -66,6 +66,7 @@
   }
   // Selected trucks reserve a slot; full trucks immediately release theirs.
   function workingCount(s){return s.active.filter(c=>c.loaded<s.puzzle.arrows[c.id].capacity).length;}
+  function roadSpeed(s){return SPEED*(!s.remaining.length&&!s.active.some(c=>c.phase==='queued')?3:1);}
   function finishedLoad(s,car){return car.loaded>=s.puzzle.arrows[car.id].capacity||!s.grains.includes(s.puzzle.arrows[car.id].color);}
   function pump(s){
     if(!s.queue.length||s.active.some(c=>c.phase==='road'&&c.distance<ROAD_GAP))return;
@@ -80,13 +81,14 @@
     const dt=PHYSICS_DT;if(s.sandDirty){const moved=fall(s.puzzle.art,s.grains,s.sandTick,s.motion);events.moved+=moved;s.sandDirty=moved>0;}s.sandTick++;pump(s);
     // Accept clicks immediately; serialize the physical exits to avoid crossing cars.
     if(!s.active.some(c=>c.phase==='depart')){const next=s.active.find(c=>c.phase==='queued');if(next)next.phase='depart';}
+    const speed=roadSpeed(s);
     for(const car of s.active){
       const a=s.puzzle.arrows[car.id];
       if(car.phase==='depart'){
         const length=departure(a).length;car.distance=Math.min(length,car.distance+dt*430);
         if(car.distance===length){car.phase='waiting';car.distance=0;s.queue.push(car.id);}
       }else if(car.phase==='road'){
-        car.distance+=dt*SPEED;car.credit+=dt;
+        car.distance+=dt*speed;car.credit+=dt;
         if(car.credit>=.055){
           const count=Math.min(Math.floor(car.credit*80*GRAIN_SCALE**2),a.capacity-car.loaded);car.credit=0;
           for(let n=0;n<count;n++){const index=nearest(s.puzzle.art,s.grains,a.color,carPose(s.puzzle,car))[0];if(index===undefined)break;take(s.puzzle.art,s.grains,index);S.clear(s.motion,index);s.sandDirty=true;car.loaded++;events.push({id:car.id,index,color:a.color});}
@@ -136,6 +138,6 @@
     s.motion=S.restore(s.grains.length,saved.motion,s.grains);s.sandDirty=canFall(p.art,s.grains)||S.snapshot(s.motion).length>0;s.jammed=isJammed(s);return s;
   }
   function undo(s){if(!s.history.length)return null;const history=s.history.slice(),last=history.pop(),r=restore(last,false);r.history=history;r.completed=s.completed.slice();r.sound=s.sound;return r;}
-  const api={VERSION,LEVELS,COLORS,NAMES,ART,PARK,ROAD,SPEED,ROAD_GAP,PICKUP_RADIUS,PHYSICS_DT,GRAIN_SCALE,Sand:S,route,generate,picture:n=>generate(n).art,pose,parked,departure,tilePosition,frontier,nearest,take,fall,canFall,carPose,create,dispatch,workingCount,step,hint,won,complete,snapshot,restore,undo,isJammed};
+  const api={VERSION,LEVELS,COLORS,NAMES,ART,PARK,ROAD,SPEED,ROAD_GAP,PICKUP_RADIUS,PHYSICS_DT,GRAIN_SCALE,Sand:S,route,generate,picture:n=>generate(n).art,pose,parked,departure,tilePosition,frontier,nearest,take,fall,canFall,carPose,create,dispatch,workingCount,roadSpeed,step,hint,won,complete,snapshot,restore,undo,isJammed};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.SandTrucks=api;
 })(globalThis);

@@ -16,7 +16,7 @@
   function drawArt(){sandArt.draw(state.puzzle.art,state.grains,state.motion);}
   function update(){
     const percent=Math.round(state.grains.filter(c=>c<0).length/state.grains.length*100);
-    $('#count').textContent=`ПАРКОВКА · ${state.remaining.length} МАШИН`;$('#roadCount').textContent=`${T.workingCount(state)} / ${state.puzzle.limit}`;$('#roadCount').setAttribute('aria-label',`В работе ${T.workingCount(state)} из ${state.puzzle.limit}`);
+    $('#count').textContent=T.roadSpeed(state)>T.SPEED?'ПАРКОВКА ПУСТА · СКОРОСТЬ ×3':`ПАРКОВКА · ${state.remaining.length+state.active.filter(c=>c.phase==='queued').length} МАШИН`;$('#roadCount').textContent=`${T.workingCount(state)} / ${state.puzzle.limit}`;$('#roadCount').setAttribute('aria-label',`В работе ${T.workingCount(state)} из ${state.puzzle.limit}`);
     canvas.setAttribute('aria-label',`${state.puzzle.art.title}. Собрано ${percent}% песка.`);
   }
   function build(){

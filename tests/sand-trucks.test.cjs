@@ -112,6 +112,18 @@ test('unfilled trucks return beyond the screen and reenter from the left in FIFO
  T.step(s,.04);assert.equal(s.active.find(c=>c.phase==='road').id,2);assert.deepEqual(s.queue,[0,1]);advance(s,2);const road=s.active.filter(c=>c.phase==='road').sort((a,b)=>b.distance-a.distance);assert.deepEqual(road.map(c=>c.id),[2,0,1]);for(let i=1;i<road.length;i++)assert.ok(road[i-1].distance-road[i].distance>=T.ROAD_GAP);
  const c=road[0];c.distance=T.ROAD.length-1;T.step(s,.04);assert.equal(c.phase,'waiting');assert.equal(s.queue.at(-1),c.id);assert.equal(T.carPose(s.puzzle,c).x,-80);assert.equal(c.loaded,0);
 });
+test('an empty parking lot triples road movement, preserves entry gaps and restores speed from saves',()=>{
+ const s=T.create(1);s.grains.fill(-1);s.remaining=[];
+ const ids=s.puzzle.solution.slice(-3);s.delivered=s.puzzle.arrows.filter(a=>!ids.includes(a.id)).map(a=>({id:a.id,loaded:a.capacity}));
+ s.active=ids.map((id,i)=>({id,phase:i?'waiting':'road',distance:0,loaded:s.puzzle.arrows[id].capacity,credit:0}));s.queue=ids.slice(1);
+ assert.equal(T.roadSpeed(s),T.SPEED*3);T.step(s,T.PHYSICS_DT);assert.ok(Math.abs(s.active[0].distance-T.SPEED*3*T.PHYSICS_DT)<1e-9);
+ const r=T.restore(T.snapshot(s));assert.deepEqual(r.active,s.active);assert.equal(T.roadSpeed(r),T.SPEED*3);
+ for(let n=0;n<400&&!T.won(r);n++){T.step(r,T.PHYSICS_DT);const cars=r.active.filter(c=>c.phase==='road').sort((a,b)=>b.distance-a.distance);for(let i=1;i<cars.length;i++)assert.ok(cars[i-1].distance-cars[i].distance>=T.ROAD_GAP);}
+ assert.ok(T.won(r));assert.deepEqual(r.delivered.slice(-3).map(c=>c.id),ids);
+ const normal=T.create(1);T.dispatch(normal,normal.puzzle.solution[0]);normal.active[0].phase='road';T.step(normal,T.PHYSICS_DT);assert.ok(Math.abs(normal.active[0].distance-T.SPEED*T.PHYSICS_DT)<1e-9);
+ normal.remaining=[];normal.active.push({id:1,phase:'queued',distance:0,loaded:0,credit:0});assert.equal(T.roadSpeed(normal),T.SPEED);
+ normal.active.pop();assert.equal(T.roadSpeed(normal),T.SPEED*3);assert.equal(T.roadSpeed(T.undo(normal)),T.SPEED);
+});
 test('wrong color choices cause a visible jam instead of an endless silent stall',()=>{
  const runs=Array.from({length:10},(_,i)=>solve(i+1,true));assert.ok(runs.some(r=>r.s.jammed));for(const r of runs)assert.ok(r.s.jammed||T.won(r.s));
 });

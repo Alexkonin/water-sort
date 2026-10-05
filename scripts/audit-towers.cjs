@@ -22,7 +22,7 @@ function runAudit(level,policy){
  function coverage(t,st){return samples.reduce((s,ps)=>s+ps.filter(p=>Math.hypot(p.x-t.x-.5,p.y-t.y-.5)<=st.range).length/2,0)/samples.length;}
  function power(t,st){return (Math.max(1,st.dmg-(level>14?5:level>2?2:0))*st.rate)*(t.type==='mortar'?2.4:t.type==='tesla'?Math.min(st.chain,2.5):t.type==='frost'?3:1);}
  function buy(){
-  if(G.castle.lvl<5&&G.lives<castleStats().hp*.75&&G.gold>=upCost(G.castle)){let old=castleStats().hp;G.gold-=upCost(G.castle);G.castle.lvl++;G.lives+=castleStats().hp-old;}
+  if(G.castle.lvl<5&&G.lives<castleStats().hp*.75&&G.gold>=upCost(G.castle)){let old=castleStats();G.gold-=upCost(G.castle);G.castle.lvl++;if(castleStats().repair)G.lives=castleStats().hp;if(castleStats().palisadeHp>old.palisadeHp)G.castle.palisade=castleStats().palisadeHp;}
   for(let n=0;n<80;n++){
    let best=null;
    const candidates=[];

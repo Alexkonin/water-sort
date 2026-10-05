@@ -96,6 +96,7 @@
   .sel.show + .build-tip{display:none}
   .sel.castle{grid-template-columns:minmax(0,1fr) 70px}
   .sel .info{min-width:0;max-height:100%;overflow:auto;overscroll-behavior:contain;padding:0 3px}
+  .sel .info .repair{min-height:26px;padding:4px 8px;margin-top:4px;font-size:10px}
   .sel .info b{display:block;font-size:12px;font-weight:750;line-height:16px}
   .sel .info small{display:block;font-size:10px;color:var(--muted);line-height:14px;white-space:pre-line}
   .sel button{border:0;border-radius:11px;cursor:pointer;padding:4px 3px;min-height:48px;font-size:10.5px;font-weight:750;line-height:1.35}
@@ -254,7 +255,7 @@
     <div class="palette" id="palette" aria-label="Построить башню"></div>
     <div class="selection-slot">
     <div class="sel" id="sel">
-      <div class="info"><b id="selName">—</b><small id="selStats">—</small></div>
+      <div class="info"><b id="selName">—</b><small id="selStats">—</small><button class="up repair" id="btnRepair" hidden>Починить частокол</button></div>
       <button class="up" id="btnUp">Улучшить<br><span id="upCost">—</span></button>
       <button class="sell" id="btnSell">Продать<br><span id="sellSum">—</span></button>
     </div>
@@ -322,11 +323,11 @@
       <li>За каждого убитого дают золото. На него строй и улучшай башни.</li>
       <li>Башня при каждом выстреле выбирает ближайшего к себе видимого врага в радиусе атаки.</li>
       <li>Коснись поставленной башни — её можно улучшить или продать (вернётся 60%).</li>
-      <li>Кнопка «Отмена» отменяет последнюю постройку, улучшение или продажу. Если башня уже успела выстрелить после постройки или улучшения, откат отключается. Улучшение замка нельзя отменить после его выстрела или полученного удара.</li>
+      <li>Кнопка «Отмена» отменяет последнюю постройку, улучшение или продажу. Если башня уже успела выстрелить после постройки или улучшения, откат отключается. Улучшение замка и ремонт частокола нельзя отменить после полученного удара.</li>
       <li>Все башни можно развить с 1-го до 5-го разряда на любой карте. Перед улучшением видны цена и прибавка к силе.</li>
       <li>Пушка ускоряет стрельбу, мороз сильнее замедляет, молния на старших разрядах цепляет до пяти врагов, мортира увеличивает площадь взрыва. Корпус меняется с каждым разрядом.</li>
-      <li>Дошедший до ворот враг не исчезает: он бьёт замок, пока жив. Башни и гарнизон замка продолжают по нему стрелять. Зато у ворот он открытая мишень — броня не спасает, урон двойной. Держи оборону у ворот.</li>
-      <li>Нажми на замок или показатель его прочности: у него пять разрядов. Сначала растут прочность и броня, на 4-м появляются лучники, на 5-м — баллиста. Новые стены добавляют прочность, но не чинят весь прежний урон. Улучшения действуют на текущей карте. Кончилась прочность — база прорвана.</li>
+      <li>Дошедший до ворот враг не исчезает: он бьёт замок, пока жив. Башни продолжают по нему стрелять. Зато у ворот он открытая мишень — броня не спасает, урон двойной. Держи оборону у ворот.</li>
+      <li>Нажми на замок или показатель его прочности: у него пять разрядов. На уровнях 2–4 улучшается частокол: он снижает входящий урон на 10%, 20% и 30%, но не чинит замок. Частокол перекрывает соседнюю дорожную клетку перед замком. У него своя прочность: 20, 35 и 50. При нескольких подходах пролёты образуют одну защиту с общей прочностью. Пока он цел, принимает удары на себя; после разрушения замок остаётся без брони. Улучшение частокола восстанавливает его, отдельный ремонт стоит 2 золота за единицу прочности. На 5-м уровне замок полностью чинится, а его максимальная прочность растёт с 20 до 60. Улучшения действуют на текущей карте. Кончилась прочность — база прорвана.</li>
       <li><b>Камнеспины</b> гасят слабые удары: по ним бьёт пушка и мортира, а молния почти бесполезна.</li>
       <li>На поздних картах к замку ведёт несколько дорог, а у врагов появляются повадки: одни не мёрзнут, другие уходят под землю, лечат соседей или рассыпаются спорами. При первой встрече игра подскажет, чем брать; все вместе — в бестиарии.</li>
       <li>Три звезды дают, если замок не получил ни одного удара.</li>
@@ -449,13 +450,13 @@ const TOWER_TIERS = {
 const SELL_BACK = 0.6;
 
 /* Замок развивается на текущей карте, как башни. Цена — за переход в этот
-   разряд. Новые стены добавляют только прирост максимальной прочности. */
+   разряд. Частокол усиливает броню; пятый разряд полностью чинит замок. */
 const CASTLE_TIERS = [null,
-  { name:'Застава', hp:20, armor:0,    dmg:0,  rate:0,    range:0,   cost:0 },
-  { name:'Каменные стены', hp:28, armor:0.10, dmg:0,  rate:0,    range:0,   cost:80 },
-  { name:'Бастион', hp:38, armor:0.20, dmg:0,  rate:0,    range:0,   cost:130 },
-  { name:'Лучники', hp:48, armor:0.25, dmg:6,  rate:0.75, range:2.2, cost:190 },
-  { name:'Баллиста', hp:60, armor:0.30, dmg:10, rate:1,    range:2.6, cost:270 }
+  { name:'Застава', hp:20, armor:0, dmg:0, rate:0, range:0, palisadeHp:0, cost:0 },
+  { name:'Частокол', hp:20, armor:0.10, dmg:0, rate:0, range:0, palisadeHp:20, cost:80 },
+  { name:'Укреплённый частокол', hp:20, armor:0.20, dmg:0, rate:0, range:0, palisadeHp:35, cost:130 },
+  { name:'Усиленный частокол', hp:20, armor:0.30, dmg:0, rate:0, range:0, palisadeHp:50, cost:190 },
+  { name:'Восстановленный замок', hp:60, armor:0.30, dmg:0, rate:0, range:0, palisadeHp:50, cost:270, repair:true }
 ];
 const MAX_CASTLE_LVL = CASTLE_TIERS.length - 1;
 const castleStats = (castle = G.castle) => CASTLE_TIERS[castle.lvl];
@@ -811,7 +812,7 @@ for (let lv = HAND_MAPS; lv < TOTAL_LEVELS; lv++) MAPS.push(generateMap(lv));
 /* ============ состояние ============ */
 const G = {
   lv: 0, path: null, paths: [], roadKey: new Set(), blocked: new Set(), obstacles: new Map(), spawnIdx: 0, castleShake: 0, smokeT: 0,
-  castle: { type:'castle', lvl:1, cool:0, flash:0, aim:-Math.PI / 2 },
+  castle: { type:'castle', lvl:1, palisade:0, cool:0, flash:0, aim:-Math.PI / 2 },
   lives: START_LIVES, gold: startGold(0), dmgTaken: 0, reached: 0,
   wave: 0, waveRunning: false, queue: [], spawnT: 0,
   foes: [], towers: [], shots: [], fx: [],
@@ -923,9 +924,16 @@ function undoLastAction(){
     if (G.castle !== a.tower || G.castle.lvl !== a.from + 1){ refreshUndo(); return; }
     G.castle.lvl = a.from;
     G.lives = a.lives;
+    G.castle.palisade = a.palisade;
     G.gold += a.cost;
     G.selected = G.castle; G.armed = null;
     showHint('Улучшение замка отменено');
+  } else if (a.kind === 'palisadeRepair'){
+    if (G.castle !== a.tower){ refreshUndo(); return; }
+    G.castle.palisade = a.palisade;
+    G.gold += a.cost;
+    G.selected = G.castle; G.armed = null;
+    showHint('Ремонт частокола отменён');
   } else if (a.kind === 'sell'){
     if (G.gold < a.gold || !cellFree(a.tower.x, a.tower.y)){
       refreshUndo();
@@ -958,7 +966,7 @@ function startLevel(i){
   G.obstacles = DioramaMaps.occupancy(m);
   G.blocked = new Set(G.obstacles.keys());
   const gate = G.path.pts[G.path.pts.length - 1];
-  G.castle = { type:'castle', lvl:1, x:gate.x - 0.5, y:gate.y - 0.5, cool:0, flash:0, aim:-Math.PI / 2 };
+  G.castle = { type:'castle', lvl:1, palisade:0, x:gate.x - 0.5, y:gate.y - 0.5, cool:0, flash:0, aim:-Math.PI / 2 };
   G.castleShake = 0; G.smokeT = 0;
   G.lives = START_LIVES; G.gold = startGold(G.lv); G.dmgTaken = 0; G.reached = 0;
   G.wave = 0; G.waveRunning = false; G.queue = []; G.spawnT = 0;
@@ -1047,21 +1055,34 @@ function spawn(type, scale, opts){
 const SIEGE_SLOTS = [[-0.95, 0], [-0.9, 0.45], [-0.9, -0.45], [-1.3, 0.22], [-1.3, -0.22],
                      [-1.25, 0.7], [-1.25, -0.7], [-1.65, 0], [-1.6, 0.45], [-1.6, -0.45],
                      [-1.5, 0.95], [-1.5, -0.95]];
-function siegeFrame(){
-  const P = G.path.pts, b = P[P.length - 1], a = P[P.length - 2] || { x: b.x - 1, y: b.y };
-  return { b, h: Math.atan2(b.y - a.y, b.x - a.x) };
+// Последняя дорожная клетка перед замком. Совпадающие подходы дают один пролёт.
+function palisadeFrames(){
+  const frames = new Map();
+  for (const path of G.paths){
+    const b = atDist(path, Math.max(0, path.len - 1)), gate = path.pts[path.pts.length - 1];
+    const key = Math.floor(b.x) + ',' + Math.floor(b.y);
+    if (!frames.has(key)) frames.set(key, { b, h:Math.atan2(gate.y-b.y, gate.x-b.x) });
+  }
+  return [...frames.values()];
+}
+function siegeFrame(f){
+  const path = f ? G.paths[f.pi] : G.path;
+  const P = path.pts, gate = P[P.length - 1], a = P[P.length - 2] || { x:gate.x-1, y:gate.y };
+  const b = f && f.palisadeTarget ? atDist(path, Math.max(0, path.len - 1)) : gate;
+  return { b, h:Math.atan2(gate.y-a.y, gate.x-a.x) };
 }
 function foePos(f){
   if (!f.siege) return atDist(G.paths[f.pi], f.d);
-  const { b, h } = siegeFrame();
+  const { b, h } = siegeFrame(f);
   const [ox, oy] = SIEGE_SLOTS[f.slot % SIEGE_SLOTS.length];
   const lx = ox - Math.floor(f.slot / SIEGE_SLOTS.length) * 0.5 + (f.lunge > 0 ? f.lunge * 0.16 : 0);
   return { x: clamp(b.x + Math.cos(h) * lx - Math.sin(h) * oy, 0.35, COLS - 0.35),
            y: clamp(b.y + Math.sin(h) * lx + Math.cos(h) * oy, 0.35, ROWS - 0.35) };
 }
-const foeHeading = f => f.siege ? siegeFrame().h : headingAt(G.paths[f.pi], f.d);
+const foeHeading = f => f.siege ? siegeFrame(f).h : headingAt(G.paths[f.pi], f.d);
 function startSiege(f){
-  f.siege = true; f.d = G.paths[f.pi].len;
+  f.palisadeTarget = (G.castle?.palisade || 0) > 0 && f.d < G.paths[f.pi].len;
+  f.siege = true; f.d = G.paths[f.pi].len - (f.palisadeTarget ? 1 : 0);
   const used = new Set(G.foes.filter(x => x.siege && !x.dead && x !== f).map(x => x.slot));
   let k = 0; while (used.has(k)) k++;
   f.slot = k;
@@ -1131,12 +1152,16 @@ function nearestEnemy(tx, ty, range){
   return best;
 }
 
-function damageCastle(hit){
-  if (G.lives <= 0) return;
-  lockUndoForTower(G.castle);               // броня уже повлияла на бой
-  const damage = hit * (1 - castleStats().armor);
-  G.lives = Math.max(0, Math.round((G.lives - damage) * 100) / 100);
-  G.dmgTaken += hit;                       // улучшение не стирает историю для звёзд
+function damageCastle(hit, attacker){
+  if (G.lives <= 0 || hit <= 0) return;
+  lockUndoForTower(G.castle);
+  const st = castleStats(), health = (!attacker || attacker.palisadeTarget) ? (G.castle.palisade || 0) : 0;
+  // Броня принадлежит частоколу. Остаток пробившего удара идёт в замок без брони.
+  const absorbed = Math.min(hit, health / (1 - st.armor));
+  if (!attacker || attacker.palisadeTarget) G.castle.palisade = Math.max(0, Number((health - absorbed * (1 - st.armor)).toFixed(2)));
+  const damage = Math.max(0, hit - absorbed);
+  G.lives = Math.max(0, Number((G.lives - damage).toFixed(2)));
+  G.dmgTaken = Number((G.dmgTaken + damage).toFixed(2));                    // ремонт не стирает историю урона замку
 }
 
 function fireCastle(){
@@ -1254,7 +1279,14 @@ function update(dt){
         const st = Math.floor(stepPhase(f));
         if (st !== f.step){ f.step = st; const q = foePos(f); G.fx.push({ kind:'dust', x: q.x, y: q.y + f.r * 0.5, t: 0, life: 0.5, parts: parts(4, 0.5, (f.d * 733) | 0) }); }
       }
-      if (f.d >= G.paths[f.pi].len) startSiege(f);
+      if (f.d >= G.paths[f.pi].len - ((G.castle.palisade || 0) > 0 ? 1.65 : 0)) startSiege(f);
+      continue;
+    }
+    // Разбитая преграда открывает последний участок дороги к замку.
+    if (f.palisadeTarget && !(G.castle.palisade > 0)){
+      f.siege = false; f.palisadeTarget = false; f.slot = -1;
+      f.d = Math.max(0, G.paths[f.pi].len - 1.65);
+      f.lunge = 0; f.attackAfter = 0;
       continue;
     }
     // осада: мороз замедляет и удары тоже
@@ -1267,11 +1299,11 @@ function update(dt){
       // before it, recovery afterwards; no extra delay and no double lunge.
       f.atk = b.atk; f.lunge = b.attackAnim ? 0 : 1;
       if (b.attackAnim) f.attackAfter = b.attackAnim.duration * (1 - b.attackAnim.contact);
-      damageCastle(b.hit);
+      damageCastle(b.hit, f);
       G.castleShake = 1;
       flash('#stLives', 'hurt');
       sndLeak();
-      const gate = siegeFrame().b, q = foePos(f);
+      const gate = siegeFrame(f).b, q = foePos(f);
       G.fx.push({ kind:'leak', x: gate.x, y: gate.y, t: 0, life: 0.4, parts: parts(5, 0.7, (G.t * 997) | 0) });
       if(f.type!=='grunt'&&f.type!=='runner') G.fx.push({ kind:'slash', x: (q.x + gate.x) / 2, y: (q.y + gate.y) / 2, a: Math.atan2(gate.y - q.y, gate.x - q.x), t: 0, life: 0.22 });
     }
@@ -1550,32 +1582,68 @@ function drawCastle(c, cx, cy){
     c.fillStyle = g; poly(c, [[tx - s * 0.16, cy - s * 0.28], [tx + s * 0.16, cy - s * 0.28], [tx, cy - s * 0.54]]); c.fill();
     c.fillStyle = '#ffdc82'; c.fillRect(tx - s * 0.03, cy - s * 0.1, s * 0.06, s * 0.09);           // окно
   }
-  if (lvl >= 2){
-    c.strokeStyle = lvl >= 3 ? '#e6dfc5' : '#a3ae90'; c.lineWidth = Math.max(1, s * 0.055);
-    for (const side of [-1, 1]){
-      c.beginPath(); c.moveTo(cx + side * s * 0.24, cy - s * 0.11); c.lineTo(cx + side * s * 0.24, cy + s * 0.28); c.stroke();
-    }
-    c.strokeStyle = '#ab9abc'; c.lineWidth = Math.max(1, s * 0.025);
-    for (const yy of [0.03, 0.18]){ c.beginPath(); c.moveTo(cx - s * 0.3, cy + s * yy); c.lineTo(cx + s * 0.3, cy + s * yy); c.stroke(); }
-  }
-  if (lvl >= 3){
-    c.fillStyle = lvl === 5 ? '#ffda68' : '#77cce5';
-    poly(c, [[cx,cy-s*0.23],[cx+s*0.11,cy-s*0.18],[cx+s*0.08,cy-s*0.03],[cx,cy+s*0.03],[cx-s*0.08,cy-s*0.03],[cx-s*0.11,cy-s*0.18]]); c.fill();
-    c.strokeStyle = '#4c394f'; c.lineWidth = Math.max(1, s * 0.022); c.stroke();
-  }
-  if (lvl >= 4){
-    c.save(); c.translate(cx, cy - s * 0.3); c.rotate(G.castle.aim);
-    const size = lvl === 5 ? 0.22 : 0.15;
-    c.strokeStyle = lvl === 5 ? '#ffd878' : '#bb824e'; c.lineWidth = Math.max(1.5, s * 0.055);
-    c.beginPath(); c.moveTo(-s * 0.04,-s * size); c.quadraticCurveTo(s * 0.2,0,-s * 0.04,s * size); c.stroke();
-    c.strokeStyle = '#f2e5c7'; c.lineWidth = Math.max(1, s * 0.02);
-    c.beginPath(); c.moveTo(-s * 0.04,-s * size); c.lineTo(-s * 0.11,0); c.lineTo(-s * 0.04,s * size); c.stroke();
-    c.fillStyle = '#675063'; rr(c,-s*0.15,-s*0.04,s*0.39,s*0.08,s*0.02); c.fill();
-    if (G.castle.flash > 0) muzzleFlash(c,s*0.2,s*0.23*(G.castle.flash/0.14),'rgba(255,255,230,.9)','rgba(255,210,100,.5)');
-    c.restore();
-  }
   c.save(); c.translate(cx,cy+s*0.13); studs(c,s*0.8,lvl); c.restore();
 
+}
+function drawPalisade(c, cx, cy, heading, onBoard = false){
+  if (G.castle.lvl < 2) return;
+  const s=CELL, rank=Math.min(4,G.castle.lvl)-1;
+  const hp=G.castle.palisade||0, ratio=clamp(hp/castleStats().palisadeHp,0,1);
+  // Standing logs stay upright, as do the castle towers. Only their ground line turns.
+  const vx=-Math.sin(heading)*.92+Math.cos(heading)*.54;
+  const vy=Math.cos(heading)*.67+Math.sin(heading)*.12;
+  const point=(t,z=0)=>[cx+vx*t*s,cy+vy*t*s-z*s];
+  const shape=(points,fill,stroke)=>{c.fillStyle=fill;poly(c,points);c.fill();if(stroke){c.strokeStyle=stroke;c.lineWidth=Math.max(.8,s*.016);c.stroke();}};
+  c.save();
+  c.fillStyle='#20301d44';c.beginPath();c.ellipse(cx+s*.065,cy+s*.06,s*.39,s*.20,Math.atan2(vy,vx),0,7);c.fill();
+  const count=rank===1?7:9, posts=[];
+  for(let i=0;i<count;i++){
+    const t=-.48+.96*i/(count-1), end=i===0||i===count-1;
+    const base=point(t), full=(end?.51:.43)+rank*.025+(i%3-1)*.018;
+    const broken=ratio<.5 && (i===2||i===count-3), height=hp?(broken?full*.48:full):.065+(i%3)*.018;
+    posts.push({i,t,base,height,end,broken});
+  }
+  posts.sort((a,b)=>a.base[1]-b.base[1]);
+  for(const post of posts){
+    const {i,base:[x,y],height,end,broken}=post,w=s*(end?.15:.115),top=y-height*s,tip=s*(hp&&!broken?.08:.025);
+    // Earthen sockets and a dark side plane give every timber volume.
+    c.fillStyle='#665d3b';c.beginPath();c.ellipse(x,y+s*.014,w*.7,s*.033,0,0,7);c.fill();
+    const wood=c.createLinearGradient(x-w*.5,0,x+w*.5,0);
+    wood.addColorStop(0,'#684529');wood.addColorStop(.24,'#a57e4d');wood.addColorStop(.6,'#977044');wood.addColorStop(1,'#553d27');
+    shape([[x-w*.5,y],[x-w*.5,top+tip],[x-w*.08,top],[x+w*.5,top+tip*.8],[x+w*.5,y]],wood,'#453622');
+    shape([[x-w*.5,top+tip],[x-w*.08,top],[x+w*.5,top+tip*.8],[x+w*.1,top+tip*1.45]],broken||!hp?'#ae8c60':'#d4ba86');
+    c.strokeStyle='#49332266';c.lineWidth=Math.max(.6,s*.012);c.beginPath();c.moveTo(x-w*.1,top+tip*1.8);c.lineTo(x-w*.19,y-s*.025);c.stroke();
+    if(end&&hp){
+      for(const z of [.16,.30]){c.fillStyle=rank===3?'#505d53':'#c0a374';c.fillRect(x-w*.55,y-z*s,w*1.1,s*.035);}
+    }
+  }
+  if(hp){
+    // Two broad wooden crossbeams. Iron is limited to the fastenings at tier four.
+    const beam=(a,b,z)=>{
+      const A=point(a,z),B=point(b,z),d=s*.035;
+      shape([[A[0],A[1]-d],[B[0],B[1]-d],[B[0],B[1]+d],[A[0],A[1]+d]],'#674b30','#443725');
+      c.strokeStyle='#b79a65';c.lineWidth=Math.max(.8,s*.016);c.beginPath();c.moveTo(A[0],A[1]-d);c.lineTo(B[0],B[1]-d);c.stroke();
+    };
+    for(const z of rank===1?[.15]:[.14,.29]){
+      if(ratio<.5){beam(-.51,-.10,z);beam(.10,.51,z);}else beam(-.51,.51,z);
+      for(const t of [-.44,0,.44]){
+        const p=point(t,z);c.fillStyle=rank===3?'#a6afa0':'#d0b884';c.beginPath();c.arc(p[0],p[1],s*.018,0,7);c.fill();
+      }
+    }
+  }
+  if(!hp||ratio<.5){
+    // A few fallen splinters leave the road visibly open, rather than a second fence.
+    for(let i=0;i<(!hp?5:2);i++){
+      const t=(i-2)*.15,p=point(t);c.save();c.translate(p[0]+s*.10,p[1]+s*.12);c.rotate((i%2?.65:-.45));
+      shape([[-s*.12,-s*.027],[s*.10,-s*.027],[s*.15,0],[s*.09,s*.03],[-s*.12,s*.025]],i%2?'#8c6842':'#b09464','#57412c');c.restore();
+    }
+  }
+  const width=s*.72, rawTop=cy-s*.94, top=onBoard?Math.max(s*.04,rawTop):rawTop;
+  c.fillStyle='#172c22e8';rr(c,cx-width/2-s*.04,top-s*.035,width+s*.08,s*.24,s*.05);c.fill();
+  c.fillStyle='#48533a';rr(c,cx-width/2,top,width,s*.045,s*.018);c.fill();
+  if(hp){c.fillStyle=ratio>.5?'#b9ca84':ratio>.25?'#d6b376':'#cf8869';rr(c,cx-width/2,top,width*ratio,s*.045,s*.018);c.fill();}
+  c.font='600 '+Math.max(8,s*.15)+'px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillStyle='#f2e7cd';c.fillText(hp+'/'+castleStats().palisadeHp,cx,top+s*.13);
+  c.restore();
 }
 function drawCastleLive(){
   const b = G.path.pts[G.path.pts.length - 1], k = G.castleShake;
@@ -2252,7 +2320,7 @@ const FOES = {
     art(c,r,f){
       const attack=f.siege?Ugolek.attackProgress(f.atk,f.attackAfter||0):null;
       let target;
-      if(f.siege){const gate=siegeFrame().b,q=foePos(f),h=foeHeading(f),dx=(gate.x-q.x)*CELL,dy=(gate.y-q.y)*CELL;
+      if(f.siege){const gate=siegeFrame(f).b,q=foePos(f),h=foeHeading(f),dx=(gate.x-q.x)*CELL,dy=(gate.y-q.y)*CELL;
         target={x:dx*Math.cos(h)+dy*Math.sin(h),y:-dx*Math.sin(h)+dy*Math.cos(h)};}
       Ugolek.draw(c,{size:r*2.8,time:G.t,distance:f.d,seed:f.ph,shadow:false,target,
         state:f.siege?(attack===null?'idle':'attack'):'walk',attack:attack===null?0:attack});
@@ -2268,7 +2336,7 @@ const FOES = {
     art(c,r,f){
       const attack=f.siege?Vihrek.attackProgress(f.atk,f.attackAfter||0):null;
       let target;
-      if(f.siege){const gate=siegeFrame().b,q=foePos(f),h=foeHeading(f),dx=(gate.x-q.x)*CELL,dy=(gate.y-q.y)*CELL;
+      if(f.siege){const gate=siegeFrame(f).b,q=foePos(f),h=foeHeading(f),dx=(gate.x-q.x)*CELL,dy=(gate.y-q.y)*CELL;
         target={x:-dx*Math.sin(h)+dy*Math.cos(h),y:-dx*Math.cos(h)-dy*Math.sin(h)};}
       c.save();c.rotate(Math.PI/2);
       Vihrek.draw(c,{size:r*3.2,time:G.t,distance:f.d,seed:f.ph,shadow:false,target,
@@ -2915,6 +2983,7 @@ function draw(){
     }
   }
   for (const p of G.paths) drawPortal(p.pts[0].x, p.pts[0].y);
+  for (const frame of palisadeFrames()) drawPalisade(ctx,px(frame.b.x),py(frame.b.y),frame.h,true);
   drawCastleLive();
   drawFlag();
   if (G.selected){                                                                                  // радиус выбранной
@@ -3023,28 +3092,34 @@ function towerSummary(t, st, next){
   return rows.join('\n');
 }
 
+const palisadeRepairCost = () => Math.ceil(Math.max(0, castleStats().palisadeHp - (G.castle.palisade || 0)) * 2);
 const castleHealth = () => Number(Math.max(0, G.lives).toFixed(2));
 function castleAttack(st){
   return st.dmg ? 'урон ' + st.dmg + ' · ' + st.rate + '/с · дальность ' + st.range : 'без атаки';
 }
 function refreshCastleSel(){
   const t = G.castle, st = castleStats(), cost = upCost(t);
-  const sig = 'castle:' + t.lvl + ':' + G.lives + ':' + (cost !== null && G.gold >= cost);
+  const sig = 'castle:' + t.lvl + ':' + G.lives + ':' + (t.palisade || 0) + ':' + G.gold + ':' + G.paused + ':' + G.over;
   if (sig === selSig) return;
   selSig = sig;
   $('#selName').textContent = 'Замок · ' + t.lvl + '/5';
-  $('#selStats').textContent = 'Прочность ' + castleHealth() + '/' + st.hp + '\nБроня ' + Math.round(st.armor * 100) + '%\n' + castleAttack(st);
+  $('#selStats').textContent = 'Прочность ' + castleHealth() + '/' + st.hp + '\nЧастокол ' + (t.palisade || 0) + '/' + st.palisadeHp + ' · броня ' + ((t.palisade || 0) > 0 ? Math.round(st.armor * 100) : 0) + '%';
+  const repair = $('#btnRepair'), repairCost = palisadeRepairCost();
+  repair.hidden = !st.palisadeHp || !repairCost;
+  repair.disabled = !repairCost || G.gold < repairCost || G.paused || G.over;
+  repair.textContent = repairCost ? 'Починить частокол · ' + repairCost + ' зол.' : 'Частокол цел';
+  repair.setAttribute('aria-label', repair.textContent);
   const up = $('#btnUp');
   up.disabled = cost === null || G.gold < cost;
-  up.firstChild.textContent = cost === null ? 'Максимум' : 'Укрепить';
+  up.firstChild.textContent = cost === null ? 'Максимум' : t.lvl === 4 ? 'Починить' : 'Частокол';
   $('#upCost').textContent = cost === null ? '5 / 5' : cost + ' зол.';
   up.setAttribute('aria-label', cost === null ? 'Замок достиг максимального разряда 5' : 'Улучшить замок до разряда ' + (t.lvl + 1) + ' за ' + cost + ' золота');
   if (cost !== null){
     const next = CASTLE_TIERS[t.lvl + 1];
     $('#selStats').textContent = 'Прочность ' + castleHealth() + '/' + st.hp + ' → ' +
-      Number(Math.min(next.hp, castleHealth() + next.hp - st.hp).toFixed(2)) + '/' + next.hp +
-      '\nБроня ' + Math.round(st.armor * 100) + ' → ' + Math.round(next.armor * 100) + '%\n' + (st.dmg !== next.dmg ? 'После: ' : '') + castleAttack(next);
-    up.setAttribute('title', next.name + ': ' + castleAttack(next));
+      (next.repair ? next.hp : castleHealth()) + '/' + next.hp +
+      '\nЧастокол ' + (t.palisade || 0) + '/' + st.palisadeHp + (next.palisadeHp > st.palisadeHp ? ' → ' + next.palisadeHp + '/' + next.palisadeHp : '');
+    up.setAttribute('title', next.name + (next.repair ? ': полная починка, прочность 60' : ': броня ' + Math.round(next.armor * 100) + '%'));
   } else {
     up.setAttribute('title', 'Замок полностью улучшен');
   }
@@ -3057,6 +3132,7 @@ function refreshSel(){
   box.classList.toggle('show', !!t);
   const isCastle = !!t && t.type === 'castle';
   box.classList.toggle('castle', isCastle);
+  $('#btnRepair').hidden = !isCastle || !castleStats().palisadeHp || !palisadeRepairCost();
   $('#btnSell').hidden = isCastle;
   if (!t){ selSig = ''; return; }
   if (isCastle){ refreshCastleSel(); return; }
@@ -3110,6 +3186,7 @@ cv.addEventListener('pointerdown', ev => {
   const { x, y } = cellAt(ev);
   if (x < 0 || y < 0 || x >= COLS || y >= ROWS) return;
 
+  if (G.castle.lvl >= 2 && palisadeFrames().some(({b}) => Math.floor(b.x) === x && Math.floor(b.y) === y)){ selectCastle(); return; }
   if (x === G.castle.x && y === G.castle.y){ selectCastle(); return; }
   const hit = G.towers.find(t => t.x === x && t.y === y);
   if (hit){
@@ -3159,14 +3236,25 @@ $('#btnUp').addEventListener('click', () => {
   const t = G.selected; if (!t || G.over || G.paused) return;
   const c = upCost(t);
   if (c === null || G.gold < c){ sndNope(); return; }
-  const from = t.lvl, lives = G.lives;
+  const from = t.lvl, lives = G.lives, palisade = t.palisade || 0;
   G.gold -= c; t.lvl++;
   if (t.type === 'castle'){
-    G.lives = Math.min(castleStats().hp, G.lives + castleStats().hp - CASTLE_TIERS[from].hp);
-    setUndo({ kind:'castleUpgrade', tower:t, from, lives, cost:c, label:'улучшение замка' });
+    G.lives = castleStats().repair ? castleStats().hp : G.lives;
+    if (castleStats().palisadeHp > CASTLE_TIERS[from].palisadeHp) t.palisade = castleStats().palisadeHp;
+    setUndo({ kind:'castleUpgrade', tower:t, from, lives, palisade, cost:c, label:'улучшение замка' });
   } else setUndo({ kind:'upgrade', tower:t, from, cost:c, label:'улучшение «' + TOWERS[t.type].name + '»' });
   sndBuild();
   refreshHud(); refreshSel();
+});
+$('#btnRepair').addEventListener('click', () => {
+  if (G.selected !== G.castle || G.over || G.paused) return;
+  const cost = palisadeRepairCost();
+  if (!cost || G.gold < cost){ sndNope(); return; }
+  const palisade = G.castle.palisade || 0;
+  G.gold -= cost;
+  G.castle.palisade = castleStats().palisadeHp;
+  setUndo({ kind:'palisadeRepair', tower:G.castle, palisade, cost, label:'ремонт частокола' });
+  sndBuild(); refreshHud(); refreshSel();
 });
 $('#btnSell').addEventListener('click', () => {
   const t = G.selected; if (!t || t.type === 'castle' || G.over || G.paused) return;

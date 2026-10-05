@@ -121,15 +121,15 @@ test('each new shot reselects the nearest foe without retargeting a projectile a
 });
 
 
-test('castle upgrades add only new wall health, obey prices/cap and cannot be sold',()=>{
+test('castle palisade preserves health and final upgrade fully repairs, obeys prices/cap and cannot be sold',()=>{
   const h=setup();h.G.selected=h.G.castle;h.G.lives=12;h.G.dmgTaken=8;
-  for(const [level,cost,hp] of [[2,80,20],[3,130,30],[4,190,40],[5,270,52]]){
+  for(const [level,cost,hp] of [[2,80,12],[3,130,12],[4,190,12],[5,270,60]]){
     const gold=h.G.gold;h.$('#btnUp').click();
     assert.equal(h.G.castle.lvl,level);assert.equal(h.G.gold,gold-cost);assert.equal(h.G.lives,hp);
     assert.equal(h.G.dmgTaken,8);assert.equal(h.$('#btnSell').hidden,true);
   }
   const gold=h.G.gold;h.$('#btnUp').click();h.$('#btnSell').click();
-  assert.equal(h.G.castle.lvl,5);assert.equal(h.G.gold,gold);assert.equal(h.G.lives,52);
+  assert.equal(h.G.castle.lvl,5);assert.equal(h.G.gold,gold);assert.equal(h.G.lives,60);
   assert.equal(h.$('#btnUp').disabled,true);
   h.G.selected=h.tower('gun');h.c.refreshSel();assert.equal(h.$('#btnSell').hidden,false);
 });
@@ -143,41 +143,69 @@ test('castle upgrades reject insufficient gold, paused games and completed games
   h.G.over=false;h.$('#btnUp').click();assert.equal(h.G.castle.lvl,2);assert.equal(h.G.gold,0);
 });
 
-test('castle armor reduces real damage at each tier without erasing the star history',()=>{
-  for(const [lvl,damage] of [[1,3],[2,2.7],[3,2.4],[4,2.25],[5,2.1]]){
-    const h=setup();h.G.castle.lvl=lvl;h.c.damageCastle(3);
-    assert.ok(Math.abs(h.G.lives-(20-damage))<1e-9);assert.equal(h.G.dmgTaken,3);
+test('palisade absorbs hits using its own armor and leaks only overflow to the unarmored castle',()=>{
+  for(const [lvl,damage] of [[2,2.7],[3,2.4],[4,2.1],[5,2.1]]){
+    const h=setup();h.G.castle.lvl=lvl;h.G.castle.palisade=10;h.c.damageCastle(3);
+    assert.ok(Math.abs(h.G.castle.palisade-(10-damage))<1e-9);
+    assert.equal(h.G.lives,20);assert.equal(h.G.dmgTaken,0);
   }
-  const h=setup();h.G.castle.lvl=5;h.G.lives=.5;h.c.damageCastle(1);assert.equal(h.G.lives,0);
-  h.c.damageCastle(1);assert.equal(h.G.lives,0);
+  const h=setup();h.G.castle.lvl=4;h.G.castle.palisade=1.4;h.c.damageCastle(5);
+  assert.equal(h.G.castle.palisade,0);assert.equal(h.G.lives,17);assert.equal(h.G.dmgTaken,3);
+  h.c.damageCastle(3);assert.equal(h.G.lives,14);assert.equal(h.G.dmgTaken,6);
+  h.G.lives=.5;h.c.damageCastle(1);assert.equal(h.G.lives,0);
 });
 
-test('castle upgrade can be undone until its first received hit or its first shot',()=>{
-  for(const effect of ['none','hit','shot']){
-    const h=setup();h.G.castle.lvl=3;h.G.selected=h.G.castle;h.G.lives=23;
-    const before=h.G.gold;h.$('#btnUp').click();assert.equal(h.G.lives,33);
-    if(effect==='hit')h.c.damageCastle(1);
-    if(effect==='shot'){h.foe();h.c.fireCastle();}
+test('an enemy already inside the rebuilt palisade still attacks the castle',()=>{
+  const h=setup();h.G.castle.lvl=4;h.G.castle.palisade=50;
+  h.c.damageCastle(3,{palisadeTarget:false});
+  assert.equal(h.G.lives,17);assert.equal(h.G.castle.palisade,50);
+  h.c.damageCastle(3,{palisadeTarget:true});
+  assert.equal(h.G.lives,17);assert.equal(h.G.castle.palisade,47.9);
+});
+
+test('palisade upgrades rebuild it, final castle upgrade preserves its damage, undo restores both pools',()=>{
+  const h=setup();h.G.selected=h.G.castle;h.G.lives=12;
+  for(const [level,hp] of [[2,20],[3,35],[4,50]]){
+    h.$('#btnUp').click();assert.equal(h.G.castle.lvl,level);
+    assert.equal(h.G.castle.palisade,hp);assert.equal(h.G.lives,12);
+    h.G.castle.palisade=0;
+  }
+  h.$('#btnUp').click();assert.equal(h.G.lives,60);assert.equal(h.G.castle.palisade,0);
+  h.c.undoLastAction();assert.equal(h.G.lives,12);assert.equal(h.G.castle.palisade,0);
+});
+
+test('palisade repair works at max tier, obeys funds/state, preserves level and star history, and supports undo',()=>{
+  const h=setup();h.G.selected=h.G.castle;h.G.castle.lvl=5;h.G.castle.palisade=0;h.G.lives=9;h.G.dmgTaken=11;
+  h.G.gold=99;h.c.refreshSel();assert.equal(h.$('#btnRepair').disabled,true);
+  h.$('#btnRepair').click();assert.equal(h.G.gold,99);assert.equal(h.G.castle.palisade,0);
+  h.G.gold=100;h.G.paused=true;h.$('#btnRepair').click();assert.equal(h.G.gold,100);
+  h.G.paused=false;h.G.over=true;h.$('#btnRepair').click();assert.equal(h.G.gold,100);
+  h.G.over=false;h.$('#btnRepair').click();assert.equal(h.G.gold,0);assert.equal(h.G.castle.palisade,50);
+  assert.equal(h.G.castle.lvl,5);assert.equal(h.G.lives,9);assert.equal(h.G.dmgTaken,11);
+  h.c.undoLastAction();assert.equal(h.G.gold,100);assert.equal(h.G.castle.palisade,0);
+  h.$('#btnRepair').click();h.c.damageCastle(1);h.c.undoLastAction();assert.equal(h.G.gold,0);assert.equal(h.G.castle.palisade,49.3);
+  h.G.gold=100;h.$('#btnRepair').click();assert.equal(h.G.gold,98);assert.equal(h.G.castle.palisade,50);
+  h.$('#btnRepair').click();assert.equal(h.G.gold,98);
+});
+
+test('castle upgrades restore exact health on undo and received damage locks undo',()=>{
+  for(const from of [1,2,3,4])for(const hit of [false,true]){
+    const h=setup();h.G.castle.lvl=from;h.G.selected=h.G.castle;h.G.lives=7.25;
+    const before=h.G.gold;h.c.refreshSel();
+    assert.match(h.$('#selStats').textContent,from===4?/7.25\/20 → 60\/60/:/7.25\/20 → 7.25\/20/);
+    h.$('#btnUp').click();assert.equal(h.G.lives,from===4?60:7.25);
+    if(hit)h.c.damageCastle(1);
     h.c.undoLastAction();
-    assert.equal(h.G.castle.lvl,effect==='none'?3:4);
-    assert.equal(h.G.gold,effect==='none'?before:before-190);
-    if(effect==='none')assert.equal(h.G.lives,23);
+    assert.equal(h.G.castle.lvl,hit?from+1:from);
+    if(!hit){assert.equal(h.G.gold,before);assert.equal(h.G.lives,7.25);}
   }
 });
 
-test('castle gains modest ranged attacks only at tiers 4 and 5, targets nearest visible foe',()=>{
+test('castle has no ranged attacks at any tier',()=>{
   for(let lvl=1;lvl<=5;lvl++){
-    const h=setup();h.G.castle.lvl=lvl;
-    h.foe(.55).hidden=true;h.foe(.6).dead=true;h.foe(2);const near=h.foe(.8);
-    h.c.fireCastle();
-    if(lvl<=3){assert.equal(h.G.shots.length,0);continue;}
-    const shot=h.G.shots[0];assert.equal(shot.target,near);assert.equal(shot.kind,'arrow');
-    assert.equal(shot.dmg,lvl===4?6:10);assert.equal(h.G.castle.cool,lvl===4?1/.75:1);
-    h.c.stepShots(.1);assert.equal(h.hits.length,1);assert.equal(h.hits[0].f,near);
-    assert.equal(h.hits[0].kind,'ball','arrows respect the same physical resistances as gun shots');
+    const h=setup();h.G.castle.lvl=lvl;h.foe(.8);h.c.fireCastle();
+    assert.equal(h.G.shots.length,0);
   }
-  const h=setup();h.G.castle.lvl=5;h.foe(5);h.c.fireCastle();assert.equal(h.G.shots.length,0);
-  h.foe(.8);h.G.lives=0;h.c.fireCastle();assert.equal(h.G.shots.length,0);
 });
 
 test('persistent inspection supports direct tower, castle and build selection without closing',()=>{

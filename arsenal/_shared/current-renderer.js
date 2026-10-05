@@ -46,13 +46,13 @@ const TOWER_TIERS = {
 const SELL_BACK = 0.6;
 
 /* Замок развивается на текущей карте, как башни. Цена — за переход в этот
-   разряд. Новые стены добавляют только прирост максимальной прочности. */
+   разряд. Частокол усиливает броню; пятый разряд полностью чинит замок. */
 const CASTLE_TIERS = [null,
-  { name:'Застава', hp:20, armor:0,    dmg:0,  rate:0,    range:0,   cost:0 },
-  { name:'Каменные стены', hp:28, armor:0.10, dmg:0,  rate:0,    range:0,   cost:80 },
-  { name:'Бастион', hp:38, armor:0.20, dmg:0,  rate:0,    range:0,   cost:130 },
-  { name:'Лучники', hp:48, armor:0.25, dmg:6,  rate:0.75, range:2.2, cost:190 },
-  { name:'Баллиста', hp:60, armor:0.30, dmg:10, rate:1,    range:2.6, cost:270 }
+  { name:'Застава', hp:20, armor:0, dmg:0, rate:0, range:0, palisadeHp:0, cost:0 },
+  { name:'Частокол', hp:20, armor:0.10, dmg:0, rate:0, range:0, palisadeHp:20, cost:80 },
+  { name:'Укреплённый частокол', hp:20, armor:0.20, dmg:0, rate:0, range:0, palisadeHp:35, cost:130 },
+  { name:'Усиленный частокол', hp:20, armor:0.30, dmg:0, rate:0, range:0, palisadeHp:50, cost:190 },
+  { name:'Восстановленный замок', hp:60, armor:0.30, dmg:0, rate:0, range:0, palisadeHp:50, cost:270, repair:true }
 ];
 const MAX_CASTLE_LVL = CASTLE_TIERS.length - 1;
 const castleStats = (castle = G.castle) => CASTLE_TIERS[castle.lvl];
@@ -108,32 +108,68 @@ function drawCastle(c, cx, cy){
     c.fillStyle = g; poly(c, [[tx - s * 0.16, cy - s * 0.28], [tx + s * 0.16, cy - s * 0.28], [tx, cy - s * 0.54]]); c.fill();
     c.fillStyle = '#ffdc82'; c.fillRect(tx - s * 0.03, cy - s * 0.1, s * 0.06, s * 0.09);           // окно
   }
-  if (lvl >= 2){
-    c.strokeStyle = lvl >= 3 ? '#e6dfc5' : '#a3ae90'; c.lineWidth = Math.max(1, s * 0.055);
-    for (const side of [-1, 1]){
-      c.beginPath(); c.moveTo(cx + side * s * 0.24, cy - s * 0.11); c.lineTo(cx + side * s * 0.24, cy + s * 0.28); c.stroke();
-    }
-    c.strokeStyle = '#ab9abc'; c.lineWidth = Math.max(1, s * 0.025);
-    for (const yy of [0.03, 0.18]){ c.beginPath(); c.moveTo(cx - s * 0.3, cy + s * yy); c.lineTo(cx + s * 0.3, cy + s * yy); c.stroke(); }
-  }
-  if (lvl >= 3){
-    c.fillStyle = lvl === 5 ? '#ffda68' : '#77cce5';
-    poly(c, [[cx,cy-s*0.23],[cx+s*0.11,cy-s*0.18],[cx+s*0.08,cy-s*0.03],[cx,cy+s*0.03],[cx-s*0.08,cy-s*0.03],[cx-s*0.11,cy-s*0.18]]); c.fill();
-    c.strokeStyle = '#4c394f'; c.lineWidth = Math.max(1, s * 0.022); c.stroke();
-  }
-  if (lvl >= 4){
-    c.save(); c.translate(cx, cy - s * 0.3); c.rotate(G.castle.aim);
-    const size = lvl === 5 ? 0.22 : 0.15;
-    c.strokeStyle = lvl === 5 ? '#ffd878' : '#bb824e'; c.lineWidth = Math.max(1.5, s * 0.055);
-    c.beginPath(); c.moveTo(-s * 0.04,-s * size); c.quadraticCurveTo(s * 0.2,0,-s * 0.04,s * size); c.stroke();
-    c.strokeStyle = '#f2e5c7'; c.lineWidth = Math.max(1, s * 0.02);
-    c.beginPath(); c.moveTo(-s * 0.04,-s * size); c.lineTo(-s * 0.11,0); c.lineTo(-s * 0.04,s * size); c.stroke();
-    c.fillStyle = '#675063'; rr(c,-s*0.15,-s*0.04,s*0.39,s*0.08,s*0.02); c.fill();
-    if (G.castle.flash > 0) muzzleFlash(c,s*0.2,s*0.23*(G.castle.flash/0.14),'rgba(255,255,230,.9)','rgba(255,210,100,.5)');
-    c.restore();
-  }
   c.save(); c.translate(cx,cy+s*0.13); studs(c,s*0.8,lvl); c.restore();
 
+}
+function drawPalisade(c, cx, cy, heading, onBoard = false){
+  if (G.castle.lvl < 2) return;
+  const s=CELL, rank=Math.min(4,G.castle.lvl)-1;
+  const hp=G.castle.palisade||0, ratio=clamp(hp/castleStats().palisadeHp,0,1);
+  // Standing logs stay upright, as do the castle towers. Only their ground line turns.
+  const vx=-Math.sin(heading)*.92+Math.cos(heading)*.54;
+  const vy=Math.cos(heading)*.67+Math.sin(heading)*.12;
+  const point=(t,z=0)=>[cx+vx*t*s,cy+vy*t*s-z*s];
+  const shape=(points,fill,stroke)=>{c.fillStyle=fill;poly(c,points);c.fill();if(stroke){c.strokeStyle=stroke;c.lineWidth=Math.max(.8,s*.016);c.stroke();}};
+  c.save();
+  c.fillStyle='#20301d44';c.beginPath();c.ellipse(cx+s*.065,cy+s*.06,s*.39,s*.20,Math.atan2(vy,vx),0,7);c.fill();
+  const count=rank===1?7:9, posts=[];
+  for(let i=0;i<count;i++){
+    const t=-.48+.96*i/(count-1), end=i===0||i===count-1;
+    const base=point(t), full=(end?.51:.43)+rank*.025+(i%3-1)*.018;
+    const broken=ratio<.5 && (i===2||i===count-3), height=hp?(broken?full*.48:full):.065+(i%3)*.018;
+    posts.push({i,t,base,height,end,broken});
+  }
+  posts.sort((a,b)=>a.base[1]-b.base[1]);
+  for(const post of posts){
+    const {i,base:[x,y],height,end,broken}=post,w=s*(end?.15:.115),top=y-height*s,tip=s*(hp&&!broken?.08:.025);
+    // Earthen sockets and a dark side plane give every timber volume.
+    c.fillStyle='#665d3b';c.beginPath();c.ellipse(x,y+s*.014,w*.7,s*.033,0,0,7);c.fill();
+    const wood=c.createLinearGradient(x-w*.5,0,x+w*.5,0);
+    wood.addColorStop(0,'#684529');wood.addColorStop(.24,'#a57e4d');wood.addColorStop(.6,'#977044');wood.addColorStop(1,'#553d27');
+    shape([[x-w*.5,y],[x-w*.5,top+tip],[x-w*.08,top],[x+w*.5,top+tip*.8],[x+w*.5,y]],wood,'#453622');
+    shape([[x-w*.5,top+tip],[x-w*.08,top],[x+w*.5,top+tip*.8],[x+w*.1,top+tip*1.45]],broken||!hp?'#ae8c60':'#d4ba86');
+    c.strokeStyle='#49332266';c.lineWidth=Math.max(.6,s*.012);c.beginPath();c.moveTo(x-w*.1,top+tip*1.8);c.lineTo(x-w*.19,y-s*.025);c.stroke();
+    if(end&&hp){
+      for(const z of [.16,.30]){c.fillStyle=rank===3?'#505d53':'#c0a374';c.fillRect(x-w*.55,y-z*s,w*1.1,s*.035);}
+    }
+  }
+  if(hp){
+    // Two broad wooden crossbeams. Iron is limited to the fastenings at tier four.
+    const beam=(a,b,z)=>{
+      const A=point(a,z),B=point(b,z),d=s*.035;
+      shape([[A[0],A[1]-d],[B[0],B[1]-d],[B[0],B[1]+d],[A[0],A[1]+d]],'#674b30','#443725');
+      c.strokeStyle='#b79a65';c.lineWidth=Math.max(.8,s*.016);c.beginPath();c.moveTo(A[0],A[1]-d);c.lineTo(B[0],B[1]-d);c.stroke();
+    };
+    for(const z of rank===1?[.15]:[.14,.29]){
+      if(ratio<.5){beam(-.51,-.10,z);beam(.10,.51,z);}else beam(-.51,.51,z);
+      for(const t of [-.44,0,.44]){
+        const p=point(t,z);c.fillStyle=rank===3?'#a6afa0':'#d0b884';c.beginPath();c.arc(p[0],p[1],s*.018,0,7);c.fill();
+      }
+    }
+  }
+  if(!hp||ratio<.5){
+    // A few fallen splinters leave the road visibly open, rather than a second fence.
+    for(let i=0;i<(!hp?5:2);i++){
+      const t=(i-2)*.15,p=point(t);c.save();c.translate(p[0]+s*.10,p[1]+s*.12);c.rotate((i%2?.65:-.45));
+      shape([[-s*.12,-s*.027],[s*.10,-s*.027],[s*.15,0],[s*.09,s*.03],[-s*.12,s*.025]],i%2?'#8c6842':'#b09464','#57412c');c.restore();
+    }
+  }
+  const width=s*.72, rawTop=cy-s*.94, top=onBoard?Math.max(s*.04,rawTop):rawTop;
+  c.fillStyle='#172c22e8';rr(c,cx-width/2-s*.04,top-s*.035,width+s*.08,s*.24,s*.05);c.fill();
+  c.fillStyle='#48533a';rr(c,cx-width/2,top,width,s*.045,s*.018);c.fill();
+  if(hp){c.fillStyle=ratio>.5?'#b9ca84':ratio>.25?'#d6b376':'#cf8869';rr(c,cx-width/2,top,width*ratio,s*.045,s*.018);c.fill();}
+  c.font='600 '+Math.max(8,s*.15)+'px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillStyle='#f2e7cd';c.fillText(hp+'/'+castleStats().palisadeHp,cx,top+s*.13);
+  c.restore();
 }
 function platform(c, s, top, side, k){
   const r = s * 0.34 * k;
@@ -462,9 +498,9 @@ function towerStats(t){
     splash:role.splash ? role.splash[i] : b.splash };
 }
 
-return {GunDesign,TeslaDesign,MortarDesign,FrostDesign,TOWERS,TOWER_TIERS,CASTLE_TIERS,towerStats,draw(c,type,lvl,s,time,aim,hp){
-CELL=s;G.t=time; c.save();
-if(type==='castle'){G.castle={lvl,aim,flash:0};G.lives=CASTLE_TIERS[lvl].hp*hp;drawCastle(c,0,0);}
+return {GunDesign,TeslaDesign,MortarDesign,FrostDesign,TOWERS,TOWER_TIERS,CASTLE_TIERS,towerStats,draw(c,type,lvl,s,time,aim,hp,palisadeHealth=hp,palisadeHeading=0){
+if(type==='castle')s*=.82;CELL=s;G.t=time; c.save();
+if(type==='castle'){G.castle={lvl,aim,flash:0,palisade:CASTLE_TIERS[lvl].palisadeHp*palisadeHealth};G.lives=CASTLE_TIERS[lvl].hp*hp;drawCastle(c,s*.35,0);if(lvl>=2)drawPalisade(c,-s*.65,0,palisadeHeading);}
 else {const t={type,lvl,x:0,aim,cool:0,flash:0,recoil:0};TOWER_ART[type].body(c,s,lvl);TOWER_ART[type].live(c,s,t);}
 c.restore();}};
 })();

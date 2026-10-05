@@ -126,10 +126,39 @@ const Diorama = (() => {
     }
     for(let i=0;i<t.lvl;i++)oval(c,px(x)+(i-(t.lvl-1)/2)*s*.075,py(y)-s*.015,s*.025,s*.023,t.lvl===5?'#ffe3a0':'#ddbd70');
   }
+  function palisade(c,frame){
+    const {b,h}=frame, rank=Math.min(G.castle.lvl,4)-1, hp=G.castle.palisade||0;
+    const ratio=clamp(hp/castleStats().palisadeHp,0,1), count=6+rank;
+    const point=(side,z,depth=0)=>P(b.x-Math.sin(h)*side+Math.cos(h)*depth,b.y+Math.cos(h)*side+Math.sin(h)*depth,z);
+    const posts=Array.from({length:count},(_,i)=>({i,side:-.44+.88*i/(count-1)})).sort((a,b)=>point(a.side,0)[1]-point(b.side,0)[1]);
+    for(const {i,side} of posts){
+      const end=i===0||i===count-1,w=end?.067:.052;
+      const broken=ratio<.5&&(i===2||i===count-3),height=hp?(.44+rank*.025+(end?.06:0))*(broken?.48:1):.065;
+      path(c,[point(side-w,0),point(side-w,height-.075),point(side,height),point(side+w,height-.06),point(side+w,0)],i%2?'#967044':'#a57e4d');
+      path(c,[point(side,height),point(side+w,height-.06),point(side+w,0),point(side+.022,0)],'#63482d');
+      path(c,[point(side-w,height-.075),point(side,height),point(side+w,height-.06),point(side+.01,height-.10)],'#d4ba86');
+      if(end&&hp)for(const z of [.16,.30])line(c,[point(side-w,z,-.01),point(side+w,z,-.01)],rank===3?'#505d53':'#c0a374',CELL*.025);
+    }
+    if(hp)for(const z of rank===1?[.15]:[.14,.29]){
+      for(const [a,b] of ratio<.5?[[-.5,-.1],[.1,.5]]:[[-.5,.5]]){
+        line(c,[point(a,z,-.025),point(b,z,-.025)],'#57412b',CELL*.065);
+        line(c,[point(a,z+.028,-.03),point(b,z+.028,-.03)],'#b79a65',CELL*.015);
+      }
+    }
+    if(!hp||ratio<.5)for(let i=0;i<(!hp?4:2);i++){
+      const side=-.25+i*.16;
+      line(c,[point(side-.10,.035,.09),point(side+.10,.035,i%2?.24:-.03)],'#8d6b44',CELL*.065);
+    }
+    const x=px(b.x),y=py(b.y)-CELL*.76,w=CELL*.84;
+    c.fillStyle='#172c22';rr(c,x-w/2-CELL*.035,y-CELL*.03,w+CELL*.07,CELL*.24,CELL*.04);c.fill();
+    c.fillStyle='#45503a';c.fillRect(x-w/2,y,w,CELL*.055);
+    c.fillStyle=ratio>.5?'#b8cb77':'#e4a367';c.fillRect(x-w/2,y,w*ratio,CELL*.055);
+    c.font='600 '+Math.max(8,CELL*.16)+'px system-ui';c.fillStyle='#f2e7cd';c.textAlign='center';c.fillText(hp+'/'+castleStats().palisadeHp,x,y+CELL*.18);c.textAlign='start';
+  }
   function castle(c,x,y,time){
     if(buildingsReady){
       building(c,3,x,y,1.52);
-      if(G.castle.lvl>=4)barrel(c,x,y-.05,G.castle.aim||0,G.castle.lvl,false,0);
+
       for(let i=0;i<G.castle.lvl;i++)oval(c,px(x)+(i-(G.castle.lvl-1)/2)*CELL*.07,py(y)+CELL*.07,CELL*.024,CELL*.019,'#f1d592');
       if(G.lives<castleStats().hp*.6)line(c,[P(x-.23,y+.03,.55),P(x-.12,y+.03,.32),P(x-.24,y+.03,.15)],'#4a5547',CELL*.025);
       return;
@@ -150,7 +179,7 @@ const Diorama = (() => {
     path(c,[[pole[0],pole[1]-s*.24],[pole[0]+s*.20,pole[1]-s*(.21+.025*Math.sin(time*4))],[pole[0],pole[1]-s*.12]],'#d9ac55');
     if(G.castle.lvl>=2){line(c,[P(x-.29,y+.26,.36),P(x+.29,y+.26,.36)],'#e7d6a2',s*.045);}
     if(G.castle.lvl>=3){path(c,[P(x,y+.27,.55),P(x+.1,y+.27,.46),P(x,y+.27,.31),P(x-.1,y+.27,.46)],'#8bcec2');}
-    if(G.castle.lvl>=4)barrel(c,x,y-.05,G.castle.aim||0,G.castle.lvl,false,0);
+
     if(G.lives<castleStats().hp*.6)line(c,[P(x-.2,y+.26,.53),P(x-.12,y+.26,.32),P(x-.24,y+.26,.15)],'#4a5547',s*.025);
   }
   function eyes(c,x,y,r,heading,time){
@@ -212,10 +241,10 @@ const Diorama = (() => {
     }else fallback(c,0,0,height,heading,f,time);
     c.restore();
     if(f.type==='runner'&&attack!==null){
-      const gate=siegeFrame().b;Vihrek.drawGust(c,{progress:attack,from:{x,y:y-height*.2},to:{x:px(gate.x),y:py(gate.y)-height*.3},size:height*.3,seed:f.ph});
+      const gate=siegeFrame(f).b;Vihrek.drawGust(c,{progress:attack,from:{x,y:y-height*.2},to:{x:px(gate.x),y:py(gate.y)-height*.3},size:height*.3,seed:f.ph});
     }
     if(f.type==='grunt'&&attack!==null){
-      const gate=siegeFrame().b;
+      const gate=siegeFrame(f).b;
       Ugolek.drawShot(c,{progress:attack,from:{x:x+Math.cos(heading)*height*.24,y:y-height*.32},
         to:{x:px(gate.x),y:py(gate.y)-height*.30},size:height*.055});
     }
@@ -333,6 +362,7 @@ const Diorama = (() => {
     const b=G.path.pts[G.path.pts.length-1];
     const items=tour?preview(time):[...G.towers.map(t=>({y:t.y+.5,shadow:()=>shadow(ctx,t.x+.5,t.y+.5,.48,t.type==='gun'||t.type==='mortar'?.9:1.12),draw:()=>tower(ctx,t,time)})),...G.foes.map(f=>({y:foePos(f).y,shadow:()=>{if(f.under)return;const p=foePos(f);ctx.save();if(f.hidden)ctx.globalAlpha=.25;shadow(ctx,p.x,p.y,Math.max(.22,f.r),height(f)/CELL);ctx.restore();},draw:()=>foe(ctx,f,time)}))];
     items.push({y:b.y,shadow:()=>shadow(ctx,b.x,b.y,.82,1.52),draw:()=>castle(ctx,b.x,b.y,time)});
+    if(G.castle.lvl>=2)for(const frame of palisadeFrames())items.push({y:frame.b.y,shadow:()=>{},draw:()=>palisade(ctx,frame)});
     // Ground pass prevents a foreground object's shadow darkening a neighbour.
     for(const item of items)item.shadow();
     items.sort((a,b)=>a.y-b.y);for(const item of items)item.draw();

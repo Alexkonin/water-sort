@@ -96,7 +96,6 @@
   .sel.show + .build-tip{display:none}
   .sel.castle{grid-template-columns:minmax(0,1fr) 70px}
   .sel .info{min-width:0;max-height:100%;overflow:auto;overscroll-behavior:contain;padding:0 3px}
-  .sel .info .repair{min-height:26px;padding:4px 8px;margin-top:4px;font-size:10px}
   .sel .info b{display:block;font-size:12px;font-weight:750;line-height:16px}
   .sel .info small{display:block;font-size:10px;color:var(--muted);line-height:14px;white-space:pre-line}
   .sel button{border:0;border-radius:11px;cursor:pointer;padding:4px 3px;min-height:48px;font-size:10.5px;font-weight:750;line-height:1.35}
@@ -255,7 +254,7 @@
     <div class="palette" id="palette" aria-label="Построить башню"></div>
     <div class="selection-slot">
     <div class="sel" id="sel">
-      <div class="info"><b id="selName">—</b><small id="selStats">—</small><button class="up repair" id="btnRepair" hidden>Починить частокол</button></div>
+      <div class="info"><b id="selName">—</b><small id="selStats">—</small></div>
       <button class="up" id="btnUp">Улучшить<br><span id="upCost">—</span></button>
       <button class="sell" id="btnSell">Продать<br><span id="sellSum">—</span></button>
     </div>
@@ -323,11 +322,11 @@
       <li>За каждого убитого дают золото. На него строй и улучшай башни.</li>
       <li>Башня при каждом выстреле выбирает ближайшего к себе видимого врага в радиусе атаки.</li>
       <li>Коснись поставленной башни — её можно улучшить или продать (вернётся 60%).</li>
-      <li>Кнопка «Отмена» отменяет последнюю постройку, улучшение или продажу. Если башня уже успела выстрелить после постройки или улучшения, откат отключается. Улучшение замка и ремонт частокола нельзя отменить после полученного удара.</li>
+      <li>Кнопка «Отмена» отменяет последнюю постройку, улучшение или продажу. Если башня уже успела выстрелить после постройки или улучшения, откат отключается. Улучшение замка нельзя отменить после полученного удара.</li>
       <li>Все башни можно развить с 1-го до 5-го разряда на любой карте. Перед улучшением видны цена и прибавка к силе.</li>
       <li>Пушка ускоряет стрельбу, мороз сильнее замедляет, молния на старших разрядах цепляет до пяти врагов, мортира увеличивает площадь взрыва. Корпус меняется с каждым разрядом.</li>
       <li>Дошедший до ворот враг не исчезает: он бьёт замок, пока жив. Башни продолжают по нему стрелять. Зато у ворот он открытая мишень — броня не спасает, урон двойной. Держи оборону у ворот.</li>
-      <li>Нажми на замок или показатель его прочности: у него пять разрядов. На уровнях 2–4 улучшается частокол: он снижает входящий урон на 10%, 20% и 30%, но не чинит замок. Частокол перекрывает соседнюю дорожную клетку перед замком. У него своя прочность: 20, 35 и 50. При нескольких подходах пролёты образуют одну защиту с общей прочностью. Пока он цел, принимает удары на себя; после разрушения замок остаётся без брони. Улучшение частокола восстанавливает его, отдельный ремонт стоит 2 золота за единицу прочности. На 5-м уровне замок полностью чинится, а его максимальная прочность растёт с 20 до 60. Улучшения действуют на текущей карте. Кончилась прочность — база прорвана.</li>
+      <li>Нажми на замок или показатель его прочности: у него пять разрядов. На уровнях 2–4 улучшается частокол: он снижает входящий урон на 10%, 20% и 30%, но не чинит замок. Частокол перекрывает соседнюю дорожную клетку перед замком. У него своя прочность: 20, 35 и 50. При нескольких подходах пролёты образуют одну защиту с общей прочностью. Пока он цел, принимает удары на себя; после разрушения замок остаётся без брони. Постройка даёт частоколу 20 прочности, следующие улучшения добавляют по 15 к текущей и максимальной прочности, сохраняя полученный урон. Отдельного ремонта нет. На 5-м уровне замок полностью чинится, а его максимальная прочность растёт с 20 до 60. Улучшения действуют на текущей карте. Кончилась прочность — база прорвана.</li>
       <li><b>Камнеспины</b> гасят слабые удары: по ним бьёт пушка и мортира, а молния почти бесполезна.</li>
       <li>На поздних картах к замку ведёт несколько дорог, а у врагов появляются повадки: одни не мёрзнут, другие уходят под землю, лечат соседей или рассыпаются спорами. При первой встрече игра подскажет, чем брать; все вместе — в бестиарии.</li>
       <li>Три звезды дают, если замок не получил ни одного удара.</li>
@@ -928,12 +927,6 @@ function undoLastAction(){
     G.gold += a.cost;
     G.selected = G.castle; G.armed = null;
     showHint('Улучшение замка отменено');
-  } else if (a.kind === 'palisadeRepair'){
-    if (G.castle !== a.tower){ refreshUndo(); return; }
-    G.castle.palisade = a.palisade;
-    G.gold += a.cost;
-    G.selected = G.castle; G.armed = null;
-    showHint('Ремонт частокола отменён');
   } else if (a.kind === 'sell'){
     if (G.gold < a.gold || !cellFree(a.tower.x, a.tower.y)){
       refreshUndo();
@@ -3092,7 +3085,6 @@ function towerSummary(t, st, next){
   return rows.join('\n');
 }
 
-const palisadeRepairCost = () => Math.ceil(Math.max(0, castleStats().palisadeHp - (G.castle.palisade || 0)) * 2);
 const castleHealth = () => Number(Math.max(0, G.lives).toFixed(2));
 function castleAttack(st){
   return st.dmg ? 'урон ' + st.dmg + ' · ' + st.rate + '/с · дальность ' + st.range : 'без атаки';
@@ -3104,11 +3096,6 @@ function refreshCastleSel(){
   selSig = sig;
   $('#selName').textContent = 'Замок · ' + t.lvl + '/5';
   $('#selStats').textContent = 'Прочность ' + castleHealth() + '/' + st.hp + '\nЧастокол ' + (t.palisade || 0) + '/' + st.palisadeHp + ' · броня ' + ((t.palisade || 0) > 0 ? Math.round(st.armor * 100) : 0) + '%';
-  const repair = $('#btnRepair'), repairCost = palisadeRepairCost();
-  repair.hidden = !st.palisadeHp || !repairCost;
-  repair.disabled = !repairCost || G.gold < repairCost || G.paused || G.over;
-  repair.textContent = repairCost ? 'Починить частокол · ' + repairCost + ' зол.' : 'Частокол цел';
-  repair.setAttribute('aria-label', repair.textContent);
   const up = $('#btnUp');
   up.disabled = cost === null || G.gold < cost;
   up.firstChild.textContent = cost === null ? 'Максимум' : t.lvl === 4 ? 'Починить' : 'Частокол';
@@ -3118,7 +3105,7 @@ function refreshCastleSel(){
     const next = CASTLE_TIERS[t.lvl + 1];
     $('#selStats').textContent = 'Прочность ' + castleHealth() + '/' + st.hp + ' → ' +
       (next.repair ? next.hp : castleHealth()) + '/' + next.hp +
-      '\nЧастокол ' + (t.palisade || 0) + '/' + st.palisadeHp + (next.palisadeHp > st.palisadeHp ? ' → ' + next.palisadeHp + '/' + next.palisadeHp : '');
+      '\nЧастокол ' + (t.palisade || 0) + '/' + st.palisadeHp + (next.palisadeHp > st.palisadeHp ? ' → ' + Number(((t.palisade || 0) + next.palisadeHp - st.palisadeHp).toFixed(2)) + '/' + next.palisadeHp : '');
     up.setAttribute('title', next.name + (next.repair ? ': полная починка, прочность 60' : ': броня ' + Math.round(next.armor * 100) + '%'));
   } else {
     up.setAttribute('title', 'Замок полностью улучшен');
@@ -3132,7 +3119,6 @@ function refreshSel(){
   box.classList.toggle('show', !!t);
   const isCastle = !!t && t.type === 'castle';
   box.classList.toggle('castle', isCastle);
-  $('#btnRepair').hidden = !isCastle || !castleStats().palisadeHp || !palisadeRepairCost();
   $('#btnSell').hidden = isCastle;
   if (!t){ selSig = ''; return; }
   if (isCastle){ refreshCastleSel(); return; }
@@ -3240,21 +3226,11 @@ $('#btnUp').addEventListener('click', () => {
   G.gold -= c; t.lvl++;
   if (t.type === 'castle'){
     G.lives = castleStats().repair ? castleStats().hp : G.lives;
-    if (castleStats().palisadeHp > CASTLE_TIERS[from].palisadeHp) t.palisade = castleStats().palisadeHp;
+    if (castleStats().palisadeHp > CASTLE_TIERS[from].palisadeHp) t.palisade = Number((palisade + castleStats().palisadeHp - CASTLE_TIERS[from].palisadeHp).toFixed(2));
     setUndo({ kind:'castleUpgrade', tower:t, from, lives, palisade, cost:c, label:'улучшение замка' });
   } else setUndo({ kind:'upgrade', tower:t, from, cost:c, label:'улучшение «' + TOWERS[t.type].name + '»' });
   sndBuild();
   refreshHud(); refreshSel();
-});
-$('#btnRepair').addEventListener('click', () => {
-  if (G.selected !== G.castle || G.over || G.paused) return;
-  const cost = palisadeRepairCost();
-  if (!cost || G.gold < cost){ sndNope(); return; }
-  const palisade = G.castle.palisade || 0;
-  G.gold -= cost;
-  G.castle.palisade = castleStats().palisadeHp;
-  setUndo({ kind:'palisadeRepair', tower:G.castle, palisade, cost, label:'ремонт частокола' });
-  sndBuild(); refreshHud(); refreshSel();
 });
 $('#btnSell').addEventListener('click', () => {
   const t = G.selected; if (!t || t.type === 'castle' || G.over || G.paused) return;

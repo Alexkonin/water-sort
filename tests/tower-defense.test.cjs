@@ -163,29 +163,22 @@ test('an enemy already inside the rebuilt palisade still attacks the castle',()=
   assert.equal(h.G.lives,17);assert.equal(h.G.castle.palisade,47.9);
 });
 
-test('palisade upgrades rebuild it, final castle upgrade preserves its damage, undo restores both pools',()=>{
-  const h=setup();h.G.selected=h.G.castle;h.G.lives=12;
-  for(const [level,hp] of [[2,20],[3,35],[4,50]]){
-    h.$('#btnUp').click();assert.equal(h.G.castle.lvl,level);
-    assert.equal(h.G.castle.palisade,hp);assert.equal(h.G.lives,12);
-    h.G.castle.palisade=0;
+test('palisade upgrades add capacity without repairing damage, preview and undo preserve health',()=>{
+  for(const [level,before,after] of [[1,0,20],[2,0,15],[2,8,23],[2,20,35],[3,12.34,27.34],[3,0,15],[4,7,7]]){
+    const h=setup();h.G.selected=h.G.castle;h.G.castle.lvl=level;h.G.castle.palisade=before;h.G.lives=12;
+    const gold=h.G.gold;h.c.refreshSel();
+    if(level<4)assert.ok(h.$('#selStats').textContent.includes(' → '+after+'/'));
+    h.$('#btnUp').click();assert.equal(h.G.castle.lvl,level+1);
+    assert.equal(h.G.castle.palisade,after);assert.equal(h.G.lives,level===4?60:12);
+    h.c.undoLastAction();assert.equal(h.G.castle.lvl,level);assert.equal(h.G.castle.palisade,before);
+    assert.equal(h.G.lives,12);assert.equal(h.G.gold,gold);
   }
-  h.$('#btnUp').click();assert.equal(h.G.lives,60);assert.equal(h.G.castle.palisade,0);
-  h.c.undoLastAction();assert.equal(h.G.lives,12);assert.equal(h.G.castle.palisade,0);
 });
 
-test('palisade repair works at max tier, obeys funds/state, preserves level and star history, and supports undo',()=>{
-  const h=setup();h.G.selected=h.G.castle;h.G.castle.lvl=5;h.G.castle.palisade=0;h.G.lives=9;h.G.dmgTaken=11;
-  h.G.gold=99;h.c.refreshSel();assert.equal(h.$('#btnRepair').disabled,true);
-  h.$('#btnRepair').click();assert.equal(h.G.gold,99);assert.equal(h.G.castle.palisade,0);
-  h.G.gold=100;h.G.paused=true;h.$('#btnRepair').click();assert.equal(h.G.gold,100);
-  h.G.paused=false;h.G.over=true;h.$('#btnRepair').click();assert.equal(h.G.gold,100);
-  h.G.over=false;h.$('#btnRepair').click();assert.equal(h.G.gold,0);assert.equal(h.G.castle.palisade,50);
-  assert.equal(h.G.castle.lvl,5);assert.equal(h.G.lives,9);assert.equal(h.G.dmgTaken,11);
-  h.c.undoLastAction();assert.equal(h.G.gold,100);assert.equal(h.G.castle.palisade,0);
-  h.$('#btnRepair').click();h.c.damageCastle(1);h.c.undoLastAction();assert.equal(h.G.gold,0);assert.equal(h.G.castle.palisade,49.3);
-  h.G.gold=100;h.$('#btnRepair').click();assert.equal(h.G.gold,98);assert.equal(h.G.castle.palisade,50);
-  h.$('#btnRepair').click();assert.equal(h.G.gold,98);
+test('both game pages remove standalone palisade repair',()=>{
+  for(const file of ['tower-defense.html','tower-diorama.html']){
+    assert.doesNotMatch(fs.readFileSync(require('node:path').join(__dirname,'..',file),'utf8'),/btnRepair|palisadeRepair/);
+  }
 });
 
 test('castle upgrades restore exact health on undo and received damage locks undo',()=>{

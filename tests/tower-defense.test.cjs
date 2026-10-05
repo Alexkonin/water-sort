@@ -3,6 +3,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
+const path=require('node:path');
 const vm=require('node:vm');
 const html=fs.readFileSync(require('node:path').join(__dirname,'..',process.env.TOWER_GAME || 'tower-defense.html'),'utf8');
 const script=html.match(/<script>([\s\S]*?)<\/script>/)[1];

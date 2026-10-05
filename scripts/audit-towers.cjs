@@ -10,6 +10,7 @@ const noop=()=>{};const c=vm.createContext({console,Math:seededMath,resetRandom:
 for(const match of html.matchAll(/<script src="(bestiary\/[^?]+)\?/g))Object.assign(c,require(path.join(root,match[1])));
 for(const name of ['writeSave','showHint','sndKill','sndFoe','sndWave','sndShot','sndBoom','sndLeak','flash','refreshHud','refreshPalette','refreshSel','clearUndo','lockUndo','lockUndoForTower','closeAll','layout'])c[name]=noop;
 vm.runInContext(sec('const COLS =','/* ============ сохранение')+sec('function mulberry32(','let terrain =')+sec('function buildPath(','/* ============ canvas')+sec('function eyes(','/* Карточка — публичный договор')+sec('function headingAt(','function meadowPlan(')+sec('function startLevel(','function flash('),c);
+vm.runInContext(fs.readFileSync(path.join(root,'heroes/dobrynya/combat.js'),'utf8'),c);
 c.levelWin=()=>{vm.runInContext('G.over=true;G.win=true',c)};c.levelLose=()=>{vm.runInContext('G.over=true;G.win=false',c)};
 const data=vm.runInContext(`MAPS.map((m,L)=>{const ps=buildPaths(m);return {level:L+1,name:m.name,paths:ps.map(p=>p.len),k:mapFactor(ps),gold:startGold(L),waves:waveCount(L),firstHp:hpScale(L,0,mapFactor(ps)),lastHp:hpScale(L,waveCount(L)-1,mapFactor(ps))}})`,c);
 

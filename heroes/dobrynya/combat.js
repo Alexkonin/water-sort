@@ -23,7 +23,9 @@ const DobrynyaCombat = (() => {
     let best=null,dist=Infinity;for(const f of G.foes){if(!near(h,f,RANGE))continue;const p=foePos(f),d=Math.hypot(p.x-h.x,p.y-h.y);if(d<dist){dist=d;best=f}}
     if(best){const p=foePos(best);h.aim=Math.atan2(p.y-h.y,p.x-h.x);h.target=best;h.anim=DURATION;h.cool=1/stats(h).rate;}
   }
-  function enemy(f,dt){const h=G.hero;if(!h||h.revive||h.route.length||f.siege||f.hidden||f.buff.hold||!FIGHTERS.has(f.type)||!near(h,f,HOLD)){f.heroTarget=false;f.heroAtk=0;return false}
+  function enemy(f,dt){const h=G.hero;const escort=(f.squad&&!f.squadLead)||f.supportTarget;
+    // Ведущий связывает героя; сопровождение и быстрый эшелон идут дальше.
+    if(escort||!h||h.revive||h.route.length||f.siege||f.hidden||f.buff.hold||!FIGHTERS.has(f.type)||!near(h,f,HOLD)){f.heroTarget=false;f.heroAtk=0;return false}
     if(!f.heroTarget){if(G.foes.filter(q=>q!==f&&q.heroTarget&&!q.dead&&!q.hidden).length>=3)return false;f.heroTarget=true;f.heroAtk=.6;f.heroAfter=0}
     const tick=dt*(1-f.slow);f.heroAfter=Math.max(0,(f.heroAfter||0)-tick);f.heroAtk-=tick;
     if(f.heroAtk<=0){f.heroAtk=FOES[f.type].atk;f.heroAfter=.3;const p=foePos(f),angle=Math.atan2(p.y-h.y,p.x-h.x),front=Math.cos(angle-h.aim)>.5;const blocked=front&&!h.anim;h.hp=Math.max(0,h.hp-FOES[f.type].hit*8*Math.max(1,Math.sqrt(f.scale||1))*(1-stats(h).armor)*(blocked?.45:1));if(blocked)h.block=.25;G.fx.push({kind:'slash',x:(p.x+h.x)/2,y:(p.y+h.y)/2,a:angle,t:0,life:.2});if(h.hp<=0){h.revive=10;h.route=[];h.anim=0;h.target=null;release();showHint('Добрыня ранен. Вернётся у замка через 10 секунд');}}

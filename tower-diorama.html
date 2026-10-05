@@ -329,6 +329,7 @@
       <li>Нажми на замок или показатель его прочности: у него пять разрядов. На уровнях 2–4 улучшается частокол: он снижает входящий урон на 10%, 20% и 30%, но не чинит замок. Частокол перекрывает соседнюю дорожную клетку перед замком. У него своя прочность: 20, 35 и 50. При нескольких подходах пролёты образуют одну защиту с общей прочностью. Пока он цел, принимает удары на себя; после разрушения замок остаётся без брони. Постройка даёт частоколу 20 прочности, следующие улучшения добавляют по 15 к текущей и максимальной прочности, сохраняя полученный урон. Отдельного ремонта нет. На 5-м уровне замок полностью чинится, а его максимальная прочность растёт с 20 до 60. Улучшения действуют на текущей карте. Кончилась прочность — база прорвана.</li>
       <li><b>Камнеспины</b> гасят слабые удары: по ним бьёт пушка и мортира, а молния почти бесполезна.</li>
       <li>На поздних картах к замку ведёт несколько дорог, а у врагов появляются повадки: одни не мёрзнут, другие уходят под землю, лечат соседей или рассыпаются спорами. При первой встрече игра подскажет, чем брать; все вместе — в бестиарии.</li>
+      <li>По мере прохождения враги собираются в отряды: тяжёлый боец идёт впереди, поддержка сопровождает его, быстрые враги выходят позже и догоняют группу. Росник выбирает раненого тяжёлого союзника рядом, Гулень — группу бойцов на своей дороге. После гибели ведущего поддержка может найти другую цель. Замедление помогает разорвать строй.</li>
       <li>Три звезды дают, если замок не получил ни одного удара.</li>
     </ol>
     <button class="ghost" id="btnBook">Бестиарий</button>
@@ -980,17 +981,63 @@ function startLevel(i){
 }
 
 /* ============ волны ============ */
-function startWave(){
-  if (G.waveRunning || G.over) return;
-  if (G.wave >= waveCount(G.lv)) return;
-  const groups = waveGroups(G.lv, G.wave);
-  const scale = hpScale(G.lv, G.wave, G.mapK);
-  G.queue = [];
+// Отряды используют существующий бюджет волны: ни новых тел, ни добавочных HP.
+// Первые три волны остаются прежними. Сложные сочетания входят позднее простых.
+function arrangeSquads(queue, L, W, pathCount, paths=[]){
+  if (L < 31 || W < 3) return;
+  const late = W / Math.max(1, waveCount(L) - 1);
+  const limit = 1 + (L >= 64 && late >= .6 ? 1 : 0) + (L >= 97 && late >= .8 ? 1 : 0);
+  const used = new Set();
+  let count = 0;
+  const preferences = {
+    dew: L >= 85 && W % 2 ? ['seedmother','golem','tank','acorn'] : ['golem','tank','acorn','seedmother'],
+    drummer: ['tank','golem','acorn'],
+    lantern: ['golem','tank','acorn']
+  };
+  const kinds = ['dew','drummer','lantern'];
+  const pools = kinds.map(type => queue.filter(q => q.type === type));
+  for (let i = 0; i < Math.max(...pools.map(pool => pool.length)); i++){
+    for (const pool of pools){
+      const support = pool[i];
+      if (!support || used.has(support)) continue;
+      const type = support.type;
+      if (count >= limit) break;
+      const lead = preferences[type].map(t => queue.find(q => q.type === t && !used.has(q))).find(Boolean);
+      if (!lead) continue;
+      const squad = `${W}:${count}`;
+      const pi = (W + count) % Math.max(1, pathCount);
+      Object.assign(lead, { squad, pi, squadLead:true });
+      Object.assign(support, { squad, pi, at:lead.at + .5 });
+      used.add(lead); used.add(support);
+      // Только в конце поздних уровней — лекарь и барабан в одном отряде.
+      if (L >= 85 && late >= .75 && type === 'dew'){
+        const second = queue.find(q => q.type === 'drummer' && !used.has(q));
+        if (second){ Object.assign(second, { squad, pi, at:lead.at + .85 }); used.add(second); }
+      }
+      // Небольшой быстрый эшелон догоняет тяжёлого примерно в первой трети пути.
+      // Берём бойцов из этой же волны, сохраняя её награды и численность.
+      if (W >= 5){
+        const supportSpeed=Math.min(FOES[lead.type].sp, ...queue.filter(q=>q.squad===squad&&!q.squadLead).map(q=>FOES[q.type].sp));
+        const meeting=Math.max(4,Math.min(9,(paths[pi]?.len || 20)*.35));
+        const raiders=queue.filter(q=>!used.has(q)&&['runner','swarm'].includes(q.type)).slice(0,L>=97&&late>=.8?2:1);
+        for (const [j, raider] of raiders.entries()){
+          const delay=meeting/supportSpeed-meeting/FOES[raider.type].sp;
+          Object.assign(raider,{squad,pi,squadRole:'raider',at:lead.at+Math.max(1.2,delay)+j*.35});
+          used.add(raider);
+        }
+      }
+      count++;
+    }
+  }
+}
+
+function waveQueue(groups, scale, L, W, pathCount, paths=[]){
+  const queue = [];
   let t = 0;
   for (const gr of groups){
     if (FOES[gr.type].mix) continue;
     for (let k = 0; k < gr.n; k++){
-      G.queue.push({ type: gr.type, at: t, scale });
+      queue.push({ type: gr.type, at: t, scale });
       t += gr.gap;
     }
     t += 0.7;                                  // пауза между группами
@@ -1001,10 +1048,76 @@ function startWave(){
   let m = 0;
   for (const gr of groups){
     if (!FOES[gr.type].mix) continue;
-    for (let k = 0; k < gr.n; k++) G.queue.push({ type: gr.type, at: t * (k + 0.5 + (m % 3) * 0.17) / gr.n, scale });
+    for (let k = 0; k < gr.n; k++) queue.push({ type: gr.type, at: t * (k + 0.5 + (m % 3) * 0.17) / gr.n, scale });
     m++;
   }
-  G.queue.sort((a, b) => a.at - b.at);
+  arrangeSquads(queue, L, W, pathCount, paths);
+  return queue.sort((a, b) => a.at - b.at);
+}
+
+// Поддержка оценивает только видимых соседей на своей дороге, раз в 1,5 с.
+// Уже выбранная цель получает преимущество, чтобы лечение не вызывало метаний.
+function chooseSupportTargets(live, dt){
+  const heavy = new Set(['tank','golem','acorn','seedmother','boss']);
+  for (const f of live){
+    if (!['dew','drummer','lantern'].includes(f.type)) continue;
+    const valid = o => o && o !== f && !o.dead && !o.siege && !o.hidden && !o.buff.hold &&
+      heavy.has(o.type) && o.pi === f.pi && Math.abs(o.d-f.d) <= 2.4 &&
+      Math.hypot(o.pos.x-f.pos.x,o.pos.y-f.pos.y) <= 2.4;
+    if (f.dead || f.siege || f.hidden || f.buff.hold){ f.supportTarget=null; continue; }
+    f.supportThink = Math.max(0,(f.supportThink || 0)-dt);
+    if (!valid(f.supportTarget)){ f.supportTarget=null; f.supportThink=0; f.supportWait=0; }
+    if (f.supportThink > 0) continue;
+    f.supportThink=1.5;
+    const score = o => {
+      const distance=Math.abs(o.d-f.d);
+      let value=2-distance*.35;
+      if(f.type==='dew')value += 4*(1-o.hp/o.hpMax) + Math.min(1,o.hpMax/300);
+      if(f.type==='drummer')value += Math.min(4,live.filter(n=>n!==f&&!n.dead&&!n.siege&&!n.hidden&&n.pi===o.pi&&Math.abs(n.d-o.d)<1.1).length)*.65;
+      if(o.squad===f.squad && f.squad)value+=.4;
+      if(o===f.supportTarget)value+=.8;
+      return value;
+    };
+    let best=f.supportTarget, value=best?score(best):-Infinity;
+    for(const o of live){ if(!valid(o))continue; const next=score(o); if(next>value){best=o;value=next;} }
+    if(f.supportTarget!==best)f.supportWait=0;
+    f.supportTarget=best;
+  }
+}
+
+// Скорости снимком до движения: поддержка следует цели, быстрые прорываются.
+// Нет движения назад, телепортации или ускорения сверх собственной скорости.
+function prepareSquadMovement(live, dt=0){
+  const escorts = new Map();
+  for (const f of live){
+    f.marchSpeed = f.sp * f.buff.sp * (1 - f.slow);
+    if (f.dead || f.siege || f.buff.hold || f.heroTarget || f.squadRole==='raider') continue;
+    const lead = f.supportTarget || (f.squad && !f.squadLead && live.find(o=>o.squad===f.squad && o.squadLead));
+    if (!lead || lead.dead || lead.siege || lead.hidden || lead.buff.hold || lead.pi!==f.pi || Math.abs(f.d-lead.d)>=1.5) { f.supportWait=0; continue; }
+    if (lead.heroTarget){
+      f.supportWait=(f.supportWait || 0)+dt;
+      // Коротко поддерживает бой, затем продолжает прорыв: вечной стоянки нет.
+      if(f.supportWait>3)continue;
+    }else f.supportWait=0;
+    if(!escorts.has(lead))escorts.set(lead,[]);
+    escorts.get(lead).push(f);
+  }
+  for (const [lead, members] of escorts){
+    const speed=lead.heroTarget?0:Math.min(lead.marchSpeed,...members.map(f=>f.sp*f.buff.sp));
+    if(!lead.heroTarget)lead.marchSpeed=speed;
+    for(const f of members){
+      const gap=lead.heroTarget ? .8 : .55;
+      f.marchSpeed=Math.min(f.marchSpeed,Math.max(0,speed+(lead.d-f.d-gap)*2));
+    }
+  }
+}
+
+function startWave(){
+  if (G.waveRunning || G.over) return;
+  if (G.wave >= waveCount(G.lv)) return;
+  const groups = waveGroups(G.lv, G.wave);
+  const scale = hpScale(G.lv, G.wave, G.mapK);
+  G.queue = waveQueue(groups, scale, G.lv, G.wave, G.paths.length, G.paths);
   G.spawnT = 0;
   G.waveRunning = true;
   G.wave++;
@@ -1020,6 +1133,7 @@ function spawn(type, scale, opts){
   const hp = Math.round(b.hp * scale);
   const skin = b.skins ? bossSkin(G.lv) : 0;
   const f = {
+    squad:o.squad, squadLead:!!o.squadLead, squadRole:o.squadRole,
     type, d: o.d || 0, pi: o.pi !== undefined ? o.pi : G.spawnIdx++ % G.paths.length, hp, hpMax: hp, sp: b.sp, armor: b.armor, scale,
     slow: 0, slowT: 0, r: b.r, color: b.skins ? b.skins[skin].color : b.color, bounty: b.bounty, skin, step: 0,
     hit: 0, ph: Math.random() * 6.283,
@@ -1245,7 +1359,7 @@ function update(dt){
     G.spawnT += dt;
     while (G.queue.length && G.queue[0].at <= G.spawnT){
       const q = G.queue.shift();
-      spawn(q.type, q.scale);
+      spawn(q.type, q.scale, q);
     }
   }
 
@@ -1261,12 +1375,14 @@ function update(dt){
     for (const [k, p] of b.tr) if (TRAITS[k].tick) TRAITS[k].tick(f, p, dt);
     f.hidden = b.tr.some(([k, p]) => TRAITS[k].hidden && TRAITS[k].hidden(f, p));
   }
+  chooseSupportTargets(live,dt);
+  prepareSquadMovement(live,dt);
   for (const f of live){
     if (f.slowT > 0){ f.slowT -= dt; if (f.slowT <= 0) f.slow = 0; }
     if (f.hit > 0) f.hit -= dt;
     if (!f.siege){
       if (f.buff.heal > 0 && f.hp < f.hpMax) f.hp = Math.min(f.hpMax, f.hp + f.hpMax * f.buff.heal * dt);
-      if (!f.buff.hold) f.d += f.sp * f.buff.sp * (1 - f.slow) * dt;
+      if (!f.buff.hold) f.d += (f.squad || f.supportTarget ? f.marchSpeed : f.sp * f.buff.sp * (1 - f.slow)) * dt;
       // тяжёлая поступь: облачко пыли на каждом шаге
       if (FOES[f.type].dust){
         const st = Math.floor(stepPhase(f));

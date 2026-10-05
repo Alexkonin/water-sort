@@ -11,18 +11,29 @@ function draw(c,o={}){
  const r=(o.size||100)/3.2,p=pose(o),target=o.target?{x:o.target.x/r,y:o.target.y/r}:{x:2.2,y:0};
  c.save();c.translate(o.x||0,o.y||0);c.rotate(o.heading||0);c.scale(r,r);
  if(o.shadow!==false)oval(c,-.2,.15,1.05,.48,'#24364518');
- // Soft separate wisps trail a stable mask; no feet, walking bob, or solid outline.
+ // Airy wisps surround a dense core that stays readable at map scale.
  for(let j=0;j<3;j++)for(let i=4;i>=0;i--){const lag=p.flow-i*.42-j;cloud(c,-.25-i*.27*(1-p.coil*.3),Math.sin(lag)*(.11+i*.035)+(j-1)*.22,.52-i*.045,.36-i*.022,.20+(4-i)*.025)}
- cloud(c,.04,0,.87*(1-p.coil*.15),.69*(1+p.coil*.10),.7);
+ c.save();c.scale(1-p.coil*.15,1+p.coil*.10);
+ const core=c.createLinearGradient(0,-.64,0,.65);
+ core.addColorStop(0,'#e2f0f3');core.addColorStop(.48,'#b6cfdc');core.addColorStop(1,'#607e94');
+ c.beginPath();c.moveTo(.62,-.35);
+ c.bezierCurveTo(.24,-.78,-.43,-.64,-.64,-.35);
+ c.bezierCurveTo(-.88,-.38,-1.02,-.17,-1.19,-.08);
+ c.bezierCurveTo(-.97,.02,-.85,.01,-.72,.06);
+ c.bezierCurveTo(-.93,.20,-1.01,.33,-1.13,.35);
+ c.bezierCurveTo(-.77,.49,-.53,.29,-.38,.43);
+ c.bezierCurveTo(.03,.77,.69,.49,.62,-.35);c.closePath();
+ c.fillStyle=core;c.fill();c.strokeStyle='#4d687d99';c.lineWidth=.055;c.stroke();c.restore();
+ cloud(c,.04,0,.87*(1-p.coil*.15),.69*(1+p.coil*.10),.30);
  cloud(c,-.16,-.23,.58,.39,.35);
  // A curved mist lash grows out of the body, reaches the gate, and dissolves.
  if(p.reach>0){const ex=.4+(target.x-.4)*p.reach,ey=target.y*p.reach;
   for(let i=0;i<10;i++){const u=i/9;cloud(c,.4+(ex-.4)*u,ey*u-Math.sin(u*Math.PI)*.22,.19+(1-u)*.12,.12+(1-u)*.07,.45)}
  }
- c.save();c.translate(.50-p.coil*.09,p.sway);c.rotate(-p.sway*.6);
+ c.save();c.translate(.47-p.coil*.09,p.sway);c.rotate(-p.sway*.6);c.scale(1.4,1.24);
  const mask=c.createLinearGradient(-.19,-.43,.30,.43);mask.addColorStop(0,'#fff6df');mask.addColorStop(.5,'#dddccd');mask.addColorStop(1,'#9ea99f');
- c.beginPath();c.moveTo(-.02,-.43);c.bezierCurveTo(.34,-.38,.39,.21,.05,.43);c.bezierCurveTo(-.24,.39,-.31,-.30,-.02,-.43);c.closePath();c.fillStyle=mask;c.fill();
- for(const side of [-1,1]){oval(c,.075,side*.17,.034,.096,'#414f56');oval(c,.084,side*.17,.018,.073,'#25353e')}
+ c.beginPath();c.moveTo(-.02,-.43);c.bezierCurveTo(.34,-.38,.39,.21,.05,.43);c.bezierCurveTo(-.24,.39,-.31,-.30,-.02,-.43);c.closePath();c.fillStyle=mask;c.fill();c.strokeStyle='#40596b';c.lineWidth=.045;c.stroke();
+ for(const side of [-1,1])oval(c,.075,side*.18,.055,.112,'#203340');
  c.restore();
  if(p.impact){const k=1-p.impact;for(let i=0;i<5;i++){const a=i*TAU/5;cloud(c,target.x+Math.cos(a)*k*.45,target.y+Math.sin(a)*k*.45,.22,.20,p.impact*.45)}}
  c.restore();

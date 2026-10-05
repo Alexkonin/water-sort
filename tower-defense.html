@@ -252,6 +252,7 @@
   <div class="wave-track" aria-hidden="true"><span id="waveProgress"></span></div>
   <footer>
     <div class="build-heading">Башни<span>Выберите для постройки</span></div>
+    <button class="ghost" id="btnHero" style="margin:6px 0;padding:8px 12px">Нанять Добрыню · 80 зол.</button>
     <div class="control-slot">
     <div class="palette" id="palette" aria-label="Построить башню"></div>
     <div class="selection-slot">
@@ -336,6 +337,7 @@
       <li>Нажми на замок или показатель его прочности: у него пять разрядов. Сначала растут прочность и броня, на 4-м появляются лучники, на 5-м — баллиста. Новые стены добавляют прочность, но не чинят весь прежний урон. Улучшения действуют на текущей карте. Кончилась прочность — база прорвана.</li>
       <li><b>Камнеспины</b> гасят слабые удары: по ним бьёт пушка и мортира, а молния почти бесполезна.</li>
       <li>На поздних картах к замку ведёт несколько дорог, а у врагов появляются повадки: одни не мёрзнут, другие уходят под землю, лечат соседей или рассыпаются спорами. При первой встрече игра подскажет, чем брать; все вместе — в бестиарии.</li>
+      <li>Добрыня: найми за 80 золота, выбери героя и коснись любой клетки дороги — он дойдёт туда по дороге. Атакует всех видимых врагов рядом. До трёх наземных бойцов останавливаются драться; остальные, быстрые и летающие идут к замку. Щит снижает урон спереди между ударами. Улучшения до уровней 2 и 3 стоят 100 и 180 золота. После поражения возвращается у замка через 10 секунд; между волнами лечится. На новой карте героя нужно нанять заново.</li>
       <li>Три звезды дают, если замок не получил ни одного удара.</li>
     </ol>
     <button class="ghost" id="btnBook">Бестиарий</button>
@@ -353,6 +355,8 @@
   </div>
 </div>
 
+<script src="heroes/dobrynya/animations/dobrynya-topdown.js?v=126"></script>
+<script src="heroes/dobrynya/combat.js?v=126"></script>
 <script>
 /* ============================================================
    ЗАЩИТА БАШНИ
@@ -982,6 +986,7 @@ function startLevel(i){
   G.blocked = new Set((m.blocked || []).map(([x, y]) => x + ',' + y));
   const gate = G.path.pts[G.path.pts.length - 1];
   G.castle = { type:'castle', lvl:1, x:gate.x - 0.5, y:gate.y - 0.5, cool:0, flash:0, aim:-Math.PI / 2 };
+  G.hero = null;
   G.castleShake = 0; G.smokeT = 0;
   G.lives = START_LIVES; G.gold = startGold(G.lv); G.dmgTaken = 0; G.reached = 0;
   G.wave = 0; G.waveRunning = false; G.queue = []; G.spawnT = 0;
@@ -1082,7 +1087,7 @@ function foePos(f){
   return { x: clamp(b.x + Math.cos(h) * lx - Math.sin(h) * oy, 0.35, COLS - 0.35),
            y: clamp(b.y + Math.sin(h) * lx + Math.cos(h) * oy, 0.35, ROWS - 0.35) };
 }
-const foeHeading = f => f.siege ? siegeFrame().h : headingAt(G.paths[f.pi], f.d);
+const foeHeading = f => f.heroTarget && G.hero ? Math.atan2(G.hero.y-foePos(f).y,G.hero.x-foePos(f).x) : f.siege ? siegeFrame().h : headingAt(G.paths[f.pi], f.d);
 function startSiege(f){
   f.siege = true; f.d = G.paths[f.pi].len;
   const used = new Set(G.foes.filter(x => x.siege && !x.dead && x !== f).map(x => x.slot));
@@ -1177,7 +1182,7 @@ function towerStats(t){
     chain:role.chain ? role.chain[i] : b.chain,
     splash:role.splash ? role.splash[i] : b.splash };
 }
-const upCost = t => t.type === 'castle'
+const upCost = t => t.type === 'hero' ? DobrynyaCombat.upCost(t) : t.type === 'castle'
   ? (t.lvl >= MAX_CASTLE_LVL ? null : CASTLE_TIERS[t.lvl + 1].cost)
   : (t.lvl >= MAX_TW_LVL ? null : Math.round(TOWERS[t.type].cost * UPGRADES[t.lvl + 1].cost));
 const sellSum = t => {
@@ -1301,6 +1306,8 @@ function update(dt){
     }
   }
 
+  DobrynyaCombat.update(dt);
+
   // враги. Три прохода, а не один: позиции и чистые бафы для всех, потом
   // особенности (ауры пишут бафы соседям), потом движение. В одном проходе
   // сосед, стоящий в списке раньше фонарника, двигался бы до его хода и не
@@ -1322,6 +1329,7 @@ function update(dt){
     f.evade=Math.max(0,(f.evade||0)-dt);
     if (!f.siege){
       if (f.buff.heal > 0 && f.hp < f.hpMax) f.hp = Math.min(f.hpMax, f.hp + f.hpMax * f.buff.heal * dt);
+      if (DobrynyaCombat.enemy(f, dt)) continue;
       if (!f.buff.hold) f.d += f.sp * f.buff.sp * (1 - f.slow) * dt;
       // тяжёлая поступь: облачко пыли на каждом шаге
       if (FOES[f.type].dust){
@@ -2801,7 +2809,14 @@ function drawFoe(f){
   for (const [k, q] of b.tr) if (TRAITS[k].under && TRAITS[k].under(f, q, ctx, r, CELL)) body = true;
   const covered=mistCoverAccuracy(f)<1;
   ctx.save();if(covered)ctx.globalAlpha*=.58;
-  if (!body) b.art(ctx, r, f);
+  if (!body && f.heroTarget && f.type === 'mole'){
+    const p=foePos(f), distance=Math.hypot(G.hero.x-p.x,G.hero.y-p.y);
+    const attack=Kroten.attackProgress(f.heroAtk,f.heroAfter||0);
+    Kroten.draw(ctx,{size:r*3,time:G.t,state:attack===null?'idle':'attack',attack:attack||0,target:{x:Math.max(0,distance-.3)*CELL,y:0}});
+  } else if (!body){
+    if(f.heroTarget && f.heroAfter>0)ctx.rotate(-f.heroAfter*.6);
+    b.art(ctx,r,f);
+  }
   ctx.restore();
   if(covered)Tumannik.drawAura(ctx,{radius:r*1.4,time:G.t});
   for (const [k, q] of b.tr) if (TRAITS[k].over) TRAITS[k].over(f, q, ctx, r, CELL);
@@ -2966,13 +2981,14 @@ function draw(){
   for (const p of G.paths) drawPortal(p.pts[0].x, p.pts[0].y);
   drawCastleLive();
   drawFlag();
-  if (G.selected){                                                                                  // радиус выбранной
+  if (G.selected && G.selected.type !== 'hero'){                                                     // радиус выбранной
     const st = G.selected.type === 'castle' ? castleStats() : towerStats(G.selected), cx = px(G.selected.x + 0.5), cy = py(G.selected.y + 0.5);
     ctx.fillStyle = 'rgba(255,210,63,.08)'; ctx.strokeStyle = 'rgba(255,210,63,.45)'; ctx.lineWidth = Math.max(1, CELL * 0.03);
     ctx.beginPath(); ctx.arc(cx, cy, (st.range || 0.65) * CELL, 0, 7); ctx.fill(); ctx.stroke();
   }
   for (const t of G.towers) drawTower(t);
   for (const f of G.foes) drawFoe(f);
+  DobrynyaCombat.draw();
   for (const s of G.shots) drawShot(s);
   for (const e of G.fx) drawFx(e);
 }
@@ -2997,6 +3013,7 @@ function frame(now){
 
 /* ============ показатели и панели ============ */
 function refreshHud(){
+  DobrynyaCombat.hud();
   $('#lives').textContent = castleHealth() + '/' + castleStats().hp;
   $('#castleRank').textContent = G.castle.lvl + '/5 ↗';
   $('#stLives').setAttribute('aria-label', 'Замок, разряд ' + G.castle.lvl + ', прочность ' + castleHealth() + ' из ' + castleStats().hp + '. Открыть улучшения');
@@ -3109,9 +3126,10 @@ function refreshSel(){
   box.classList.toggle('show', !!t);
   const isCastle = !!t && t.type === 'castle';
   box.classList.toggle('castle', isCastle);
-  $('#btnSell').hidden = isCastle;
+  $('#btnSell').hidden = isCastle || !!t && t.type === 'hero';
   if (!t){ selSig = ''; return; }
   if (isCastle){ refreshCastleSel(); return; }
+  if (t.type === 'hero'){ selSig = ''; DobrynyaCombat.panel(); return; }
   const uc0 = upCost(t);
   /* Панель зовётся каждый кадр (иначе кнопка «Улучшить» не разблокируется сама,
      когда золото накопилось во время волны), поэтому пишем в DOM только при
@@ -3152,6 +3170,8 @@ cv.addEventListener('pointerdown', ev => {
   const { x, y } = cellAt(ev);
   if (x < 0 || y < 0 || x >= COLS || y >= ROWS) return;
 
+  if(G.selected === G.hero && G.hero && G.roadKey.has(x+','+y)){DobrynyaCombat.move(x,y);return;}
+  if(G.hero && !G.hero.revive && Math.hypot(x+.5-G.hero.x,y+.5-G.hero.y)<.7){DobrynyaCombat.select();return;}
   if (x === G.castle.x && y === G.castle.y){ selectCastle(); return; }
   const hit = G.towers.find(t => t.x === x && t.y === y);
   if (hit){
@@ -3196,6 +3216,7 @@ $('#palette').addEventListener('click', ev => {
 
 $('#btnUp').addEventListener('click', () => {
   const t = G.selected; if (!t || G.over || G.paused) return;
+  if(t.type === 'hero'){if(DobrynyaCombat.upgrade(t)){sndBuild();refreshHud();refreshSel();}else sndNope();return;}
   const c = upCost(t);
   if (c === null || G.gold < c){ sndNope(); return; }
   const from = t.lvl, lives = G.lives;
@@ -3208,7 +3229,7 @@ $('#btnUp').addEventListener('click', () => {
   refreshHud(); refreshSel();
 });
 $('#btnSell').addEventListener('click', () => {
-  const t = G.selected; if (!t || t.type === 'castle' || G.over || G.paused) return;
+  const t = G.selected; if (!t || t.type === 'castle' || t.type === 'hero' || G.over || G.paused) return;
   const gold = sellSum(t), index = G.towers.indexOf(t);
   setUndo({ kind:'sell', tower:{ ...t }, index, gold, label:'продажу «' + TOWERS[t.type].name + '»' });
   G.gold += gold;
@@ -3225,6 +3246,7 @@ function selectCastle(){
   refreshSel(); refreshPalette(); sndTap();
 }
 $('#stLives').addEventListener('click', selectCastle);
+$('#btnHero').addEventListener('click', () => DobrynyaCombat.select());
 $('#btnGo').addEventListener('click', () => { startWave(); });
 $('#btnUndo').addEventListener('click', undoLastAction);
 $('#btnSpd').addEventListener('click', () => {

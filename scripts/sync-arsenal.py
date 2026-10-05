@@ -3,12 +3,14 @@ import hashlib,json
 root=Path(__file__).resolve().parents[1]; src=(root/'tower-defense.html').read_text(); base=root/'arsenal'
 def section(a,b):
  s=src.index(a); return src[s:src.index(b,s)]
+gun=(root/'arsenal/gun/design/storybook-v04/gun.js').read_text()
+gun="const StorybookGun = (() => {\n"+gun[gun.index("'use strict';"):gun.index('root.StorybookGun=')]+"return {body,live};\n})();\n"
 renderer='''/* Snapshot of tower-defense.html, 2026-10-04. Refresh with scripts/sync-arsenal.py. */
 window.ArsenalCurrent = (() => {
 let CELL=100; const G={t:0,castle:{lvl:1,aim:-.5,flash:0},lives:20};
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-'''+section('const TOWERS =','/* ============ враги')+section('function rr(', 'function gloss(')+section('function drawCastle(', 'function drawCastleLive(')+section('function platform(', 'function buildSprites(')+section('function towerStats(t){','const upCost =')+'''
-return {GunDesign,TeslaDesign,MortarDesign,FrostDesign,TOWERS,TOWER_TIERS,CASTLE_TIERS,towerStats,draw(c,type,lvl,s,time,aim,hp,palisadeHealth=hp,palisadeHeading=0){
+'''+gun+section('const TOWERS =','/* ============ враги')+section('function rr(', 'function gloss(')+section('function drawCastle(', 'function drawCastleLive(')+section('function platform(', 'function buildSprites(')+section('function towerStats(t){','const upCost =')+'''
+return {storybook:{gun:StorybookGun,frost:FrostDesign,tesla:TeslaDesign,mortar:MortarDesign},GunDesign,TeslaDesign,MortarDesign,FrostDesign,TOWERS,TOWER_TIERS,CASTLE_TIERS,towerStats,draw(c,type,lvl,s,time,aim,hp,palisadeHealth=hp,palisadeHeading=0){
 if(type==='castle')s*=.82;CELL=s;G.t=time; c.save();
 if(type==='castle'){G.castle={lvl,aim,flash:0,palisade:CASTLE_TIERS[lvl].palisadeHp*palisadeHealth};G.lives=CASTLE_TIERS[lvl].hp*hp;drawCastle(c,s*.35,0);if(lvl>=2)drawPalisade(c,-s*.65,0,palisadeHeading);}
 else {const t={type,lvl,x:0,aim,cool:0,flash:0,recoil:0};TOWER_ART[type].body(c,s,lvl);TOWER_ART[type].live(c,s,t);}

@@ -1,0 +1,46 @@
+const FrostDesign = (() => {
+  const names=['Осколок','Кристалл','Иней','Метель','Вечная зима'];
+  const height=lvl=>.34+(lvl-1)*.045;
+  function shard(c,x,y,w,h){
+    c.fillStyle='#def5e7';poly(c,[[x,y-h],[x-w,y-h*.27],[x,y+.035]]);c.fill();
+    c.fillStyle='#72bead';poly(c,[[x,y-h],[x+w,y-h*.27],[x,y+.035]]);c.fill();
+    c.strokeStyle='#366c60';c.lineWidth=.011;poly(c,[[x,y-h],[x-w,y-h*.27],[x,y+.035],[x+w,y-h*.27]]);c.stroke();
+    c.strokeStyle='#f3fff29c';c.lineWidth=.011;c.beginPath();c.moveTo(x-w*.4,y-h*.40);c.lineTo(x-w*.15,y-h*.72);c.stroke();
+  }
+  function body(c,s,lvl,sil=false){
+    c.save();if(sil)c.filter='brightness(0) invert(.85)';
+    if(!sil)platform(c,s,['#a5b799','#5b7964'],'#2c493b',.8+(lvl-1)*.035);
+    c.scale(s,s);
+    // Each new crystal is retained in later ranks, at the same attachment.
+    if(lvl>=4)for(const side of [-1,1])shard(c,side*.115,-.10,.05,lvl===5?.37:.31);
+    c.fillStyle='#3c6554';c.beginPath();c.ellipse(0,.07,.21,.105,0,0,7);c.fill();
+    c.fillStyle='#a3c4ac';c.beginPath();c.ellipse(0,.03,.21,.085,0,0,7);c.fill();
+    if(lvl>=2)for(const side of [-1,1]){
+      c.strokeStyle='#587c65';c.lineWidth=.048;c.beginPath();c.moveTo(side*.1,.08);c.lineTo(side*.215,.02);c.stroke();
+      shard(c,side*.215,.01,lvl===2?.045:.063,lvl===2?.16:lvl===3?.285:lvl===4?.31:.34);
+    }
+    shard(c,0,.025,.10+(lvl-1)*.009,height(lvl));
+    // Three restrained stone clasps hold the crystal above the socket.
+    for(const side of [-1,1]){
+      c.fillStyle=lvl>=3?'#91ae8d':'#7e9e81';poly(c,[[side*.065,.055],[side*.115,.055],[side*.12,-.065],[side*.075,-.10]]);c.fill();
+      c.strokeStyle='#395c48';c.lineWidth=.011;c.stroke();
+    }
+    if(lvl>=3){c.strokeStyle='#c3dcc5';c.lineWidth=.018;c.beginPath();c.ellipse(0,.052,.185,.07,0,0,Math.PI);c.stroke();}
+    if(lvl===5){
+      // Ice crown grows outside the existing socket and never hides the shards.
+      c.fillStyle='#95d0bc';poly(c,[[-.27,.075],[-.30,-.04],[-.22,.01],[-.13,.135],[0,.175],[.13,.135],[.22,.01],[.30,-.04],[.27,.075],[.15,.195],[0,.225],[-.15,.195]]);c.fill();
+      c.strokeStyle='#daf3df';c.lineWidth=.014;c.stroke();
+    }
+    c.restore();
+  }
+  function live(c,s,t,time=0){
+    const y=-height(t.lvl)*.47,p=.5+.5*Math.sin(time*2),flash=Math.max(0,Math.min(1,(t.flash||0)/.07));
+    c.save();c.scale(s,s);const g=c.createRadialGradient(0,y,0,0,y,.21+flash*.06);
+    g.addColorStop(0,`rgba(192,244,224,${.10+p*.07+flash*.32})`);g.addColorStop(1,'rgba(153,225,202,0)');
+    c.fillStyle=g;c.beginPath();c.arc(0,y,.21+flash*.06,0,7);c.fill();
+    if(flash){c.strokeStyle=`rgba(226,255,244,${flash})`;c.lineWidth=.02;c.beginPath();c.ellipse(0,.02,.18+(1-flash)*.2,.07+(1-flash)*.07,0,0,7);c.stroke();}
+    c.restore();
+  }
+  return {body,live,names,height};
+})();
+

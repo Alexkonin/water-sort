@@ -1,0 +1,49 @@
+const MortarDesign = (() => {
+  const names=['Ядро','Гром','Осадная','Вулкан','Метеор'];
+  function body(c,s,lvl,sil=false){
+    if(sil)return;
+    platform(c,s,['#a5a58a','#646c51'],'#303f30',.9+(lvl-1)*.035);
+    c.save();c.scale(s,s);
+    if(lvl>=4)for(const x of [-1,1])for(const y of [-1,1]){
+      c.fillStyle=lvl===5?'#c7b780':'#8e9875';rr(c,x*.26-.045,y*.24-.055,.09,.11,.015);c.fill();
+      c.strokeStyle='#3b4d37';c.lineWidth=.018;c.stroke();
+    }
+    c.fillStyle='#334631';c.beginPath();c.arc(0,0,.205,0,7);c.fill();
+    c.strokeStyle='#999f79';c.lineWidth=.025;c.stroke();c.restore();
+  }
+  function live(c,s,t,sil=false){
+    const lvl=t.lvl,aim=t.aim??-Math.PI/2,L=.32+lvl*.025,w=.27+lvl*.022,back=-(t.recoil||0)*.09;
+    c.save();c.scale(s,s);c.rotate(aim);if(sil)c.filter='brightness(0) invert(.85)';
+    const metal=c.createLinearGradient(0,-w*.65,0,w*.65);metal.addColorStop(0,'#d4ccaa');metal.addColorStop(.4,'#979875');metal.addColorStop(1,'#475b40');
+    const band=c.createLinearGradient(0,-w,0,w);band.addColorStop(0,'#dfb58a');band.addColorStop(1,'#896749');
+    const box=(x,y,ww,h,r,col)=>{c.fillStyle=col;rr(c,x,y,ww,h,r);c.fill();c.strokeStyle='#34452f';c.lineWidth=.018;c.stroke();};
+    // Distinct support architecture, not a row of rank-count rings.
+    box(-.22,-.18,.39,.36,.09,metal);
+    if(lvl>=3){
+      c.fillStyle='#7e8865';poly(c,[[-.26,-.16],[-.13,-.215],[.12,-.215],[.20,-.16],[.20,.16],[.12,.215],[-.13,.215],[-.26,.16]]);c.fill();c.strokeStyle='#34452f';c.lineWidth=.018;c.stroke();
+    }
+    if(lvl===5)for(const side of [-1,1]){
+      c.fillStyle='#b9b48b';poly(c,[[.08,side*.24],[.30,side*.24],[.34,side*.32],[-.12,side*.32],[-.21,side*.25]]);c.fill();c.strokeStyle='#3b4e37';c.lineWidth=.018;c.stroke();
+    }
+    // The same angular support rails remain exposed at every rank from II.
+    // Armour grows between them; later ranks thicken and reinforce the rails.
+    if(lvl>=2)for(const side of [-1,1]){
+      const y=side*.28,h=lvl>=4?.10:.07,end=lvl===5?.29:lvl>=4?.25:.20;
+      box(-.14,side>0?.17:-.28,.065,.11,.006,metal);
+      c.fillStyle=metal;poly(c,[[-.23,y-h/2],[end-.035,y-h/2],[end,y],[end-.035,y+h/2],[-.23,y+h/2],[-.255,y]]);c.fill();
+      c.strokeStyle='#34452f';c.lineWidth=.018;c.stroke();
+      if(lvl>=4){c.strokeStyle=lvl===5?'#e3c48c':'#b9bd95';c.lineWidth=.016;c.beginPath();c.moveTo(-.19,y);c.lineTo(end-.055,y);c.stroke();}
+    }
+    // Wide, short barrel and a deep open mouth keep it distinct from the gun.
+    box(back-.11,-w/2,L+.11,w,w*.30,metal);
+    box(back+.015,-w*.57,.075,w*1.14,.017,band);
+    if(lvl>=3)box(back+L*.53,-w*.55,.06,w*1.1,.015,band);
+    c.fillStyle=band;c.beginPath();c.ellipse(back+L,0,w*.32,w*.61,0,0,7);c.fill();c.strokeStyle='#4c5138';c.lineWidth=.018;c.stroke();
+    c.fillStyle='#1d2a20';c.beginPath();c.ellipse(back+L+.007,0,w*.225,w*.45,0,0,7);c.fill();
+    c.strokeStyle='#7b7956';c.lineWidth=.012;c.beginPath();c.ellipse(back+L+.007,0,w*.225,w*.45,0,-Math.PI/2,Math.PI/2);c.stroke();
+    if(t.flash>0&&!sil)muzzleFlash(c,L,.36*(t.flash/.07),'rgba(255,245,217,.95)','rgba(240,175,93,.65)');
+    c.restore();
+  }
+  return {body,live,names,muzzle:lvl=>.32+lvl*.025};
+})();
+

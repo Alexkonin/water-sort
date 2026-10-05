@@ -13,9 +13,14 @@
   function leaf(c){
     c.beginPath();c.moveTo(0,.42);
     c.bezierCurveTo(-.64,.24,-.77,-.25,-.60,-.67);
-    c.bezierCurveTo(-.54,-1.12,.18,-1.40,.60,-1.24);
-    c.bezierCurveTo(.31,-1.21,.25,-.94,.49,-.70);
-    c.bezierCurveTo(.77,-.30,.64,.02,.47,.16);
+    c.lineTo(-.52,-.53);c.lineTo(-.49,-.77);c.lineTo(-.40,-.66);
+    c.quadraticCurveTo(-.52,-.79,-.27,-1.04);
+    c.bezierCurveTo(-.02,-1.28,.36,-1.40,.60,-1.24);
+    c.quadraticCurveTo(.69,-1.15,.51,-1.02);
+    c.quadraticCurveTo(.51,-1.25,.35,-1.20);
+    c.quadraticCurveTo(.18,-1.10,.39,-.83);
+    c.quadraticCurveTo(.52,-.69,.52,-.48);
+    c.lineTo(.70,-.62);c.lineTo(.64,-.31);c.lineTo(.73,-.36);c.quadraticCurveTo(.69,-.08,.47,.16);
     c.quadraticCurveTo(.22,.42,0,.42);c.closePath();
   }
   function wind(c,t,p,front){
@@ -64,7 +69,7 @@
       c.strokeStyle=i?'#c5e9da':'#f0ffe1';c.lineWidth=size*(i?.07:.10);
       c.beginPath();c.ellipse(-i*size*.25,0,size*.20*spread,size*.65*spread,0,-1.35,4.35);c.stroke();
     }
-    for(let i=0;i<2;i++){
+    for(let i=0;i<4;i++){
       const a=i*TAU/4+k*5;c.globalAlpha=(p.impact||1)*.9;
       oval(c,Math.cos(a)*size*.4*spread,Math.sin(a)*size*.72*spread,size*.13,size*.045,color,a);
     }
@@ -83,16 +88,18 @@
     const heading=o.heading,back=heading!==undefined&&Math.sin(heading)<-.45;
     const side=heading===undefined?0:Math.cos(heading);
     c.scale(heading===undefined?1:.65+.35*Math.abs(Math.sin(heading)),1);
-    leaf(c);material(c,p.mid,p.light,p.dark,0,-.43,.69,.89);
-    leaf(c);c.save();c.clip();
+    const g=c.createLinearGradient(-.5,-1,.6,.4);g.addColorStop(0,p.light);g.addColorStop(.48,p.mid);g.addColorStop(1,p.dark);
+    leaf(c);c.fillStyle=g;c.fill();
+    c.save();c.clip();
+    const glow=c.createRadialGradient(-.23,-.65,0,-.23,-.65,.83);glow.addColorStop(0,'#ffffdb44');glow.addColorStop(1,'#ffffdb00');c.fillStyle=glow;c.fillRect(-1,-1.5,2,2);
     c.lineCap='round';c.strokeStyle=p.vein;c.lineWidth=.018;
     c.beginPath();c.moveTo(0,.40);c.bezierCurveTo(-.04,-.10,-.21,-.73,.35,-1.25);c.stroke();
-    for(const s of [-1,1])for(let i=0;i<2;i++){
-      const y=.08-i*.45;c.beginPath();c.moveTo(-.035,y);c.quadraticCurveTo(s*.23,y-.02,s*(.45-i*.045),y-.26);c.globalAlpha=.36;c.lineWidth=.012;c.stroke();
+    for(const s of [-1,1])for(let i=0;i<4;i++){
+      const y=.18-i*.26;c.beginPath();c.moveTo(-.035,y);c.quadraticCurveTo(s*.23,y-.02,s*(.45-i*.045),y-.26);c.globalAlpha=.36;c.lineWidth=.012;c.stroke();
     }
     c.restore();
     // Thick curled side edges give the leaf depth without a hard outline.
-    for(const s of [-1,1]){c.save();c.scale(s,1);c.beginPath();c.moveTo(.07,.34);c.bezierCurveTo(.57,.18,.70,-.17,.61,-.48);c.quadraticCurveTo(.55,-.25,.36,-.20);c.quadraticCurveTo(.58,-.13,.40,.10);c.quadraticCurveTo(.28,.27,.07,.34);c.fillStyle=s===1?p.dark:p.mid;c.fill();c.restore();}
+    for(const s of [-1,1]){c.save();c.scale(s,1);c.beginPath();c.moveTo(.07,.34);c.bezierCurveTo(.57,.18,.70,-.17,.61,-.48);c.quadraticCurveTo(.55,-.25,.36,-.20);c.quadraticCurveTo(.58,-.13,.40,.10);c.quadraticCurveTo(.28,.27,.07,.34);const fold=c.createLinearGradient(.30,-.2,.61,.06);fold.addColorStop(0,p.dark);fold.addColorStop(.55,p.mid);fold.addColorStop(1,p.edge);c.fillStyle=fold;c.fill();c.restore();}
     if(!back){
       // Wind seen through two irregular openings: no human face or expression.
       const pulse=.88+.12*Math.sin(t*3+seed);
@@ -113,11 +120,7 @@
     c.save();c.translate(0,.88);c.scale(1/motion.stretch,motion.stretch);c.translate(0,-.88);
     wind(c,motion.wind,p,true);c.restore();c.restore();
   }
-
-// Broad material planes clipped to the silhouette; no surface gradients.
-function material(c,base,light,shade,x,y,rx,ry){c.fillStyle=base;c.fill();c.save();c.clip();c.beginPath();c.ellipse(x+rx*.26,y+ry*.48,rx,ry,0,0,Math.PI*2);c.fillStyle=shade;c.fill();c.beginPath();c.ellipse(x-rx*.14,y-ry*.22,rx*.94,ry*.77,0,0,Math.PI*2);c.fillStyle=light;c.fill();c.restore();}
-
-function draw(c,o={}){c.save();const scale=(o.size||100)/2.5;c.scale(scale,scale);c.translate(0,.14);render(c,o);c.restore();if(o.state==='attack'&&!o.externalGust)drawGust(c,{progress:o.attack,from:{x:0,y:(o.size||100)*.25},to:o.target||{x:0,y:-(o.size||100)*.85},size:(o.size||100)*.19,seed:o.seed});}
+  function draw(c,o={}){c.save();const scale=(o.size||100)/2.5;c.scale(scale,scale);c.translate(0,.14);render(c,o);c.restore();if(o.state==='attack'&&!o.externalGust)drawGust(c,{progress:o.attack,from:{x:0,y:(o.size||100)*.25},to:o.target||{x:0,y:-(o.size||100)*.85},size:(o.size||100)*.19,seed:o.seed});}
   function drawDiorama(c,o={}){c.save();const scale=(o.height||100)/2.5;c.translate(0,-scale*1.08);c.scale(scale,scale);render(c,{...o,shadow:false});c.restore();}
-  root.Vihrek={draw,drawDiorama,season,palettes,pose,attackPose,attackProgress,drawGust,ATTACK_DURATION,CONTACT,RELEASE};
+  root.VihrekBefore={draw,drawDiorama,season,palettes,pose,attackPose,attackProgress,drawGust,ATTACK_DURATION,CONTACT,RELEASE};
 })(typeof window!=='undefined'?window:globalThis);

@@ -382,7 +382,7 @@ const FOES = {
     art(c,r,f){
       const attack=f.siege?Tumannik.attackProgress(f.atk,f.attackAfter||0):null;
       const target=undefined;
-      Tumannik.draw(c,{size:r*3.2,time:G.t,distance:f.d,seed:f.ph,shadow:false,target,
+      Tumannik.draw(c,{size:r*3.2,viewHeading:f.viewHeading||0,time:G.t,distance:f.d,seed:f.ph,shadow:false,target,
         state:f.siege?(attack===null?'idle':'attack'):'walk',attack});
     }
   },

@@ -7,10 +7,6 @@ function pose(o={}){const a=clamp(o.attack||0),phase=(o.distance||0)*9+(o.seed||
 function oval(c,x,y,rx,ry,col,a=0){c.beginPath();c.ellipse(x,y,rx,ry,a,0,TAU);c.fillStyle=col;c.fill()}
 function poly(c,p,col){c.beginPath();p.forEach((q,i)=>i?c.lineTo(...q):c.moveTo(...q));c.closePath();c.fillStyle=col;c.fill()}
 function mound(c,t,amount=1){oval(c,0,0,1.1,.76,'#493625');for(let i=0;i<15;i++){const a=i*2.399,d=.20+(i%4)*.20;oval(c,Math.cos(a)*d,Math.sin(a)*d*.75,.17+(i%3)*.025,.12,['#665039','#82684a','#a1845b'][i%3],a)}for(let i=0;i<7;i++){const a=i*2.399,u=((t*1.5+i*.17)%1+1)%1;oval(c,Math.cos(a)*(1+u*.23),Math.sin(a)*(.65+u*.2),.03+.02*(i%2),.035,'#8b6e48')}}
-
-// Broad material planes clipped to the silhouette; no surface gradients.
-function material(c,base,light,shade,x,y,rx,ry){c.fillStyle=base;c.fill();c.save();c.clip();c.beginPath();c.ellipse(x+rx*.26,y+ry*.48,rx,ry,0,0,Math.PI*2);c.fillStyle=shade;c.fill();c.beginPath();c.ellipse(x-rx*.14,y-ry*.22,rx*.94,ry*.77,0,0,Math.PI*2);c.fillStyle=light;c.fill();c.restore();}
-
 function draw(c,o={}){
  const r=(o.size||90)/3,p=pose(o),target=o.target?{x:o.target.x/r,y:o.target.y/r}:{x:2,y:0};
  c.save();c.translate(o.x||0,o.y||0);c.rotate(o.heading||0);c.scale(r,r);c.lineCap='round';
@@ -29,16 +25,17 @@ function draw(c,o={}){
   c.beginPath();c.moveTo(.02,side*.43);c.quadraticCurveTo(.23,side*.65,x,y);c.strokeStyle='#554432';c.lineWidth=.42;c.stroke();
   c.beginPath();c.moveTo(.10,side*.44);c.quadraticCurveTo(.26,side*.59,x,y);c.strokeStyle='#806347';c.lineWidth=.27;c.stroke();
  }
- const fur='#735642';oval(c,-.16,0,.91,.72,fur);material(c,fur,'#b18b62','#4c4236',-.16,0,.91,.72);
+ const fur=c.createRadialGradient(-.25,-.35,.05,0,0,1.1);fur.addColorStop(0,'#806347');fur.addColorStop(.55,'#503d30');fur.addColorStop(1,'#30291f');oval(c,-.16,0,.91,.72,fur);
+ for(let i=0;i<27;i++){const a=i*2.399,d=.20+(i%5)*.12,x=-.17+Math.cos(a)*d,y=Math.sin(a)*d*.85;poly(c,[[x+.09,y-.055],[x-.10,y],[x+.08,y+.055],[x+.04,y]],['#91715155','#241f1955','#af8a5633'][i%3]);}
  for(const side of [-1,1]){
   const x=.35+p.stroke*side+.30*p.strike,y=side*(.62-.20*p.strike);
   oval(c,x,y,.34,.26,'#554432',side*.35);oval(c,x-.03,y-.04,.28,.22,'#a08660',side*.35);
-
+  for(let j=0;j<4;j++)poly(c,[[x-.23+j*.1,y-.10],[x-.16+j*.1,y-.20],[x-.08+j*.1,y-.06],[x-.15+j*.1,y+.03]],j%2?'#8d7350':'#b2976b');
   for(let j=-1;j<=1;j++){poly(c,[[x+.18,y+j*.13-.05],[x+.45,y+j*.12],[x+.24,y+j*.13+.05]],'#e9d5ad');}
  }
- oval(c,.56,0,.46,.40,fur);material(c,fur,'#b99570','#554b3c',.56,0,.46,.4);oval(c,.92,0,.21,.16,'#be8279');oval(c,.98,-.04,.075,.035,'#e1ada0');
+ oval(c,.56,0,.43,.38,fur);oval(c,.92,0,.21,.16,'#be8279');oval(c,.98,-.04,.075,.035,'#e1ada0');
  for(const side of [-1,1])oval(c,.68,side*.24,.065,.024,'#c4a15d',side*-.45);
- for(const [x,y,s] of [[-.55,-.23,.22],[-.3,-.38,.18]]){oval(c,x,y,s,s*.65,'#65794b');oval(c,x-.03,y-.035,s*.75,s*.43,'#a6b877');}
+ for(const [x,y,s] of [[-.50,-.25,.16],[-.34,.21,.13],[-.08,-.38,.12]]){oval(c,x,y,s,s*.65,'#405033');for(let i=0;i<5;i++)oval(c,x+Math.cos(i*2.4)*s*.5,y+Math.sin(i*2.4)*s*.35,s*.40,s*.30,['#667543','#8a914e'][i%2]);}
  poly(c,[[-.28,-.12],[-.50,-.13],[-.46,-.02],[-.31,.05]],'#af8753');
  c.restore();
  // Foreground soil covers the sinking body rather than making it transparent.
@@ -47,5 +44,5 @@ function draw(c,o={}){
  if(p.impact>0){c.globalAlpha*=p.impact;for(let i=0;i<6;i++){const a=i*2.4,d=(1-p.impact)*.35;oval(c,target.x+Math.cos(a)*d,target.y+Math.sin(a)*d,.04,.035,'#c3a675')}}
  c.restore();
 }
-root.Kroten={draw,pose,attackProgress,ATTACK_DURATION,CONTACT,DIG_DURATION,EMERGE_DURATION};
+root.KrotenBefore={draw,pose,attackProgress,ATTACK_DURATION,CONTACT,DIG_DURATION,EMERGE_DURATION};
 })(typeof module==='object'?module.exports:window);

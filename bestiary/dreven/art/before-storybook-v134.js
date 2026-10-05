@@ -12,16 +12,12 @@ function pose(o={}){
  return {roots,reach,brace,roll:o.state==='walk'?Math.sin(phase*TAU)*.018:0,impact:active&&a>=CONTACT?Math.max(0,1-(a-CONTACT)/.2):0};
 }
 function oval(c,x,y,rx,ry,color,a=0){c.beginPath();c.ellipse(x,y,rx,ry,a,0,TAU);c.fillStyle=color;c.fill()}
-
-// Broad material planes clipped to the silhouette; no surface gradients.
-function material(c,base,light,shade,x,y,rx,ry){c.fillStyle=base;c.fill();c.save();c.clip();c.beginPath();c.ellipse(x+rx*.26,y+ry*.48,rx,ry,0,0,Math.PI*2);c.fillStyle=shade;c.fill();c.beginPath();c.ellipse(x-rx*.14,y-ry*.22,rx*.94,ry*.77,0,0,Math.PI*2);c.fillStyle=light;c.fill();c.restore();}
-
 function draw(c,o={}){
  const r=(o.size||100)/3,p=pose(o),t=o.time||0,h=o.viewHeading??o.heading??0;
  const sh=Math.sin(h),ch=Math.cos(h),zTop=1.28-p.brace*.08;
  // Near-orthographic overhead view: height adds only a shallow rim shadow.
  const project=(x,y,z=0)=>[(x*ch-y*sh),(x*sh+y*ch)-z*.12];
- const path=(points,color,stroke)=>{c.beginPath();points.forEach((q,i)=>{const v=project(...q);i?c.lineTo(...v):c.moveTo(...v)});c.closePath();c.fillStyle=color;c.fill();if(false&&stroke){c.strokeStyle=stroke;c.lineWidth=.018;c.stroke()}};
+ const path=(points,color,stroke)=>{c.beginPath();points.forEach((q,i)=>{const v=project(...q);i?c.lineTo(...v):c.moveTo(...v)});c.closePath();c.fillStyle=color;c.fill();if(stroke){c.strokeStyle=stroke;c.lineWidth=.018;c.stroke()}};
  const dot=(x,y,z,rx,ry,col)=>{const v=project(x,y,z);oval(c,v[0],v[1],rx,ry,col)};
  c.save();c.translate(o.x||0,o.y||0);if(o.viewHeading!==undefined)c.rotate(-h);c.scale(r,r);c.lineCap='round';c.lineJoin='round';
  if(o.shadow!==false)oval(c,0,.1,1.24,1.10,'#14211855');
@@ -43,7 +39,7 @@ function draw(c,o={}){
     return {x:start.x+dx*u+px*bulge,y:start.y+dy*u+py*bulge,w:w*Math.pow(1-u,1.45)*(1+.10*Math.sin(u*17))};});
    path([...points.map(q=>[q.x+px*q.w,q.y+py*q.w,.06]),...points.slice().reverse().map(q=>[q.x-px*q.w,q.y-py*q.w,.06])],'#765338','#453323');
    // Long wood fibres continue from trunk to the tapered tips.
-   for(const [offset,col,line] of [[-.25,'#bd9b69',.075]]){c.beginPath();points.forEach((q,i)=>{const v=project(q.x+px*q.w*offset,q.y+py*q.w*offset,.07);i?c.lineTo(...v):c.moveTo(...v)});c.strokeStyle=col;c.lineWidth=line;c.stroke()}
+   for(const [offset,col,line] of [[-.32,'#b28a54',.032],[.28,'#392d2399',.023],[0,'#d1a56866',.016]]){c.beginPath();points.forEach((q,i)=>{const v=project(q.x+px*q.w*offset,q.y+py*q.w*offset,.07);i?c.lineTo(...v):c.moveTo(...v)});c.strokeStyle=col;c.lineWidth=line;c.stroke()}
   }
   const end={x,y};
   // Forks are shorter than the parent, irregular and flattened against the soil.
@@ -55,25 +51,25 @@ function draw(c,o={}){
  }
  roots.slice().sort((a,b)=>a.depth-b.depth).forEach(rootLeg);
  // Solid trunk: uneven vertical bark slabs surround a raised cut surface.
- const N=12,ring=Array.from({length:N},(_,i)=>{const a=i*TAU/N;return {a,rad:.76+.055*Math.sin(i*2.6),z:zTop+.07*Math.sin(i*3.1)}});
+ const N=20,ring=Array.from({length:N},(_,i)=>{const a=i*TAU/N;return {a,rad:.76+.055*Math.sin(i*2.6),z:zTop+.07*Math.sin(i*3.1)}});
  for(let i=0;i<N;i++){const a=ring[i],b=ring[(i+1)%N];if(Math.sin((a.a+Math.PI/N)+h)<0)continue;
   const shade=Math.sin(a.a+h-.5),color=shade>.7?'#9b7850':shade>.1?'#785b3c':'#513e2d';
   path([[Math.cos(a.a)*a.rad,Math.sin(a.a)*a.rad,a.z],[Math.cos(b.a)*b.rad,Math.sin(b.a)*b.rad,b.z],[Math.cos(b.a)*.82,Math.sin(b.a)*.82,.24],[Math.cos(a.a)*.82,Math.sin(a.a)*.82,.18]],color,'#3e3024');
-
+  for(let j=0;j<2;j++){const ang=a.a+.07+j*.1,v1=project(Math.cos(ang)*.80,Math.sin(ang)*.80,.35),v2=project(Math.cos(ang)*a.rad,Math.sin(ang)*a.rad,a.z-.08);c.beginPath();c.moveTo(...v1);c.lineTo((v1[0]+v2[0])/2+.025,(v1[1]+v2[1])/2);c.lineTo(...v2);c.strokeStyle=j?'#b08c5955':'#31271f99';c.lineWidth=j?.022:.035;c.stroke()}
  }
  const top=ring.map(k=>[Math.cos(k.a)*k.rad,Math.sin(k.a)*k.rad,k.z]);
- path(top,'#be9f71');material(c,'#b89767','#dec391','#876840',0,-.15,.83,.8);
+ const wood=c.createLinearGradient(-.7,-1.8,.7,-.7);wood.addColorStop(0,'#d4b487');wood.addColorStop(.55,'#b48b5c');wood.addColorStop(1,'#8b633e');path(top,wood,'#59412b');
  // Off-centre, weathered growth rings: broad grain instead of a concentric target.
- for(let j=1;j<=3;j++){const pts=Array.from({length:81},(_,i)=>{const a=i*TAU/80,rad=j*.19*(1+.055*Math.sin(a*3+.5)+.022*Math.sin(a*8+j*.15));return project(-.075+Math.cos(a)*rad, .035+Math.sin(a)*rad*.93,zTop+.006)});c.beginPath();pts.forEach((v,i)=>i?c.lineTo(...v):c.moveTo(...v));c.strokeStyle=j%3?'#67472a80':'#e1bd8477';c.lineWidth=.026;c.stroke()}
+ for(let j=1;j<=9;j++){const pts=Array.from({length:81},(_,i)=>{const a=i*TAU/80,rad=j*.073*(1+.055*Math.sin(a*3+.5)+.022*Math.sin(a*8+j*.15));return project(-.075+Math.cos(a)*rad, .035+Math.sin(a)*rad*.93,zTop+.006)});c.beginPath();pts.forEach((v,i)=>i?c.lineTo(...v):c.moveTo(...v));c.strokeStyle=j%3?'#67472a80':'#e1bd8477';c.lineWidth=j%3?.012:.020;c.stroke()}
  // Split grain and forked drying cracks, fixed to the wood as it turns.
- for(const [a,len] of [[1.92,.29],[3.7,.32]]){
+ for(const [a,len] of [[.83,.28],[1.92,.39],[2.86,.27],[3.7,.42],[4.78,.31],[5.58,.22]]){
   const ca=Math.cos(a),sa=Math.sin(a),px=-sa,py=ca;
   const edge={x:ca*.73,y:sa*.73},mid={x:ca*(.73-len*.55)+px*.027,y:sa*(.73-len*.55)+py*.027},tip={x:ca*(.73-len),y:sa*(.73-len)};
   path([[edge.x+px*.022,edge.y+py*.022,zTop+.01],[mid.x+px*.010,mid.y+py*.010,zTop+.01],[tip.x,tip.y,zTop+.01],[mid.x-px*.014,mid.y-py*.014,zTop+.01],[edge.x-px*.009,edge.y-py*.009,zTop+.01]],'#493322bb');
   path([[mid.x,mid.y,zTop+.012],[mid.x+px*.08-ca*.06,mid.y+py*.08-sa*.06,zTop+.012],[mid.x+px*.013,mid.y+py*.013,zTop+.012]],'#5b3c27aa');
  }
  // Asymmetric broken bark plates, with bright torn wood on their inner edges.
- for(const [a,width,height] of [[1.28,.50,.18],[2.65,.48,.22],[4.67,.48,.19]]){
+ for(const [a,width,height] of [[.55,.22,.13],[1.28,.36,.23],[2.08,.20,.12],[2.65,.38,.28],[3.45,.28,.19],[4.03,.22,.12],[4.67,.35,.24],[5.38,.22,.17]]){
   const b=a+width,pt=(angle,rad,z)=>[Math.cos(angle)*rad,Math.sin(angle)*rad,z];
   path([pt(a,.68,zTop),pt(a-.03,.79,zTop+height),pt(a+width*.38,.84,zTop+height*.8),pt(b,.78,zTop+height*1.1),pt(b+.025,.67,zTop)],'#63472f','#3d3024');
   path([pt(a,.68,zTop),pt(a+width*.33,.73,zTop+height*.65),pt(b,.69,zTop+height*.35),pt(b+.025,.67,zTop)],'#b18b58');
@@ -90,8 +86,8 @@ function draw(c,o={}){
  for(const [a,size] of [[1.20,.16],[2.7,.20],[3.9,.11],[4.8,.18],[5.4,.09]]){
   const cx=Math.cos(a)*.73,cy=Math.sin(a)*.73;
   dot(cx,cy,zTop+.03,size*1.15,size*.82,'#35482b');
-  dot(cx-.035,cy-.04,zTop+.10,size,size*.68,'#87a05d');
-  dot(cx-.05,cy-.07,zTop+.12,size*.65,size*.36,'#b2c47b');
+  for(let i=0;i<13;i++){const ang=i*2.399,rr=size*(.17+(i%4)*.20),x=cx+Math.cos(ang)*rr,y=cy+Math.sin(ang)*rr;
+   dot(x,y,zTop+.10,size*(.28+(i%3)*.06),size*.27,['#536838','#718347','#919d58'][i%3]);}
  }
 
  for(let i=0;i<3;i++)dot(-.63,.42,.57+i*.16,.10-i*.013,.045,'#c6a378');
@@ -99,5 +95,5 @@ function draw(c,o={}){
  if(p.impact>0){c.globalAlpha*=p.impact;c.strokeStyle='#d9bb78';c.lineWidth=.03;const v=project(targetRoot.x,targetRoot.y);c.beginPath();c.ellipse(v[0],v[1],.15+(1-p.impact)*.4,.09+(1-p.impact)*.2,0,0,TAU);c.stroke()}
  c.restore();
 }
-root.Dreven={draw,pose,attackProgress,ATTACK_DURATION,CONTACT};
+root.DrevenBefore={draw,pose,attackProgress,ATTACK_DURATION,CONTACT};
 })(typeof module==='object'?module.exports:window);

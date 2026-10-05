@@ -6,13 +6,13 @@ test('both seasons occur and animation cannot change the chosen palette or calle
  const variants=new Set();
  for(let i=0;i<100;i++)variants.add(Vihrek.season(i*6.283/100));
  assert.deepEqual([...variants].sort(),['autumn','green']);
- const gradients=[];let balance=0;
- const c=new Proxy({}, {set(o,k,v){o[k]=v;return true},get(o,k){if(k==='save')return()=>balance++;if(k==='restore')return()=>balance--;if(k.startsWith('create'))return()=>({addColorStop(at,color){gradients.push(color)}});return o[k]||(()=>{})}});
+ const colors=[];let balance=0;
+ const c=new Proxy({}, {set(o,k,v){o[k]=v;if(k==='fillStyle')colors.push(v);return true},get(o,k){if(k==='save')return()=>balance++;if(k==='restore')return()=>balance--;if(k.startsWith('create'))return()=>({addColorStop(at,color){colors.push(color)}});return o[k]||(()=>{})}});
  for(const seed of [.7,1.7,2.7]){
   const color=Vihrek.palettes[Vihrek.season(seed)].mid;
   for(const time of [0,1,5.3,100]){
-   gradients.length=0;const options=Object.freeze({time,seed,size:32,state:'walk'});
-   Vihrek.draw(c,options);assert.ok(gradients.includes(color));assert.equal(balance,0);
+   colors.length=0;const options=Object.freeze({time,seed,size:32,state:'walk'});
+   Vihrek.draw(c,options);assert.ok(colors.includes(color));assert.equal(balance,0);
    Vihrek.drawDiorama(c,Object.freeze({...options,height:32,heading:Math.PI*1.5}));assert.equal(balance,0);
   }
  }

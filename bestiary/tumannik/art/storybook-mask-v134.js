@@ -12,36 +12,30 @@ function drawAura(c,{radius,time=0}){for(let i=0;i<5;i++){const a=i*2.4+time*.10
 function material(c,base,light,shade,x,y,rx,ry){c.fillStyle=base;c.fill();c.save();c.clip();c.beginPath();c.ellipse(x+rx*.26,y+ry*.48,rx,ry,0,0,Math.PI*2);c.fillStyle=shade;c.fill();c.beginPath();c.ellipse(x-rx*.14,y-ry*.22,rx*.94,ry*.77,0,0,Math.PI*2);c.fillStyle=light;c.fill();c.restore();}
 
 function draw(c,o={}){
- const r=(o.size||100)/3.2,p=pose(o),view=o.viewHeading??o.heading??0,target=o.target?{x:o.target.x/r,y:o.target.y/r}:{x:2.2,y:0};
+ const r=(o.size||100)/3.2,p=pose(o),target=o.target?{x:o.target.x/r,y:o.target.y/r}:{x:2.2,y:0};
  c.save();c.translate(o.x||0,o.y||0);c.rotate(o.heading||0);c.scale(r,r);
  if(o.shadow!==false)oval(c,-.2,.15,1.05,.48,'#24364518');
  // Airy wisps surround a dense core that stays readable at map scale.
  for(let j=0;j<3;j++)for(let i=4;i>=0;i--){const lag=p.flow-i*.42-j;cloud(c,-.25-i*.27*(1-p.coil*.3),Math.sin(lag)*(.11+i*.035)+(j-1)*.22,.52-i*.045,.36-i*.022,.20+(4-i)*.025)}
- // The mist gathers beneath a raised mask; only its trailing wake follows the road.
- c.save();c.rotate(-view);c.translate(0,-.12+Math.sin(p.flow)*.035);c.scale(1+p.coil*.10,1-p.coil*.12);
- c.beginPath();c.moveTo(-.55,.42);c.bezierCurveTo(-.75,.19,-.67,-.13,-.43,-.28);
- c.bezierCurveTo(-.48,-.60,.04,-.77,.27,-.48);c.bezierCurveTo(.69,-.49,.79,-.06,.54,.18);
- c.bezierCurveTo(.66,.40,.34,.62,.10,.47);c.bezierCurveTo(-.10,.70,-.37,.50,-.55,.42);c.closePath();
- material(c,'#a6c9d2','#d5e8df','#6797a7',-.02,-.04,.65,.57);c.restore();
- cloud(c,-.24,.10,.78,.43,.27);
+ c.save();c.scale(1-p.coil*.15,1+p.coil*.10);
+ c.beginPath();c.moveTo(.62,-.35);
+ c.bezierCurveTo(.24,-.78,-.43,-.64,-.64,-.35);
+ c.bezierCurveTo(-.88,-.38,-1.02,-.17,-1.19,-.08);
+ c.bezierCurveTo(-.97,.02,-.85,.01,-.72,.06);
+ c.bezierCurveTo(-.93,.20,-1.01,.33,-1.13,.35);
+ c.bezierCurveTo(-.77,.49,-.53,.29,-.38,.43);
+ c.bezierCurveTo(.03,.77,.69,.49,.62,-.35);c.closePath();
+ material(c,'#a6c9d2','#d5e8df','#6797a7',-.13,0,.9,.6);c.restore();
+ cloud(c,.04,0,.87*(1-p.coil*.15),.69*(1+p.coil*.10),.30);
+ cloud(c,-.16,-.23,.58,.39,.35);
  // A curved mist lash grows out of the body, reaches the gate, and dissolves.
  if(p.reach>0){const ex=.4+(target.x-.4)*p.reach,ey=target.y*p.reach;
   for(let i=0;i<10;i++){const u=i/9;cloud(c,.4+(ex-.4)*u,ey*u-Math.sin(u*Math.PI)*.22,.19+(1-u)*.12,.12+(1-u)*.07,.45)}
  }
- // The mask sits on the leading face of the cloud, not on its crown.
- // Turn its three-quarter projection with travel while keeping its chin below its brow.
- const facing=Math.cos(view),front=Math.sin(view),width=.64+.30*Math.abs(front);
- c.save();c.translate(.62-p.coil*.07,0);c.rotate(-view);c.translate(0,-.10+p.sway*.5);
- c.rotate(-facing*.20+p.sway*.4);c.scale(width,.90);
- function plate(){c.beginPath();c.moveTo(-.27,-.34);c.quadraticCurveTo(0,-.48,.27,-.32);c.lineTo(.25,.10);c.quadraticCurveTo(.15,.27,0,.38);c.quadraticCurveTo(-.18,.25,-.26,.07);c.closePath();}
- // Separate cast shadow and a narrow lower edge show thickness without a spherical highlight.
- c.save();c.translate(-facing*.14,.09);plate();c.fillStyle='#456d7577';c.fill();c.restore();
- c.save();c.translate(-facing*.045,.022);plate();c.fillStyle='#8ba69b';c.fill();c.restore();
- plate();c.fillStyle='#f0e9ce';c.fill();c.save();c.clip();
- c.beginPath();c.moveTo(.12,-.43);c.lineTo(.28,-.30);c.lineTo(.27,.14);c.lineTo(0,.38);c.lineTo(.08,.04);c.closePath();c.fillStyle='#c5ceb5';c.fill();c.restore();
- c.save();c.translate(facing*.065,.045);
- for(const side of [-1,1]){c.beginPath();c.moveTo(side*.055,-.13);c.quadraticCurveTo(side*.15,-.24,side*.215,-.15);c.lineTo(side*.16,-.035);c.quadraticCurveTo(side*.09,-.04,side*.055,-.13);c.fillStyle='#31515a';c.fill();}
- c.restore();c.restore();
+ c.save();c.translate(.47-p.coil*.09,p.sway);c.rotate(-p.sway*.6);c.scale(1.4,1.24);
+ c.beginPath();c.moveTo(-.02,-.43);c.bezierCurveTo(.34,-.38,.39,.21,.05,.43);c.bezierCurveTo(-.24,.39,-.31,-.30,-.02,-.43);c.closePath();material(c,'#d7d8bd','#f7efd3','#a1bbaa',.04,0,.29,.46);
+ for(const side of [-1,1])oval(c,.075,side*.18,.055,.112,'#203340');
+ c.restore();
  if(p.impact){const k=1-p.impact;for(let i=0;i<5;i++){const a=i*TAU/5;cloud(c,target.x+Math.cos(a)*k*.45,target.y+Math.sin(a)*k*.45,.22,.20,p.impact*.45)}}
  c.restore();
 }

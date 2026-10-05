@@ -6,11 +6,7 @@ function expire(f,now){if(f.drumFactor&&now>=f.drumUntil){f.hp/=f.drumFactor;f.h
 function oval(c,x,y,rx,ry,col){c.beginPath();c.ellipse(x,y,rx,ry,0,0,7);c.fillStyle=col;c.fill()}
 function stroke(c,x,y,u,v,col,w){c.beginPath();c.moveTo(x,y);c.lineTo(u,v);c.strokeStyle=col;c.lineWidth=w;c.stroke()}
 function patch(c,x,y,rx,ry,col,seed=0){c.beginPath();for(let i=0;i<18;i++){const a=i*Math.PI/9,d=1+.09*Math.sin(i*2.3+seed);const u=x+Math.cos(a)*rx*d,v=y+Math.sin(a)*ry*d;i?c.lineTo(u,v):c.moveTo(u,v);}c.closePath();c.fillStyle=col;c.fill();}
-function shade(c,x,y,r,light,dark){return light;}
-
-// Broad material planes clipped to the silhouette; no surface gradients.
-function material(c,base,light,shade,x,y,rx,ry){c.fillStyle=base;c.fill();c.save();c.clip();c.beginPath();c.ellipse(x+rx*.26,y+ry*.48,rx,ry,0,0,Math.PI*2);c.fillStyle=shade;c.fill();c.beginPath();c.ellipse(x-rx*.14,y-ry*.22,rx*.94,ry*.77,0,0,Math.PI*2);c.fillStyle=light;c.fill();c.restore();}
-
+function shade(c,x,y,r,light,dark){const g=c.createRadialGradient(x-r*.25,y-r*.3,r*.04,x,y,r);g.addColorStop(0,light);g.addColorStop(1,dark);return g;}
 function draw(c,o={}){
 const r=(o.size||90)/3,walk=o.state==='walk',ph=(o.distance||0)*8+(o.seed||0),a=o.attack;
 const strike=a==null?0:a<.6?clamp((a-.25)/.35):1-clamp((a-.6)/.4),lift=a==null?0:Math.sin(Math.PI*clamp(a/.6)),target=o.target?{x:o.target.x/r,y:o.target.y/r}:{x:1.5,y:0};
@@ -23,16 +19,16 @@ for(const side of [-1,1]){const x=-.61+(walk?Math.sin(ph)*side*.10:0),y=side*.57
 // Arms are lower than the back and curve around its sides to cradle the log.
 for(const side of [-1,1]){const reach=side===-1?lift:0;c.beginPath();c.moveTo(-.29,side*.61);c.bezierCurveTo(-.12,side*1.03,.42-reach*.12,side*1.05,.79-reach*.17,side*(.78+reach*.12));c.strokeStyle='#302f22';c.lineWidth=.42;c.stroke();c.strokeStyle=shade(c,.1,side*.75,.72,'#697349','#373d2b');c.lineWidth=.34;c.stroke();for(let j=0;j<3;j++)stroke(c,.02,side*(.87+j*.04),.43-reach*.1,side*(.91+j*.025),'#7c714f',.025);}
 // One broad pear-shaped back, narrow at the rear, with a low forward brow.
-c.beginPath();c.moveTo(-1.02,0);c.bezierCurveTo(-1.05,-.56,-.59,-.88,-.08,-.85);c.bezierCurveTo(.48,-.83,.66,-.44,.59,0);c.bezierCurveTo(.66,.44,.48,.83,-.08,.85);c.bezierCurveTo(-.59,.88,-1.05,.56,-1.02,0);c.closePath();material(c,'#7c8f5e','#afbc7f','#4c6b48',-.23,0,.9,.85);
+c.beginPath();c.moveTo(-1.02,0);c.bezierCurveTo(-1.05,-.56,-.59,-.88,-.08,-.85);c.bezierCurveTo(.48,-.83,.66,-.44,.59,0);c.bezierCurveTo(.66,.44,.48,.83,-.08,.85);c.bezierCurveTo(-.59,.88,-1.05,.56,-1.02,0);c.closePath();c.fillStyle=shade(c,-.28,-.09,1.07,'#8a9160','#29372a');c.fill();
 // Split bark ridges follow the spine, with small irregular moss islands.
-for(let k=0;k<2;k++){const y=(k-.5)*.45;c.beginPath();c.moveTo(-.89,y*.52);c.bezierCurveTo(-.60,y-.09,-.18,y+.07,.30,y*.85);c.strokeStyle='#3b3829';c.lineWidth=.05;c.stroke();c.strokeStyle='#a6a474';c.lineWidth=.023;c.stroke();}
-for(const [x,y,rx,ry] of [[-.65,-.3,.29,.23],[-.3,-.53,.34,.22],[-.65,.25,.2,.16]]){oval(c,x,y,rx,ry,'#5b793f');oval(c,x-.02,y-.04,rx*.8,ry*.65,'#a3b66c');}
+for(let k=0;k<5;k++){const y=(k-2)*.27;c.beginPath();c.moveTo(-.89,y*.52);c.bezierCurveTo(-.60,y-.09,-.18,y+.07,.30,y*.85);c.strokeStyle='#3b3829';c.lineWidth=.09;c.stroke();c.strokeStyle='#817556';c.lineWidth=.035;c.stroke();}
+for(let i=0;i<19;i++){const t=i*2.399,d=.16+(i%6)*.105,x=-.25+Math.cos(t)*d,y=Math.sin(t)*d*.97;patch(c,x,y,.13+(i%3)*.045,.11+(i%4)*.014,['#78864c','#657540','#8a9156'][i%3],i);for(let j=0;j<4;j++)oval(c,x+Math.sin(i+j*4)*.09,y+Math.cos(j*3)*.065,.012,.009,'#bdba7b70');}
 // Eyes are narrow glints beneath a projecting brow, not round eyes on the back.
 for(const side of [-1,1]){oval(c,.48,side*.23,.11,.055,'#212a20');oval(c,.53,side*.23,.035,.018,'#e7b751');patch(c,.39,side*.23,.15,.075,'#65733f',side);}
 // Log lies across the front: cylindrical light, broken bark plates running along its axis.
 oval(c,.86,.04,.43,1.0,'#18231c55');
-c.beginPath();c.moveTo(.51,-.87);c.lineTo(.66,-.97);c.lineTo(1.06,-.94);c.lineTo(1.25,-.82);c.lineTo(1.23,.87);c.lineTo(1.05,.98);c.lineTo(.65,.96);c.lineTo(.51,.83);c.closePath();material(c,'#a98b60','#d1b789','#6d583d',.84,0,.4,1.3);
-for(const x of [.64,.84,1.06])stroke(c,x,-.78,x+.01,.78,'#745c3e',.04);
+c.beginPath();c.moveTo(.51,-.87);c.lineTo(.66,-.97);c.lineTo(1.06,-.94);c.lineTo(1.25,-.82);c.lineTo(1.23,.87);c.lineTo(1.05,.98);c.lineTo(.65,.96);c.lineTo(.51,.83);c.closePath();const wood=c.createLinearGradient(.5,0,1.25,0);wood.addColorStop(0,'#493d2c');wood.addColorStop(.38,'#b19a72');wood.addColorStop(.72,'#87704e');wood.addColorStop(1,'#403629');c.fillStyle=wood;c.fill();
+for(let i=0;i<11;i++){const x=.55+i*.061;c.beginPath();c.moveTo(x,-.85);for(let j=0;j<9;j++)c.lineTo(x+Math.sin(i*3+j*1.3)*.018,-.85+j*.214);c.strokeStyle=['#54452f','#9f8963','#726043'][i%3];c.lineWidth=.018+(i%2)*.008;c.stroke();for(let j=0;j<3;j++){const y=-.65+j*.52+Math.sin(i*7+j)*.10;stroke(c,x,y,x+.048,y+.045,'#4e402d',.012);}}
 
 for(const side of [-1,1]){oval(c,.87,side*.91,.35,.095,'#c0aa7d');oval(c,.87,side*.924,.26,.057,'#2c251d');stroke(c,.56,side*.58,1.18,side*.59,'#46542f',.044);stroke(c,.57,side*.63,1.17,side*.64,'#788046',.023);}
 // Only the short gripping pads overlap the sides of the drum.
@@ -41,5 +37,5 @@ for(let k=0;k<3;k++){const x=-.39-k*.16,y=-.25+k*.23;stroke(c,x,y,x-.34,y-.12,'#
 if(a!=null&&a>=.6&&a<1){const p=(a-.6)/.4;c.strokeStyle='rgba(204,225,143,'+(1-p)*.6+')';c.lineWidth=.025;c.beginPath();c.ellipse(.85,0,.2+p*1.4,.3+p*1.4,0,0,7);c.stroke();}
 c.restore();}
 
-root.Gulen={draw,attackProgress,boost,expire,ATTACK_DURATION,CONTACT};
+root.GulenBefore={draw,attackProgress,boost,expire,ATTACK_DURATION,CONTACT};
 })(typeof module==='object'?module.exports:window);

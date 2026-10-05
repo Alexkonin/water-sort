@@ -1,0 +1,4 @@
+from pathlib import Path
+root=Path(__file__).resolve().parents[2]
+files=['bestiary/hranitel/skins/forest-lord/art/before-storybook-v135.js', 'bestiary/hranitel/skins/forest-lord/animations/forest-lord.js', 'bestiary/hranitel/skins/white-mask/art/before-storybook-v135.js', 'bestiary/hranitel/skins/white-mask/animations/white-mask.js', 'bestiary/hranitel/skins/river-serpent/art/before-storybook-v135.js', 'bestiary/hranitel/skins/river-serpent/animations/river-serpent.js', 'bestiary/hranitel/skins/thunder-bull/art/before-storybook-v135.js', 'bestiary/hranitel/skins/thunder-bull/animations/thunder-bull.js', 'bestiary/kamnespin/animations/kamnespin.js', 'bestiary/kamnespin/animations/storybook-v03/kamnespin.js', 'bestiary/rosnik/animations/rosnik.js', 'bestiary/dozhdevik/animations/dozhdevik.js']
+(root/'output/bosses-storybook-v01/models.js').write_text('\n'.join((root/p).read_text() for p in files))

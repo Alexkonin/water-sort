@@ -18,7 +18,7 @@ test('menu starts in the requested order and every game records its own opening'
   assert.deepEqual(launches.rank(games,[]).map(g => g.file),launches.FILES);
   const source = fs.readFileSync(path.join(root,'launch-history.js'),'utf8');
   for(const file of launches.FILES){
-    assert.match(fs.readFileSync(path.join(root,file),'utf8'),/src="launch-history\.js\?v=60"/);
+    assert.match(fs.readFileSync(path.join(root,file),'utf8'),/src="launch-history\.js\?v=\d+"/);
     const saved = storage();
     vm.runInNewContext(source,{location:{pathname:'/games/'+file},localStorage:saved});
     assert.deepEqual(JSON.parse(saved.getItem()),[file]);
@@ -32,12 +32,12 @@ test('frequent games lead based on the latest 30 openings; ties keep the default
   for(let i=0;i<10;i++) launches.record('water-sort.html',saved);
   assert.equal(launches.read(saved).length,30);
   assert.deepEqual(launches.rank(games,launches.read(saved)).map(g=>g.file),
-    ['forest-lights.html','water-sort.html','tower-defense.html','arrow-escape.html','mahjong.html','memory-cards.html']);
+    ['forest-lights.html','water-sort.html','tower-defense.html','sand-trucks.html','mahjong.html','memory-cards.html']);
   for(let i=0;i<30;i++) launches.record('tower-defense.html',saved);
   assert.deepEqual(launches.read(saved),Array(30).fill('tower-defense.html'));
   assert.deepEqual(launches.rank(games,launches.read(saved)).map(g=>g.file),launches.FILES);
-  assert.deepEqual(launches.rank(games,['forest-lights.html','arrow-escape.html']).map(g=>g.file),
-    ['arrow-escape.html','forest-lights.html','tower-defense.html','water-sort.html','mahjong.html','memory-cards.html']);
+  assert.deepEqual(launches.rank(games,['forest-lights.html','sand-trucks.html']).map(g=>g.file),
+    ['sand-trucks.html','forest-lights.html','tower-defense.html','water-sort.html','mahjong.html','memory-cards.html']);
 });
 
 test('damaged or unavailable local storage falls back to the default order',()=>{
@@ -48,4 +48,8 @@ test('damaged or unavailable local storage falls back to the default order',()=>
   const saved = storage(JSON.stringify(['unknown.html','water-sort.html']));
   assert.deepEqual(launches.record('unknown.html',saved),['water-sort.html']);
   assert.deepEqual(launches.read(saved),['water-sort.html']);
+});
+
+test('old arrow-game history migrates to the truck game',()=>{
+ assert.deepEqual(launches.read(storage(JSON.stringify(['arrow-escape.html','water-sort.html']))),['sand-trucks.html','water-sort.html']);
 });

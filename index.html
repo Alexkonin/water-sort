@@ -56,7 +56,7 @@
   footer{flex:0 0 auto;text-align:center;font-size:11.5px;opacity:.7;padding-top:2px}
 </style>
 <link rel="stylesheet" href="palette.css?v=50">
-<script src="launch-history.js?v=60"></script>
+<script src="launch-history.js?v=61"></script>
 <script src="focus-mode.js?v=65"></script>
 </head>
 <body>
@@ -105,15 +105,13 @@ const GAMES = [
     }
   },
   {
-    file: 'arrow-escape.html',
-    icon: 'arrows',
-    name: 'Распутай стрелки',
-    desc: 'Освобождай пути и выпускай изогнутые стрелки с поля — 100 лесных узоров',
+    file: 'sand-trucks.html',
+    icon: 'truck',
+    name: 'Песочные самосвалы',
+    desc: '100 песочных картин: распутывай парковку и собирай цвета самосвалами',
     progress(){
-      const d = read('arrowescape.v1');
-      if (!d) return null;
-      const count = d.best && typeof d.best === 'object' ? Object.keys(d.best).length : 0;
-      return count ? 'пройдено ' + count + ' из 100' : 'уровень ' + (d.level || 1) + ' из 100';
+      const d = read('sandtrucks.v1');
+      return d && d.version === 5 ? 'уровень ' + d.level + ' · собрано ' + (Array.isArray(d.completed) ? d.completed.length : 0) + ' из 100' : null;
     }
   },
   {

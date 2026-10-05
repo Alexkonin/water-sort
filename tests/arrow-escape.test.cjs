@@ -83,6 +83,6 @@ test('corrupt, obsolete and unreachable saves reset only the active puzzle',()=>
 
 test('menu and offline cache include the complete game',()=>{
   const root=path.join(__dirname,'..'),sw=fs.readFileSync(path.join(root,'sw.js'),'utf8'),menu=fs.readFileSync(path.join(root,'index.html'),'utf8');
-  for(const file of ['arrow-escape.html','arrow-escape.js','arrow-escape-ui.js'])assert.ok(sw.includes("'./"+file+"'"));
-  assert.ok(menu.includes("file: 'arrow-escape.html'"));assert.ok(menu.includes("read('arrowescape.v1')"));
+  for(const file of ['arrow-escape.html','arrow-escape.js','sand-trucks.html','sand-trucks.js','sand-trucks-ui.js'])assert.ok(sw.includes("'./"+file+"'"));
+  assert.ok(menu.includes("file: 'sand-trucks.html'"));assert.ok(menu.includes("read('sandtrucks.v1')"));
 });

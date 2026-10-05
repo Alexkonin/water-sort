@@ -542,7 +542,11 @@ function waveGroups(L, W){
   // первая версия вычитала дождевиков из угольков, к 5-й волне угольки кончались,
   // и излишек угрозы шёл сверху — чем выше множитель, тем раньше рушился уровень.
   // Волна не тяжелеет числами — она меняется повадками.
-  const threat = b => (b.hp + (b.traits && b.traits.split ? b.traits.split.n * FOES[b.traits.split.type].hp : 0)
+  const descendantHp = type => {
+    const child = FOES[type], growth = child.traits && child.traits.maturation;
+    return growth ? Math.max(child.hp, FOES[growth.type].hp) : child.hp;
+  };
+  const threat = b => (b.hp + (b.traits && b.traits.split ? b.traits.split.n * descendantHp(b.traits.split.type) : 0)
                             + (b.traits && b.traits.spawner ? b.traits.spawner.max * FOES[b.traits.spawner.type].hp : 0)) * (b.threat || 1);
   const base = g.filter(gr => !FOES[gr.type].threat && !FOES[gr.type].skins);
   const baseHp = base.reduce((sum, gr) => sum + gr.n * FOES[gr.type].hp, 0);
@@ -573,10 +577,10 @@ const hpScale = (L, W, k) => {
    дороге врагу негде получить урон, и одна и та же волна на 22 клетках вдвое
    опаснее, чем на 40. Первая дюжина была подобрана вручную так, что поздние
    карты длиннее; во второй короткие карты стоят на поздних номерах, и без
-   поправки симуляция роняла их все. Берём среднюю длину по всем дорогам —
-   враги делятся по ним поровну — против опорных 32 клеток и только смягчаем:
-   длинные карты не ужесточаем, чтобы не сдвинуть выверенную первую дюжину. */
-const mapFactor = paths => clamp(paths.reduce((a, p) => a + p.len, 0) / paths.length / 32, 0.6, 1.0);
+   поправки симуляция роняла их все. Гармоническое среднее сильнее учитывает
+   короткие подходы: длинная основная дорога не должна скрывать опасный приток.
+   На одной дороге формула не меняется; длинные карты не ужесточаем. */
+const mapFactor = paths => clamp(paths.length / paths.reduce((sum, p) => sum + 1 / p.len, 0) / 32, 0.6, 1.0);
 
 /* ============ сохранение ============ */
 let soundOn = true;
@@ -778,7 +782,7 @@ function generateMap(lv){                    // lv — индекс уровня
   const k = lv - HAND_MAPS;
   const region = Math.floor(k / (NAME_A.length * NAME_B.length));
   const name = NAME_A[k % NAME_A.length] + ' ' + NAME_B[Math.floor(k / NAME_A.length) % NAME_B.length] + (region ? ' · ' + (region + 1) : '');
-  for (let attempt = 0; attempt < 60; attempt++){
+  for (let attempt = 0; attempt < 240; attempt++){
     const rnd = mulberry32((Math.imul(lv + 1, 2654435761) ^ (attempt * 7919)) >>> 0);
     /* Длина у всех генерированных карт примерно одна, и это важнее, чем кажется.
        Длинная дорога даёт башням больше времени по каждому врагу, то есть делает
@@ -805,7 +809,11 @@ function generateMap(lv){                    // lv — индекс уровня
       br.push(b.wp);
       busy.push(...b.nodes);
     }
-    if (br.length) m.branches = br;
+    if (br.length !== nBr) continue;
+    m.branches = br;
+    // Every entrance needs enough firing time; an average hides a six-cell rush.
+    const paths = buildPaths(m);
+    if (paths.some(p => p.len < 18)) continue;
     // место под башни: меньше 55 свободных клеток — поле тесное, отбраковываем
     const keys = new Set();
     for (const p of buildPaths(m)) for (const key of p.cellKey) keys.add(key);
@@ -815,7 +823,9 @@ function generateMap(lv){                    // lv — индекс уровня
     if (buildPath(m.wp).len < 28) continue;
     return m;
   }
-  return { name, wp: [[0, 2], [6, 2], [6, 8], [2, 8], [2, 12]] };   // страховка
+  // Verified fallback keeps the same route count and minimum approach length.
+  return { name, wp:[[6,12],[6,2],[2,2],[2,12],[0,12],[0,6]],
+    branches: [[[2,0],[8,0],[8,2],[6,2]], [[8,6],[8,12],[6,12]]].slice(0, lv < 69 ? 1 : 2) };
 }
 
 const HAND_MAPS = MAPS.length;               // сколько карт нарисовано руками
@@ -1136,8 +1146,9 @@ function updateSporeGrowth(f,dt){
   f.r=FOES.spore.r+(FOES.puffball.r-FOES.spore.r)*g;
   f.sp=FOES.spore.sp+(FOES.puffball.sp-FOES.spore.sp)*g;
   if(f.growthAge<seconds)return;
-  const adult=FOES.puffball,healthFraction=Math.max(0,Math.min(1,f.hp/f.hpMax));
+  const adult=FOES[FOES.spore.traits.maturation.type],healthFraction=Math.max(0,Math.min(1,f.hp/f.hpMax));
   f.type='puffball';
+  f.maturedFromSpore=true; // Only the original wave creature releases offspring.
   f.hpMax=Math.round(adult.hp*f.scale)*(f.drumFactor||1);f.hp=Math.max(1,Math.round(f.hpMax*healthFraction));
   f.r=adult.r;f.sp=adult.sp;f.armor=adult.armor;f.bounty=adult.bounty;f.color=adult.color;
   f.attackAfter=0;f.lunge=0;
@@ -2226,7 +2237,7 @@ const fmtN = v => String(Math.round(v * 10) / 10).replace('.', ',');
    берётся сильнейшая: два фонаря рядом не делают толпу вдвое быстрее. */
 const TRAITS = {
   maturation:{
-    about:p=>'за '+p.seconds+' с вырастает в Дождевика; его потомство тоже растёт, без ограничения поколений',
+    about:p=>'за '+p.seconds+' с вырастает в Дождевика, который уже не выпускает спор',
     init(f){f.growthAge=0;}
   },
   dryWood:{
@@ -2255,6 +2266,7 @@ const TRAITS = {
   split: {
     about: p => 'при гибели рассыпается на ' + p.n + ' ' + plural(p.n, ...FOES[p.type].acc),
     death(f, p){
+      if (f.maturedFromSpore) return;
       for (let i = 0; i < p.n; i++){const child=spawn(p.type, f.scale, { pi: f.pi, d: Math.max(0, f.d - 0.35 - i * 0.12) });if(child&&f.type==='puffball'){child.bornAt=G.t;}}
     }
   },
@@ -2546,8 +2558,8 @@ const FOES = {
     acc:['спорку', 'спорки', 'спорок'],
     hp:8, sp:2.4, armor:0, bounty:2, hit:1, atk:1.0, r:0.16, color:'#c9d98a',
     from:24, origin:'выходит из дождевика', wave:null,
-    traits:{maturation:{seconds:8}},
-    intro:'через 8 с вырастает в Дождевика; уничтожай до созревания',
+    traits:{maturation:{seconds:8,type:'puffball'}},
+    intro:'через 8 с вырастает в Дождевика без новых спор; уничтожай до созревания',
     attackAnim:{duration:.65,contact:.5},
     art(c,r,f){
       const attack=f.siege?Dozhdevik.sporeAttackProgress(f.atk,f.attackAfter||0):null;

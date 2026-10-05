@@ -38,19 +38,19 @@ test('foliage clears routes, entrances, castle and tower centers on every map',(
   }
 });
 
-test('expansion preserves the original 120 maps and provides valid routes through level 1000',()=>{
-  const hash=require('node:crypto').createHash('sha256').update(JSON.stringify(maps.slice(0,120))).digest('hex');
-  assert.equal(hash,'3f6b74d4998f0a36c8635115957f0e9e7722520dcef694146ea80223035b8f0e');
+test('all maps have valid routes and generated entrances have enough approach distance',()=>{
   assert.equal(maps.length,1000);
   assert.equal(new Set(maps.map(m=>m.name)).size,1000);
   const warnings=[];
   c.console={warn:msg=>warnings.push(msg)};
   vm.runInContext(section('(function validateMaps(){','/* ============ пуск'),c);
   assert.deepEqual(warnings,[]);
-  for(let lv=120;lv<maps.length;lv++){
+  for(let lv=24;lv<maps.length;lv++){
     const {paths,road}=plan(lv);
     assert.ok(117-road.size>=55,'buildable space on level '+(lv+1));
     assert.ok(paths[0].len>=28,'main route length on level '+(lv+1));
+    assert.equal(paths.length,lv<69?2:3,'entrance count on level '+(lv+1));
+    assert.ok(paths.every(p=>p.len>=18),'short approach on level '+(lv+1));
     const destination=paths[0].pts.at(-1);
     for(const p of paths)assert.deepEqual(p.pts.at(-1),destination);
   }
@@ -63,4 +63,15 @@ test('extra levels keep bounded wave sizes, health and starting gold',()=>{
   const limit=snapshot(119);
   for(const lv of [120,249,499,749,999])assert.equal(snapshot(lv),limit);
   assert.ok(JSON.parse(limit).waves.every(w=>Number.isFinite(w.hp)&&w.groups.every(g=>g.n>0&&g.gap>0)));
+});
+
+test('short tributaries affect health even beside a long main road',()=>{
+  const balance=vm.createContext({clamp:(v,a,b)=>Math.max(a,Math.min(b,v))});
+  vm.runInContext(section('const mapFactor =','/* ============ сохранение'),balance);
+  const factor=paths=>vm.runInContext('mapFactor('+JSON.stringify(paths)+')',balance);
+  assert.equal(factor([{len:32}]),1);
+  assert.equal(factor([{len:24}]),.75);
+  assert.equal(factor([{len:6},{len:32}]),.6);
+  assert.ok(factor(plan(23).paths)<.8,'Fortress short entrance must reduce wave health');
+  assert.equal(factor([{len:32},{len:32}]),1);
 });

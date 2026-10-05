@@ -14,18 +14,18 @@ for(const file of ['tower-defense.html','tower-diorama.html']){
     if(q.length!==groups.reduce((s,g)=>s+g.n,0))throw Error('count');
     for(const g of groups)if(q.filter(f=>f.type===g.type).length!==g.n)throw Error('type count');
     for(let i=0;i<q.length;i++)if(q[i].scale!==2||q[i].at<0||!Number.isFinite(q[i].at)||(i&&q[i].at<q[i-1].at))throw Error('queue');
-    if((L<31||W<3)&&q.some(f=>f.squad))throw Error('early squad');
+    if(L===0&&W<2&&q.some(f=>f.squad&&f.type!=='grunt'))throw Error('early complex squad');
     const ids=new Set(q.filter(f=>f.squad).map(f=>f.squad));
-    if(ids.size>3)throw Error('too many squads');
+    if(ids.size>Math.ceil(q.length/3))throw Error('too many squads');
     for(const id of ids){const members=q.filter(f=>f.squad===id),lead=members.filter(f=>f.squadLead);
       if(lead.length!==1||members.length<2||members.length>5)throw Error('membership');
       if(members.some(f=>f.pi!==lead[0].pi||f.pi<0||f.pi>=3))throw Error('route');
-      if(members.some(f=>f!==lead[0]&&f.squadRole!=='raider'&&(f.at<=lead[0].at||f.at-lead[0].at>1)))throw Error('escort timing');
+      if(members.some(f=>f!==lead[0]&&f.squadRole!=='raider'&&(f.at<=lead[0].at||f.at-lead[0].at>4)))throw Error('escort timing');
     }
   }`);
-  assert.equal(h.run("waveQueue(waveGroups(39,6),1,39,6,2).filter(f=>f.squadLead).length"),1);
+  assert.ok(h.run("waveQueue(waveGroups(39,6),1,39,6,2).filter(f=>f.squadLead).length")>1);
   assert.ok(h.run("waveQueue(waveGroups(64,10),1,64,10,3).some(f=>f.squad&&f.type==='drummer')"));
-  assert.equal(h.run("waveQueue(waveGroups(119,13),1,119,13,3).filter(f=>f.squadLead).length"),3);
+  assert.ok(h.run("waveQueue(waveGroups(119,13),1,119,13,3).filter(f=>f.squadLead).length")>3);
  });
  test(file+': escort stays in healing range for 30 seconds, with real heal aura',()=>{
   const h=setup(file);
@@ -103,3 +103,37 @@ for(const file of ['tower-defense.html','tower-diorama.html']){
     assert.equal(dew.supportTarget,lead);
   });
 }
+
+for(const file of ['tower-defense.html','tower-diorama.html']){
+ test(file+': ordinary grunts group from first wave; later waves have diverse formations and rising share',()=>{
+  const h=setup(file);
+  const data=h.run(`[0,20,119].map(L=>{const q=waveQueue(waveGroups(L,6),1,L,6,3);return {share:q.filter(f=>f.squad).length/q.length,types:[...new Set(q.filter(f=>f.squad).map(f=>f.type))]}})`);
+  assert.ok(data[0].share>=.2);assert.ok(data[1].share>=.4);assert.ok(data[2].share>=.6);
+  assert.ok(data[2].types.includes('grunt'));assert.ok(data[2].types.length>=6);
+  assert.ok(h.run("waveQueue(waveGroups(0,0),1,0,0,1).filter(f=>f.squad&&f.type==='grunt').length")>=3);
+ });
+ test(file+': line slots stay distinct for 30 seconds and nearest survivor takes command',()=>{
+  const h=setup(file);
+  const members=Array.from({length:4},(_,i)=>({type:'grunt',squad:'line',squadRole:'line',squadLead:i===0,squadSlot:i,pi:0,d:3-i*.7,sp:1.35,slow:0,buff:{sp:1}}));
+  for(let t=0;t<1800;t++){h.c.prepareSquadMovement(members,1/60);for(const f of members)f.d+=f.marchSpeed/60;}
+  for(let i=1;i<members.length;i++)assert.ok(Math.abs(members[i-1].d-members[i].d-.7)<.01);
+  members[0].dead=true;const positions=members.map(f=>f.d);
+  h.c.prepareSquadMovement(members,1/60);
+  assert.equal(members[1].squadLead,true);assert.equal(members[1].squadSlot,0);
+  assert.deepEqual(members.map(f=>f.d),positions,'promotion never teleports');
+  assert.equal(members.filter(f=>!f.dead&&f.squadLead).length,1);
+  for(let i=0;i<120;i++){h.c.prepareSquadMovement(members.slice(1).reverse(),1/60);for(const f of members.slice(1))f.d+=f.marchSpeed/60;}
+  for(let i=2;i<members.length;i++)assert.ok(members[i-1].d-members[i].d>.5);
+ });
+}
+for(const file of ['tower-defense.html','tower-diorama.html'])test(file+': production spawn preserves formation slots and mixed roles',()=>{
+  const h=setup(file),html=fs.readFileSync(file,'utf8'),start=html.indexOf('function spawn(type, scale, opts){');
+  Object.assign(h.G,{spawnIdx:0,paths:[{}],lv:0});
+  Object.assign(h.c,{foePos:f=>({x:f.d,y:0}),sndFoe(){},save:{seen:{}},writeSave(){},showHint(){}});
+  h.run(html.slice(start,html.indexOf('/* ============ осада',start)));
+  h.run(`const plan=waveQueue(waveGroups(0,0),1,0,0,1);for(const q of plan)spawn(q.type,q.scale,q);`);
+  const group=h.G.foes.filter(f=>f.squad);
+  assert.equal(group.length,3);assert.deepEqual(group.map(f=>f.squadSlot),[0,1,2]);
+  assert.ok(group.every(f=>f.pi===0&&f.squadRole==='line'));
+  assert.equal(group.filter(f=>f.squadLead).length,1);
+});

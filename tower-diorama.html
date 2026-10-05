@@ -329,7 +329,7 @@
       <li>Нажми на замок или показатель его прочности: у него пять разрядов. На уровнях 2–4 улучшается частокол: он снижает входящий урон на 10%, 20% и 30%, но не чинит замок. Частокол перекрывает соседнюю дорожную клетку перед замком. У него своя прочность: 20, 35 и 50. При нескольких подходах пролёты образуют одну защиту с общей прочностью. Пока он цел, принимает удары на себя; после разрушения замок остаётся без брони. Постройка даёт частоколу 20 прочности, следующие улучшения добавляют по 15 к текущей и максимальной прочности, сохраняя полученный урон. Отдельного ремонта нет. На 5-м уровне замок полностью чинится, а его максимальная прочность растёт с 20 до 60. Улучшения действуют на текущей карте. Кончилась прочность — база прорвана.</li>
       <li><b>Камнеспины</b> гасят слабые удары: по ним бьёт пушка и мортира, а молния почти бесполезна.</li>
       <li>На поздних картах к замку ведёт несколько дорог, а у врагов появляются повадки: одни не мёрзнут, другие уходят под землю, лечат соседей или рассыпаются спорами. При первой встрече игра подскажет, чем брать; все вместе — в бестиарии.</li>
-      <li>По мере прохождения враги собираются в отряды: тяжёлый боец идёт впереди, поддержка сопровождает его, быстрые враги выходят позже и догоняют группу. Росник выбирает раненого тяжёлого союзника рядом, Гулень — группу бойцов на своей дороге. После гибели ведущего поддержка может найти другую цель. Замедление помогает разорвать строй.</li>
+      <li>Угольки собираются в небольшие отряды с первых волн. Позже появляются смешанные группы с Камнеспинами, носителями аур, Туманниками и Тенниками; доля бойцов в строю растёт с уровнем. Каждый держит своё место, после гибели ведущего его заменяет передний оставшийся боец. Быстрые враги выходят позже и догоняют группу. Росник выбирает раненого тяжёлого союзника рядом, Гулень — группу бойцов на своей дороге. После гибели ведущего поддержка может найти другую цель. Замедление помогает разорвать строй.</li>
       <li>Три звезды дают, если замок не получил ни одного удара.</li>
     </ol>
     <button class="ghost" id="btnBook">Бестиарий</button>
@@ -982,9 +982,9 @@ function startLevel(i){
 
 /* ============ волны ============ */
 // Отряды используют существующий бюджет волны: ни новых тел, ни добавочных HP.
-// Первые три волны остаются прежними. Сложные сочетания входят позднее простых.
+// Простые группы появляются сразу; сложные сочетания входят с открытием поддержки.
 function arrangeSquads(queue, L, W, pathCount, paths=[]){
-  if (L < 31 || W < 3) return;
+  const advanced = L >= 31 && W >= 3;
   const late = W / Math.max(1, waveCount(L) - 1);
   const limit = 1 + (L >= 64 && late >= .6 ? 1 : 0) + (L >= 97 && late >= .8 ? 1 : 0);
   const used = new Set();
@@ -995,7 +995,7 @@ function arrangeSquads(queue, L, W, pathCount, paths=[]){
     lantern: ['golem','tank','acorn']
   };
   const kinds = ['dew','drummer','lantern'];
-  const pools = kinds.map(type => queue.filter(q => q.type === type));
+  const pools = kinds.map(type => advanced ? queue.filter(q => q.type === type) : []);
   for (let i = 0; i < Math.max(...pools.map(pool => pool.length)); i++){
     for (const pool of pools){
       const support = pool[i];
@@ -1029,6 +1029,55 @@ function arrangeSquads(queue, L, W, pathCount, paths=[]){
       count++;
     }
   }
+  // Доля бойцов в строю растёт плавно. Остальные сохраняют обычный выход.
+  const fraction=L<14 ? 1/3 : L<64 ? .5 : 2/3;
+  const budget=Math.max(queue.length>=3?3:0,Math.floor(queue.length*fraction));
+  const recipes=[
+    ['grunt','grunt','grunt'],
+    ['tank','grunt','grunt'],
+    ['grunt','grunt','runner'],
+    ['grunt','drummer','grunt','grunt'],
+    ['straw','ghost','straw'],
+    ['grunt','shade','grunt'],
+    ['grunt','lantern','grunt'],
+    ['swarm','swarm','swarm','swarm'],
+    ['runner','runner','runner'],
+    ['tank','ghost','tank'],
+    ['golem','puffball','puffball'],
+    ['tank','shade','shade']
+  ];
+  let recipeIndex=(L+W)%recipes.length, misses=0;
+  while(used.size+3<=budget && misses<recipes.length){
+    const recipe=recipes[recipeIndex++%recipes.length];
+    if(recipe.length+used.size>budget){misses++;continue;}
+    // Начальные две волны первой карты знакомят только с простыми группами.
+    if(L===0&&W<2&&recipe.some(type=>type!=='grunt')){misses++;continue;}
+    const members=[];
+    for(const type of recipe){
+      const q=queue.find(q=>q.type===type&&!used.has(q)&&!members.includes(q));
+      if(!q)break;members.push(q);
+    }
+    if(members.length!==recipe.length){misses++;continue;}
+    misses=0;
+    const lead=members[0],squad=`${W}:${count}`,pi=(W+count)%Math.max(1,pathCount);
+    const speed=Math.min(...members.filter(q=>q.type!=='runner'||lead.type==='runner').map(q=>FOES[q.type].sp));
+    const start=lead.at;
+    for(const [slot,q] of members.entries()){
+      const raider=q.type==='runner'&&lead.type!=='runner';
+      const meeting=Math.max(4,Math.min(9,(paths[pi]?.len||20)*.35));
+      const delay=raider ? Math.max(1.2,meeting/speed-meeting/FOES[q.type].sp) : slot*.7/speed;
+      Object.assign(q,{squad,pi,squadLead:slot===0,squadSlot:slot,squadRole:raider?'raider':'line',at:start+delay});
+      used.add(q);
+    }
+    count++;
+  }
+  // Разные места получают и прежние отряды с двумя носителями аур.
+  const slots=new Map();
+  for(const q of queue.filter(q=>q.squad).sort((a,b)=>a.at-b.at)){
+    if(q.squadSlot!==undefined)continue;
+    const slot=slots.get(q.squad)||0; q.squadSlot=slot; slots.set(q.squad,slot+1);
+  }
+
 }
 
 function waveQueue(groups, scale, L, W, pathCount, paths=[]){
@@ -1062,7 +1111,7 @@ function chooseSupportTargets(live, dt){
   for (const f of live){
     if (!['dew','drummer','lantern'].includes(f.type)) continue;
     const valid = o => o && o !== f && !o.dead && !o.siege && !o.hidden && !o.buff.hold &&
-      heavy.has(o.type) && o.pi === f.pi && Math.abs(o.d-f.d) <= 2.4 &&
+      (heavy.has(o.type) || (o.squadLead && o.squad===f.squad) || (f.type!=='dew' && ['grunt','straw'].includes(o.type))) && o.pi === f.pi && Math.abs(o.d-f.d) <= 2.4 &&
       Math.hypot(o.pos.x-f.pos.x,o.pos.y-f.pos.y) <= 2.4;
     if (f.dead || f.siege || f.hidden || f.buff.hold){ f.supportTarget=null; continue; }
     f.supportThink = Math.max(0,(f.supportThink || 0)-dt);
@@ -1088,13 +1137,30 @@ function chooseSupportTargets(live, dt){
 // Скорости снимком до движения: поддержка следует цели, быстрые прорываются.
 // Нет движения назад, телепортации или ускорения сверх собственной скорости.
 function prepareSquadMovement(live, dt=0){
+  const formations=new Map();
+  for(const f of live){
+    if(!f.squad||f.dead||f.siege)continue;
+    if(!formations.has(f.squad))formations.set(f.squad,[]);
+    formations.get(f.squad).push(f);
+  }
+  for(const members of formations.values()){
+    if(members.some(f=>f.squadLead))continue;
+    // Передний оставшийся боец принимает командование. Поддержка сама не ведёт.
+    const fighters=members.filter(f=>f.squadRole==='line'&&!['dew','drummer','lantern','ghost','shade'].includes(f.type));
+    fighters.sort((a,b)=>b.d-a.d||(a.squadSlot||0)-(b.squadSlot||0));
+    if(!fighters.length)continue;
+    const lead=fighters[0];lead.squadLead=true;lead.squadSlot=0;
+    let slot=1;
+    for(const f of members.filter(f=>f!==lead).sort((a,b)=>b.d-a.d)){f.squadSlot=slot++;}
+  }
   const escorts = new Map();
   for (const f of live){
     f.marchSpeed = f.sp * f.buff.sp * (1 - f.slow);
     if (f.dead || f.siege || f.buff.hold || f.heroTarget || f.squadRole==='raider') continue;
     const lead = f.supportTarget || (f.squad && !f.squadLead && live.find(o=>o.squad===f.squad && o.squadLead));
-    if (!lead || lead.dead || lead.siege || lead.hidden || lead.buff.hold || lead.pi!==f.pi || Math.abs(f.d-lead.d)>=1.5) { f.supportWait=0; continue; }
+    if (!lead || lead.dead || lead.siege || lead.hidden || lead.buff.hold || lead.pi!==f.pi || Math.abs(f.d-lead.d)>=Math.max(1.5,(f.squadSlot||1)*.7+.7)) { f.supportWait=0; continue; }
     if (lead.heroTarget){
+      if(f.squadRole==='line'&&!['dew','drummer','lantern'].includes(f.type))continue;
       f.supportWait=(f.supportWait || 0)+dt;
       // Коротко поддерживает бой, затем продолжает прорыв: вечной стоянки нет.
       if(f.supportWait>3)continue;
@@ -1106,7 +1172,9 @@ function prepareSquadMovement(live, dt=0){
     const speed=lead.heroTarget?0:Math.min(lead.marchSpeed,...members.map(f=>f.sp*f.buff.sp));
     if(!lead.heroTarget)lead.marchSpeed=speed;
     for(const f of members){
-      const gap=lead.heroTarget ? .8 : .55;
+      const sameSquad=f.squad && f.squad===lead.squad;
+      const spacing=f.squadRole==='line' ? .7 : .55;
+      const gap=(lead.heroTarget ? .8 : spacing)+(sameSquad?Math.max(0,(f.squadSlot||1)-1)*spacing:0);
       f.marchSpeed=Math.min(f.marchSpeed,Math.max(0,speed+(lead.d-f.d-gap)*2));
     }
   }
@@ -1133,7 +1201,7 @@ function spawn(type, scale, opts){
   const hp = Math.round(b.hp * scale);
   const skin = b.skins ? bossSkin(G.lv) : 0;
   const f = {
-    squad:o.squad, squadLead:!!o.squadLead, squadRole:o.squadRole,
+    squad:o.squad, squadLead:!!o.squadLead, squadRole:o.squadRole, squadSlot:o.squadSlot,
     type, d: o.d || 0, pi: o.pi !== undefined ? o.pi : G.spawnIdx++ % G.paths.length, hp, hpMax: hp, sp: b.sp, armor: b.armor, scale,
     slow: 0, slowT: 0, r: b.r, color: b.skins ? b.skins[skin].color : b.color, bounty: b.bounty, skin, step: 0,
     hit: 0, ph: Math.random() * 6.283,

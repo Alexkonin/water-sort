@@ -1,7 +1,7 @@
 /* Wagna's CC0 Falling Sand recording. One quiet stream follows real pickups. */
 (function(root){
   'use strict';
-  function create({enabled=()=>true,url='audio/sand-trucks/falling-sand-v1.mp3'}={}){
+  function create({enabled=()=>true,url='audio/sand-trucks/falling-sand-soft-v2.mp3'}={}){
     let context=null,buffer=null,voice=null,loading=null,tail=0,idle=0,audible=false;
     const file=fetch(url).then(r=>{if(!r.ok)throw new Error('Sand audio unavailable');return r.arrayBuffer();}).catch(()=>null);
     function unlock(){
@@ -36,9 +36,9 @@
     }
     function step(pickups,dt){
       if(!enabled()||document.hidden){stop();return;}
-      if(pickups>0){tail=.14;idle=0;}else{tail=Math.max(0,tail-dt);idle+=dt;}
-      if(tail>0){start();if(voice&&!audible){audible=true;ramp(.3,.035);}}
-      else if(audible){audible=false;ramp(0,.12);}
+      if(pickups>0){tail=.16;idle=0;}else{tail=Math.max(0,tail-dt);idle+=dt;}
+      if(tail>0){start();if(voice&&!audible){audible=true;ramp(.24,.09);}}
+      else if(audible){audible=false;ramp(0,.22);}
       if(voice&&idle>.7)stop();
     }
     document.addEventListener('pointerdown',unlock,{capture:true,passive:true});document.addEventListener('keydown',unlock,{capture:true});

@@ -1,5 +1,5 @@
 // Офлайн-кэш. Меняй CACHE при каждом обновлении игры — старая версия сотрётся.
-const CACHE = 'games-v171';
+const CACHE = 'games-v190';
 /* Все страницы сборника кладём в кэш сразу при установке: переход из меню
    в игру должен работать офлайн с первого раза, а не после того, как игру
    один раз открыли онлайн. Добавляешь игру — дописываешь её сюда и в GAMES
@@ -12,7 +12,7 @@ const ASSETS = [
   './forest-lights.html', './forest-lights.js', './forest-lights-levels.js',
   './arrow-escape.html', './arrow-escape.js',
   './sand-trucks.html', './sand-trucks.css', './sand-trucks-levels.js', './sand-trucks.js', './sand-trucks-sand.js', './sand-trucks-surface.js', './sand-trucks-sand-art.js', './sand-trucks-ui.js', './sand-trucks-art.js', './sand-trucks-audio.js', './audio/sand-trucks/sand-through-fingers-v1.mp3',
-  './mahjong.html', './mahjong.css', './mahjong.js', './mahjong-ui.js',
+  './mahjong.html', './mahjong.css', './mahjong.js', './mahjong-glyphs.js', './mahjong-art.js', './mahjong-ui.js',
   './memory-cards.html', './memory-cards.js',
   './manifest.json', './icon-192.png?v=lukomorye1', './icon-512.png?v=lukomorye1', './icon-180.png?v=lukomorye1', './icon-maskable-512.png?v=lukomorye1', './favicon.ico?v=lukomorye1'
 ];

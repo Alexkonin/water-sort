@@ -135,8 +135,8 @@ const GAMES = [
     progress(){
       const d = read('mahjong.v1');
       if (!d) return null;
-      const count = Array.isArray(d.completed) ? new Set(d.completed.filter(n => Number.isInteger(n) && n >= 1 && n <= 1000)).size : 0;
-      return count ? 'пройдено ' + count + ' из 1000' : 'уровень ' + (d.level || 1) + ' из 1000';
+      const count = Array.isArray(d.completed) ? new Set(d.completed.filter(n => Number.isInteger(n) && n >= 1 && n <= 10000)).size : 0;
+      return count ? 'пройдено ' + count + ' из 10000' : 'уровень ' + (d.level || 1) + ' из 10000';
     }
   },
   {

@@ -13,7 +13,7 @@
 <link rel="icon" href="favicon.ico?v=lukomorye1">
 <link rel="stylesheet" href="shell.css?v=58">
 <link rel="stylesheet" href="palette.css?v=51">
-<link rel="stylesheet" href="mahjong.css?v=64">
+<link rel="stylesheet" href="mahjong.css?v=173">
 <script src="launch-history.js?v=60"></script>
 <script src="focus-mode.js?v=65"></script>
 </head>
@@ -26,6 +26,7 @@
   </header>
   <main class="table" aria-label="Игровое поле Mahjong">
     <div class="board-top"><span id="count"></span><span id="pairs"></span></div>
+    <div class="board-tools"><span id="layoutName"></span><button id="zoom" aria-pressed="false">Крупнее</button></div>
     <div id="viewport" tabindex="-1" aria-label="Поле с плитками"><div id="boardFrame"><div id="boardSize"><div id="board" role="group" aria-label="Плитки. Выбери две одинаковые свободные плитки."></div></div></div></div>
     <div class="board-bottom"><div class="progress-track" role="progressbar" aria-label="Поле очищено" aria-valuemin="0" aria-valuemax="100"><div id="progress"></div></div></div>
   </main>
@@ -39,16 +40,18 @@
 <dialog id="helpDialog" aria-labelledby="helpTitle">
   <button class="close" data-close aria-label="Закрыть справку"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=63#close"/></svg></button>
   <div class="dialog-mark" aria-hidden="true"><svg class="ui-icon"><use href="icons.svg?v=63#mahjong"/></svg></div><h2 id="helpTitle">Как играть</h2>
-  <p>Убери все плитки, выбирая по две с одинаковым рисунком.</p>
-  <ol><li>Плитка свободна, если над ней ничего нет и хотя бы один бок — левый или правый — открыт.</li><li>Свободные плитки светлее остальных. Нажми на одну, затем на её пару.</li><li>Если пар нет, отмени ход или перемешай. Оставшиеся плитки соберутся в новую решаемую раскладку.</li></ol>
-  <p>1000 уровней без таймера. Прогресс сохраняется автоматически. С клавиатуры: Tab и Enter — выбор, Z — отмена, H — подсказка.</p>
+  <p>Убери все плитки, выбирая подходящие пары.</p>
+  <ol><li>Плитка свободна, если над ней ничего нет и хотя бы один бок — левый или правый — открыт.</li><li>Свободные плитки светлее остальных. Нажми на одну, затем на её пару.</li><li>Если пар нет, отмени ход или перемешай. Перемешивание сохраняет форму, когда это возможно. В неразрешимом остатке плитки перестраиваются.</li><li>Цветы можно соединять с любыми цветами, а сезоны — с любыми сезонами. Их рисунки могут отличаться.</li><li>«Крупнее» увеличивает плитки: двигай поле пальцем. «Всё поле» возвращает общий вид.</li></ol>
+  <p>10 000 уровней без таймера. Прогресс сохраняется автоматически. С клавиатуры: Tab и Enter — выбор, Z — отмена, H — подсказка.</p>
   <button class="cta" data-close>Понятно, играем</button>
 </dialog>
-<dialog id="levelsDialog" aria-labelledby="levelsTitle"><button class="close" data-close aria-label="Закрыть выбор уровня"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=63#close"/></svg></button><h2 id="levelsTitle">Выбери уровень</h2><div class="level-pages"><button id="prevPage" aria-label="Предыдущие уровни">‹</button><span id="pageLabel"></span><button id="nextPage" aria-label="Следующие уровни">›</button></div><div id="levelGrid"></div><form id="levelJump" class="level-jump"><input id="levelNumber" type="number" min="1" max="1000" step="1" inputmode="numeric" placeholder="Номер от 1 до 1000" aria-label="Номер уровня" required><button type="submit">Перейти</button></form><p class="level-summary" id="completed"></p></dialog>
+<dialog id="levelsDialog" aria-labelledby="levelsTitle"><button class="close" data-close aria-label="Закрыть выбор уровня"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=63#close"/></svg></button><h2 id="levelsTitle">Выбери уровень</h2><div class="level-pages"><button id="prevPage" aria-label="Предыдущие уровни">‹</button><span id="pageLabel"></span><button id="nextPage" aria-label="Следующие уровни">›</button></div><div id="levelGrid"></div><form id="levelJump" class="level-jump"><input id="levelNumber" type="number" min="1" max="10000" step="1" inputmode="numeric" placeholder="Номер от 1 до 10000" aria-label="Номер уровня" required><button type="submit">Перейти</button></form><p class="level-summary" id="completed"></p></dialog>
 <dialog id="restartDialog" aria-labelledby="restartTitle"><h2 id="restartTitle">Начать заново?</h2><p>Плитки вернутся на свои места в начале уровня.</p><button class="cta" id="confirmRestart">Начать заново</button><button class="ghost" data-close>Продолжить партию</button></dialog>
 <dialog id="winDialog" aria-labelledby="winTitle"><div class="dialog-mark" aria-hidden="true"><svg class="ui-icon"><use href="icons.svg?v=63#sprout"/></svg></div><h2 id="winTitle">Уровень пройден!</h2><p id="winText"></p><button class="cta" id="next">Следующая раскладка</button><button class="ghost" data-close>Посмотреть поле</button></dialog>
 <script src="sound.js?v=51"></script>
-<script src="mahjong.js?v=62"></script>
-<script src="mahjong-ui.js?v=62"></script>
+<script src="mahjong.js?v=172"></script>
+<script src="mahjong-glyphs.js?v=177"></script>
+<script src="mahjong-art.js?v=190"></script>
+<script src="mahjong-ui.js?v=174"></script>
 </body>
 </html>

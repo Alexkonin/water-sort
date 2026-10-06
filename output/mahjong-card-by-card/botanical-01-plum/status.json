@@ -1,0 +1,16 @@
+{
+  "tileId": 34,
+  "style": "Авторская ботаническая миниатюра",
+  "score": 9,
+  "iterations": 3,
+  "status": "prototype_ready",
+  "remainingTiles": [
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+  ]
+}

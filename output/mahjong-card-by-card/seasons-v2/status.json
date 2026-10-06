@@ -1,0 +1,18 @@
+{
+  "status": "ready",
+  "tiles": [
+    {
+      "id": 38,
+      "name": "Весна",
+      "motif": "Молодой побег",
+      "score": 9
+    },
+    {
+      "id": 39,
+      "name": "Лето",
+      "motif": "Лотос в профиль",
+      "score": 9
+    }
+  ],
+  "numericIndices": false
+}

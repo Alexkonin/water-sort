@@ -2,31 +2,20 @@
   'use strict';
   const G=Mahjong,KEY='mahjong.v1',$=s=>document.querySelector(s),board=$('#board');
   let saved;try{saved=JSON.parse(localStorage.getItem(KEY)||'null');}catch{}
-  let state=G.restore(saved),selected=null,hinted=[],busy=false,page=0;
+  let state=G.restore(saved),selected=null,hinted=[],busy=false,page=0,zoomed=false;
   const sfx=GameAudio.create({enabled:()=>state.sound}),reduced=matchMedia('(prefers-reduced-motion: reduce)');
-  const names=['Один круг','Два круга','Три круга','Четыре круга','Пять кругов','Шесть кругов','Один бамбук','Два бамбука','Три бамбука','Четыре бамбука','Пять бамбуков','Шесть бамбуков','Восток','Юг','Запад','Север','Красный дракон','Зелёный дракон'];
+  const names=['Один круг','Два круга','Три круга','Четыре круга','Пять кругов','Шесть кругов','Один бамбук','Два бамбука','Три бамбука','Четыре бамбука','Пять бамбуков','Шесть бамбуков','Восток','Юг','Запад','Север','Красный дракон','Зелёный дракон','Семь кругов','Восемь кругов','Девять кругов','Семь бамбуков','Восемь бамбуков','Девять бамбуков',...Array.from({length:9},(_,i)=>(i+1)+' символов'),'Белый дракон','Слива','Орхидея','Хризантема','Цветок бамбука','Весна','Лето','Осень','Зима'];
   function save(){const {version,level,actions,completed,sound,helpSeen}=state;try{localStorage.setItem(KEY,JSON.stringify({version,level,actions,completed,sound,helpSeen}));}catch{}}
   function tell(text,stuck=false){$('#status').textContent=text;$('#status').classList.toggle('stuck',stuck);}
-  function face(type){
-    const points=[[],[[24,34]],[[16,22],[32,46]],[[13,17],[24,34],[35,51]],[[14,21],[34,21],[14,47],[34,47]],[[12,17],[36,17],[24,34],[12,51],[36,51]],[[14,17],[34,17],[14,34],[34,34],[14,51],[34,51]]];
-    let art='';
-    if(type<6){
-      art=points[type+1].map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="6" fill="none" stroke="${i%2?'#ad594b':'#477066'}" stroke-width="2.2"/><circle cx="${x}" cy="${y}" r="2" fill="${i%2?'#ad594b':'#477066'}"/>`).join('');
-    }else if(type<12){
-      art=points[type-5].map(([x,y])=>`<path d="M${x-2} ${y-6}l-1 12m5-12-1 12m-5-8h9m-10 5h9" fill="none" stroke="#467650" stroke-width="2.2" stroke-linecap="round"/>`).join('');
-    }else{
-      art=`<text x="24" y="44" text-anchor="middle" font-family="serif" font-size="32" fill="${type===16?'#aa5143':type===17?'#427b51':'#355a63'}">${['東','南','西','北','中','發'][type-12]}</text><path d="M15 53h18" stroke="#ad9969" stroke-width="1"/>`;
-    }
-    return `<svg viewBox="0 0 48 68" aria-hidden="true">${art}</svg>`;
-  }
+  const face=MahjongArt.face;
   function size(){
-    const view=$('#viewport'),w=6*52+18,h=state.puzzle.rows*70+22;
-    const widthScale=Math.max(.1,(view.clientWidth-24)/w);
-    const fit=Math.min(widthScale,(view.clientHeight-24)/h,1.4);
-    // Keep small-screen tiles tappable; only the board scrolls, controls stay put.
-    const scale=Math.max(Math.min(.76,widthScale),fit);
+    const view=$('#viewport'),tiles=state.puzzle.tiles;
+    const w=(Math.max(...tiles.map(t=>t.x))+1)*52+26,h=(Math.max(...tiles.map(t=>t.y))+1)*70+36;
+    const widthScale=Math.max(.1,(view.clientWidth-24)/w),fit=Math.min(widthScale,(view.clientHeight-24)/h,1.2);
+    const scale=zoomed?Math.max(.85,fit):Math.max(.1,fit);
     $('#boardSize').style.width=w*scale+'px';$('#boardSize').style.height=h*scale+'px';
     board.style.width=w+'px';board.style.height=h+'px';board.style.transform=`scale(${scale})`;
+    $('#zoom').textContent=zoomed?'Всё поле':'Крупнее';$('#zoom').setAttribute('aria-pressed',String(zoomed));
   }
 
   function render(){
@@ -35,17 +24,17 @@
     for(const tile of state.tiles){
       const el=document.createElement('button'),free=G.isFree(tile,state.tiles);
       el.className='tile'+(free?'':' blocked')+(selected===tile.id?' selected':'')+(hinted.includes(tile.id)?' hinted':'');
-      el.dataset.id=tile.id;el.style.cssText=`left:${tile.x*52+10-tile.z*4}px;top:${tile.y*70+14-tile.z*6}px;width:50px;height:67px;z-index:${tile.z*100+tile.y};`;
-      el.setAttribute('aria-label',`${names[tile.type]}, ряд ${tile.y+1}, место ${tile.x+1}, слой ${tile.z+1}, ${free?'свободна':'закрыта'}`);
+      el.dataset.id=tile.id;el.style.cssText=`left:${tile.x*52+18-tile.z*3}px;top:${tile.y*70+24-tile.z*5}px;width:50px;height:67px;z-index:${tile.z*100+Math.round(tile.y*2)};`;
+      el.setAttribute('aria-label',`${names[tile.type]}, ряд ${tile.y+1}, место ${tile.x+1}, слой ${tile.z+1}, ${free?'свободна':'заблокирована'}`);
       el.setAttribute('aria-disabled',String(!free||busy));el.setAttribute('aria-pressed',String(selected===tile.id));el.tabIndex=free?0:-1;
       el.innerHTML=face(tile.type);el.onclick=()=>tap(tile.id);board.append(el);
     }
     if(focusId!==null)(board.querySelector(`[data-id="${focusId}"]`)||board.querySelector('[tabindex="0"]'))?.focus({preventScroll:true});
     const available=G.pairs(state.tiles),removed=state.puzzle.tiles.length-state.tiles.length;
-    $('#levelLabel').textContent='Уровень '+state.level;
+    $('#levelLabel').textContent='Уровень '+state.level;$('#layoutName').textContent=state.puzzle.name;
     $('#count').textContent=`Убрано ${removed} / ${state.puzzle.tiles.length}`;$('#pairs').textContent='Доступно пар: '+available.length;
     $('#progress').style.width=removed/state.puzzle.tiles.length*100+'%';$('.progress-track').setAttribute('aria-valuenow',Math.round(removed/state.puzzle.tiles.length*100));
-    $('#undo').disabled=busy||!state.actions.length;$('#shuffle').disabled=busy||!state.tiles.length||state.actions.length>=960;$('#hint').disabled=busy||!available.length;
+    $('#undo').disabled=busy||!state.actions.length;$('#shuffle').disabled=busy||!state.tiles.length||state.actions.length>=920;$('#hint').disabled=busy||!available.length;
     $('#restart').disabled=busy;$('#levels').disabled=busy;
     $('#sound').setAttribute('aria-pressed',String(state.sound));$('#sound').setAttribute('aria-label',state.sound?'Выключить звук':'Включить звук');$('#sound use').setAttribute('href','icons.svg?v=60#'+(state.sound?'sound':'muted'));
     if(!state.tiles.length)tell('Поле очищено. Можно выбрать следующую раскладку.');
@@ -77,7 +66,7 @@
       }
       selected=id;sfx.play('tap');render();tell('Рисунки разные. Найди пару для выбранной плитки.');return;
     }
-    selected=id;sfx.play('tap');render();tell('Теперь выбери такую же свободную плитку.');
+    selected=id;sfx.play('tap');render();tell(tile.type>=34?(tile.type<38?'Выбери любой другой свободный цветок.':'Выбери любой другой свободный сезон.'):'Теперь выбери такую же свободную плитку.');
   }
   function win(){
     if(!state.completed.includes(state.level))state.completed.push(state.level);save();sfx.play('win');
@@ -86,8 +75,8 @@
     $('#winDialog').showModal();
   }
   function start(level){
-    state={...state,level,puzzle:G.generate(level),actions:[]};state.tiles=state.puzzle.tiles;selected=null;hinted=[];
-    document.querySelectorAll('dialog[open]').forEach(d=>d.close());save();render();$('#viewport').scrollTop=0;
+    state={...state,version:G.VERSION,level,puzzle:G.generate(level),actions:[]};state.tiles=state.puzzle.tiles;selected=null;hinted=[];
+    document.querySelectorAll('dialog[open]').forEach(d=>d.close());save();render();$('#viewport').scrollTop=0;$('#viewport').scrollLeft=0;
   }
   function renderLevels(){
     $('#completed').textContent=`Пройдено ${state.completed.length} из ${G.LEVELS}`;$('#levelGrid').replaceChildren();
@@ -103,8 +92,10 @@
     page=Math.floor((state.level-1)/25);renderLevels();$('#levelNumber').value='';
     $('#levelsDialog').showModal();$('#levelGrid .current')?.focus();
   }
+  $('#sound').onclick=()=>{state.sound=!state.sound;sfx.sync();if(state.sound)sfx.play('tap');save();render();};
+  $('#zoom').onclick=()=>{zoomed=!zoomed;size();};
   $('#undo').onclick=()=>{if(busy||!state.actions.length)return;state.actions.pop();state.tiles=G.replay(state.puzzle,state.actions);selected=null;hinted=[];sfx.play('tap');save();render();};
-  $('#shuffle').onclick=()=>{if(busy||!state.tiles.length)return;if(commit({kind:'shuffle',seed:Math.floor(Math.random()*4294967296)})){sfx.play('unlock');render();tell('Оставшиеся плитки собраны в решаемую раскладку.');}};
+  $('#shuffle').onclick=()=>{if(busy||!state.tiles.length)return;const before=state.tiles.map(t=>t.id).sort((a,b)=>a-b).join();if(commit({kind:'shuffle',seed:Math.floor(Math.random()*4294967296)})){sfx.play('unlock');render();tell(before===state.tiles.map(t=>t.id).sort((a,b)=>a-b).join()?'Рисунки перемешаны. У этой позиции есть решение.':'Тупик устранён: плитки перестроены в решаемую раскладку.');}};
   $('#hint').onclick=()=>{if(busy)return;const pair=G.pairs(state.tiles)[0];if(!pair)return;selected=null;hinted=pair;sfx.play('tap');render();tell('Эти две плитки свободны — их можно убрать.');};
   $('#levelJump').onsubmit=e=>{
     e.preventDefault();const level=Number($('#levelNumber').value);
@@ -115,7 +106,6 @@
   $('#nextPage').onclick=()=>{if((page+1)*25<G.LEVELS){page++;renderLevels();}};
   $('#levels').onclick=levels;$('#help').onclick=()=>$('#helpDialog').showModal();
   $('#restart').onclick=()=>$('#restartDialog').showModal();$('#confirmRestart').onclick=()=>start(state.level);
-  $('#sound').onclick=()=>{state.sound=!state.sound;sfx.sync();if(state.sound)sfx.play('tap');save();render();};
   $('#next').onclick=()=>{if(state.level<G.LEVELS)start(state.level+1);else{$('#winDialog').close();levels();}};
   document.querySelectorAll('[data-close]').forEach(btn=>btn.onclick=()=>btn.closest('dialog').close());
   $('#helpDialog').addEventListener('close',()=>{state.helpSeen=true;save();});

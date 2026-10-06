@@ -11,8 +11,10 @@
   const SPEED=145,PICKUP_RADIUS=48,ROAD_GAP=112,PHYSICS_DT=1/120,GRAIN_SCALE=2;
   function generate(number){
     const level=Math.max(1,Math.min(LEVELS,Math.floor(Number(number)||1))),d=DATA[level-1];
+    // Introductory pictures need room for every color plus a mistaken choice.
+    // Keep layouts and capacities intact so existing progress remains valid.
     const rows=d.rows.flatMap(row=>Array(GRAIN_SCALE).fill([...row].map(c=>c.repeat(GRAIN_SCALE)).join('')));
-    return{level,width:d.width||12,height:d.height||12,limit:d.limit||3,solution:d.solution.slice(),...(d.releaseFrames?{releaseFrames:d.releaseFrames.slice()}:{}),arrows:d.arrows.map(a=>({...a,capacity:a.capacity*GRAIN_SCALE**2,cells:a.cells.map(c=>c.slice())})),art:{width:rows[0].length,height:rows.length,cells:rows.join('').split('').map(Number),title:d.title}};
+    return{level,width:d.width||12,height:d.height||12,limit:level<=30?Math.max(d.limit||3,new Set(d.rows.join('')).size+1):d.limit||3,solution:d.solution.slice(),...(d.releaseFrames?{releaseFrames:d.releaseFrames.slice()}:{}),arrows:d.arrows.map(a=>({...a,capacity:a.capacity*GRAIN_SCALE**2,cells:a.cells.map(c=>c.slice())})),art:{width:rows[0].length,height:rows.length,cells:rows.join('').split('').map(Number),title:d.title}};
   }
   function route(vertices,radius=14){
     const points=[vertices[0]];

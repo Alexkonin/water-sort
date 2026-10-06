@@ -1,7 +1,7 @@
 (function(){
   'use strict';
   const G=ArrowEscape,T=SandTrucks,$=s=>document.querySelector(s),NS='http://www.w3.org/2000/svg',KEY='sandtrucks.v1';
-  let levelPage=0;
+  let levelPage=0,noticeTimer;
   let saved;try{saved=JSON.parse(localStorage.getItem(KEY));}catch{}
   let state=T.restore(saved),last=0,saveClock=0,soundClock=0,particles=[],groups=new Map(),labels=new Map(),canvas,sandArt,particleLayer,presented=false;
   if(saved&&saved.version!==T.VERSION)try{localStorage.setItem('sandtrucks.backup.v'+saved.version,JSON.stringify(saved));}catch{}
@@ -10,13 +10,21 @@
   function rect(g,x,y,w,h,fill,r=2,attrs={}){const el=svg('rect',{x,y,width:w,height:h,rx:r,fill,...attrs});g.append(el);return el;}
   function path(g,d,attrs={}){const el=svg('path',{d,...attrs});g.append(el);return el;}
   function text(g,x,y,value,attrs={}){const el=svg('text',{x,y,...attrs});el.textContent=value;g.append(el);return el;}
-  function tell(message){$('#status').textContent=message;}
+  function tell(message){$('#status').textContent=message;$('#status').classList.add('visible');clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>$('#status').classList.remove('visible'),4200);}
   function save(){try{localStorage.setItem(KEY,JSON.stringify(T.snapshot(state)));}catch{}}
-  function transform(group,at){group.setAttribute('transform',`translate(${at.x} ${at.y}) rotate(${at.angle})`);}
+  // Enlarge the parking drawing without changing certified simulation paths.
+  function parkingPose(at,amount=1){const scale=1+.08*amount;return{...at,x:210+(at.x-210)*scale,y:588+(at.y-588)*scale,scale};}
+  function displayPose(a,car){
+    const at=car?T.carPose(state.puzzle,car):T.parked(a);
+    const amount=!car||car.phase==='queued'?1:car.phase==='depart'?Math.max(0,1-car.distance/T.departure(a).length):0;
+    return parkingPose(at,amount);
+  }
+  function transform(group,at){group.setAttribute('transform',`translate(${at.x} ${at.y}) rotate(${at.angle}) scale(${at.scale||1})`);}
   function drawArt(dt=0){sandArt.draw(state.puzzle.art,state.grains,state.motion,dt);}
   function update(){
     const percent=Math.round(state.grains.filter(c=>c<0).length/state.grains.length*100);
     $('#count').textContent=T.roadSpeed(state)>T.SPEED?'ПАРКОВКА ПУСТА · СКОРОСТЬ ×3':`ПАРКОВКА · ${state.remaining.length+state.active.filter(c=>c.phase==='queued').length} МАШИН`;$('#roadCount').textContent=`${T.workingCount(state)} / ${T.slotLimit(state)}`;$('#roadCount').setAttribute('aria-label',`В работе ${T.workingCount(state)} из ${T.slotLimit(state)}`);
+    const undo=$('#undo');undo.setAttribute('aria-disabled',!state.history.length);undo.setAttribute('tabindex',state.history.length?0:-1);undo.style.opacity=state.history.length?'1':'.35';
     canvas.setAttribute('aria-label',`${state.puzzle.art.title}. Собрано ${percent}% песка.`);
   }
   function build(){
@@ -26,19 +34,21 @@
     // The only visible road is the straight horizontal collection lane.
     rect(scene,-100,327,620,55,'#1c3036',0);path(scene,'M-100 327H520 M-100 382H520',{stroke:'#a9beb4','stroke-width':2});path(scene,'M-100 354H520',{stroke:'#d9dfc277','stroke-width':2,'stroke-dasharray':'11 14'});
     rect(scene,347,315,53,20,'#35564e',6);text(scene,374,329,'',{'text-anchor':'middle',id:'roadCount',class:'road-count'});
-    text(scene,210,406,'',{'text-anchor':'middle',id:'count',class:'scene-label'});
-    rect(scene,36,417,348,351,'#b9c2a90b',10);
-    for(let y=0;y<state.puzzle.height;y++)for(let x=0;x<state.puzzle.width;x++)scene.append(svg('circle',{cx:T.PARK.x+x*T.PARK.cell,cy:T.PARK.y+y*T.PARK.cell,r:.9,fill:'#d2d9b724'}));
+    text(scene,24,398,'',{'text-anchor':'start',id:'count',class:'scene-label'});
+    const undo=svg('g',{id:'undo',role:'button','aria-label':'Вернуть последнюю машину'});
+    rect(undo,300,383,98,24,'#35564e',6);text(undo,349,398,'↶ Вернуть',{'text-anchor':'middle',class:'road-count'});undo.onclick=rewind;undo.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();rewind();}};scene.append(undo);
+    rect(scene,22,405,376,373,'#b9c2a90b',10);
+    for(let y=0;y<state.puzzle.height;y++)for(let x=0;x<state.puzzle.width;x++){const at=parkingPose({x:T.PARK.x+x*T.PARK.cell,y:T.PARK.y+y*T.PARK.cell});scene.append(svg('circle',{cx:at.x,cy:at.y,r:.9,fill:'#d2d9b724'}));}
     for(const a of state.puzzle.arrows){
       const moving=state.active.some(c=>c.id===a.id);if(!moving&&!state.remaining.includes(a.id))continue;
       const[dx,dy]=G.direction(a),dir=dx>0?'вправо':dx<0?'влево':dy>0?'вниз':'вверх';
-      const group=svg('g',{class:'truck'+(moving?' moving':''),'data-id':a.id,role:'button',tabindex:moving?-1:0,'aria-label':`${T.NAMES[a.color]}, самосвал ${a.id+1}, вместимость ${a.capacity}, кабина ${dir}`});group.append(SandTruckArt.create(a,T.PARK.cell));transform(group,T.parked(a));group.onclick=()=>tap(a.id);group.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tap(a.id);}};
+      const group=svg('g',{class:'truck'+(moving?' moving':''),'data-id':a.id,role:'button',tabindex:moving?-1:0,'aria-label':`${T.NAMES[a.color]}, самосвал ${a.id+1}, вместимость ${a.capacity}, кабина ${dir}`});group.append(SandTruckArt.create(a,T.PARK.cell));transform(group,displayPose(a));group.onclick=()=>tap(a.id);group.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tap(a.id);}};
 
       scene.append(group);groups.set(a.id,group);labels.set(a.id,text(scene,0,0,'',{class:'car-load','text-anchor':'middle','aria-hidden':'true'}));
     }
     particleLayer=svg('g',{'pointer-events':'none','aria-hidden':'true'});scene.append(particleLayer);
     $('#level').setAttribute('aria-label',`Выбрать уровень. Сейчас ${state.puzzle.level}: ${state.puzzle.art.title}`);
-    drawArt();paintCars();update();save();tell(`Освободи выезд в сторону кабины. Лимит машин в работе: ${T.slotLimit(state)}. Выбирай цвет нижнего слоя.`);if(T.won(state))win();else if(state.jammed)jam();
+    drawArt();paintCars();update();save();tell(`Выбирай цвет снизу. В работе до ${T.slotLimit(state)} машин — оставляй место для другого цвета.`);if(T.won(state))win();else if(state.jammed)jam();
   }
   function tap(id){
     if(document.querySelector('dialog[open]'))return;const result=T.dispatch(state,id);
@@ -50,7 +60,7 @@
     for(const[id,group]of groups){
       const car=state.active.find(c=>c.id===id),a=state.puzzle.arrows[id],label=labels.get(id);
       if(!car&&!state.remaining.includes(id)){group.remove();label.remove();groups.delete(id);labels.delete(id);continue;}
-      const hidden=car?.phase==='waiting',at=car?T.carPose(state.puzzle,car):T.parked(a);transform(group,at);group.style.display=hidden?'none':'';label.style.display=hidden?'none':'';group.classList.toggle('moving',!!car);group.classList.toggle('queued',car?.phase==='queued');group.setAttribute('tabindex',car?-1:0);group.setAttribute('aria-disabled',!!car);
+      const hidden=car?.phase==='waiting',at=displayPose(a,car);transform(group,at);group.style.display=hidden?'none':'';label.style.display=hidden?'none':'';group.classList.toggle('moving',!!car);group.classList.toggle('queued',car?.phase==='queued');group.setAttribute('tabindex',car?-1:0);group.setAttribute('aria-disabled',!!car);
       SandTruckArt.update(group.firstElementChild,at.angle,car?car.loaded/a.capacity:0);
       if(car){label.textContent=(car.phase==='depart'||car.phase==='queued')?'':`${car.loaded}/${a.capacity}`;label.setAttribute('x',at.x);label.setAttribute('y',at.y+24);group.setAttribute('aria-label',`${T.NAMES[a.color]}, ${car.phase==='queued'?'выбран, ожидает выезда':car.phase==='depart'?'выезжает':car.phase==='waiting'?'ожидает въезда':'на нижней дороге'}, груз ${car.loaded} из ${a.capacity}`);}
       else{label.textContent='';label.setAttribute('x',at.x);label.setAttribute('y',at.y+3);}

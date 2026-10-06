@@ -1,0 +1,527 @@
+{
+  "policy": "Once per second: unblocked exposed color not working; otherwise another color not working; otherwise any unblocked truck. No oracle, undo or rescue. Same seeds and decision policy before and after; outcomes are simulated, not human win rates.",
+  "before": [
+    {
+      "level": 1,
+      "stats": [
+        {
+          "seed": 1,
+          "won": false,
+          "jam": true,
+          "percent": 72,
+          "seconds": 111
+        },
+        {
+          "seed": 2,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 199
+        },
+        {
+          "seed": 3,
+          "won": false,
+          "jam": true,
+          "percent": 82,
+          "seconds": 229
+        }
+      ]
+    },
+    {
+      "level": 2,
+      "stats": [
+        {
+          "seed": 1,
+          "won": false,
+          "jam": true,
+          "percent": 66,
+          "seconds": 182
+        },
+        {
+          "seed": 2,
+          "won": false,
+          "jam": true,
+          "percent": 6,
+          "seconds": 30
+        },
+        {
+          "seed": 3,
+          "won": false,
+          "jam": true,
+          "percent": 64,
+          "seconds": 152
+        }
+      ]
+    },
+    {
+      "level": 3,
+      "stats": [
+        {
+          "seed": 1,
+          "won": false,
+          "jam": true,
+          "percent": 72,
+          "seconds": 130
+        },
+        {
+          "seed": 2,
+          "won": false,
+          "jam": true,
+          "percent": 73,
+          "seconds": 119
+        },
+        {
+          "seed": 3,
+          "won": false,
+          "jam": true,
+          "percent": 72,
+          "seconds": 140
+        }
+      ]
+    },
+    {
+      "level": 4,
+      "stats": [
+        {
+          "seed": 1,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 187
+        },
+        {
+          "seed": 2,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 222
+        },
+        {
+          "seed": 3,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 216
+        }
+      ]
+    },
+    {
+      "level": 5,
+      "stats": [
+        {
+          "seed": 1,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 182
+        },
+        {
+          "seed": 2,
+          "won": false,
+          "jam": true,
+          "percent": 87,
+          "seconds": 157
+        },
+        {
+          "seed": 3,
+          "won": false,
+          "jam": true,
+          "percent": 92,
+          "seconds": 170
+        }
+      ]
+    },
+    {
+      "level": 6,
+      "stats": [
+        {
+          "seed": 1,
+          "won": false,
+          "jam": true,
+          "percent": 81,
+          "seconds": 180
+        },
+        {
+          "seed": 2,
+          "won": false,
+          "jam": true,
+          "percent": 10,
+          "seconds": 26
+        },
+        {
+          "seed": 3,
+          "won": false,
+          "jam": true,
+          "percent": 87,
+          "seconds": 197
+        }
+      ]
+    },
+    {
+      "level": 7,
+      "stats": [
+        {
+          "seed": 1,
+          "won": false,
+          "jam": true,
+          "percent": 91,
+          "seconds": 200
+        },
+        {
+          "seed": 2,
+          "won": false,
+          "jam": true,
+          "percent": 80,
+          "seconds": 191
+        },
+        {
+          "seed": 3,
+          "won": false,
+          "jam": true,
+          "percent": 95,
+          "seconds": 226
+        }
+      ]
+    },
+    {
+      "level": 8,
+      "stats": [
+        {
+          "seed": 1,
+          "won": false,
+          "jam": true,
+          "percent": 91,
+          "seconds": 234
+        },
+        {
+          "seed": 2,
+          "won": false,
+          "jam": true,
+          "percent": 71,
+          "seconds": 129
+        },
+        {
+          "seed": 3,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 187
+        }
+      ]
+    },
+    {
+      "level": 9,
+      "stats": [
+        {
+          "seed": 1,
+          "won": false,
+          "jam": true,
+          "percent": 96,
+          "seconds": 205
+        },
+        {
+          "seed": 2,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 278
+        },
+        {
+          "seed": 3,
+          "won": false,
+          "jam": true,
+          "percent": 83,
+          "seconds": 182
+        }
+      ]
+    },
+    {
+      "level": 10,
+      "stats": [
+        {
+          "seed": 1,
+          "won": false,
+          "jam": true,
+          "percent": 46,
+          "seconds": 312
+        },
+        {
+          "seed": 2,
+          "won": false,
+          "jam": true,
+          "percent": 88,
+          "seconds": 277
+        },
+        {
+          "seed": 3,
+          "won": false,
+          "jam": true,
+          "percent": 95,
+          "seconds": 275
+        }
+      ]
+    }
+  ],
+  "after": [
+    {
+      "level": 1,
+      "stats": [
+        {
+          "seed": 1,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 130
+        },
+        {
+          "seed": 2,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 164
+        },
+        {
+          "seed": 3,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 167
+        }
+      ]
+    },
+    {
+      "level": 2,
+      "stats": [
+        {
+          "seed": 1,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 118
+        },
+        {
+          "seed": 2,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 119
+        },
+        {
+          "seed": 3,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 218
+        }
+      ]
+    },
+    {
+      "level": 3,
+      "stats": [
+        {
+          "seed": 1,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 111
+        },
+        {
+          "seed": 2,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 122
+        },
+        {
+          "seed": 3,
+          "won": false,
+          "jam": true,
+          "percent": 76,
+          "seconds": 113
+        }
+      ]
+    },
+    {
+      "level": 4,
+      "stats": [
+        {
+          "seed": 1,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 200
+        },
+        {
+          "seed": 2,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 325
+        },
+        {
+          "seed": 3,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 256
+        }
+      ]
+    },
+    {
+      "level": 5,
+      "stats": [
+        {
+          "seed": 1,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 136
+        },
+        {
+          "seed": 2,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 154
+        },
+        {
+          "seed": 3,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 174
+        }
+      ]
+    },
+    {
+      "level": 6,
+      "stats": [
+        {
+          "seed": 1,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 171
+        },
+        {
+          "seed": 2,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 145
+        },
+        {
+          "seed": 3,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 214
+        }
+      ]
+    },
+    {
+      "level": 7,
+      "stats": [
+        {
+          "seed": 1,
+          "won": false,
+          "jam": true,
+          "percent": 81,
+          "seconds": 191
+        },
+        {
+          "seed": 2,
+          "won": false,
+          "jam": true,
+          "percent": 79,
+          "seconds": 197
+        },
+        {
+          "seed": 3,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 176
+        }
+      ]
+    },
+    {
+      "level": 8,
+      "stats": [
+        {
+          "seed": 1,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 205
+        },
+        {
+          "seed": 2,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 172
+        },
+        {
+          "seed": 3,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 182
+        }
+      ]
+    },
+    {
+      "level": 9,
+      "stats": [
+        {
+          "seed": 1,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 203
+        },
+        {
+          "seed": 2,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 236
+        },
+        {
+          "seed": 3,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 157
+        }
+      ]
+    },
+    {
+      "level": 10,
+      "stats": [
+        {
+          "seed": 1,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 283
+        },
+        {
+          "seed": 2,
+          "won": true,
+          "jam": false,
+          "percent": 100,
+          "seconds": 220
+        },
+        {
+          "seed": 3,
+          "won": false,
+          "jam": true,
+          "percent": 69,
+          "seconds": 356
+        }
+      ]
+    }
+  ]
+}

@@ -87,11 +87,11 @@ test('fixed physics steps give the same grains and truck load at different displ
 });
 test('rapid selections reserve slots and leave in order without overlapping departures',()=>{
  const s=T.create(1),free=G.available(s.puzzle,s.remaining),blocked=s.remaining.find(id=>!free.includes(id));assert.equal(T.dispatch(s,blocked),'blocked');
- const ids=s.puzzle.solution.slice(0,3);for(const id of ids)assert.equal(T.dispatch(s,id),'ok');
- assert.deepEqual(s.active.map(c=>c.phase),['depart','queued','queued']);assert.equal(T.workingCount(s),3);
+ const ids=s.puzzle.solution.slice(0,s.puzzle.limit);for(const id of ids)assert.equal(T.dispatch(s,id),'ok');
+ assert.deepEqual(s.active.map(c=>c.phase),ids.map((_,i)=>i?'queued':'depart'));assert.equal(T.workingCount(s),s.puzzle.limit);
  assert.deepEqual(T.carPose(s.puzzle,s.active[1]),T.parked(s.puzzle.arrows[ids[1]]));
  assert.equal(T.dispatch(s,G.available(s.puzzle,s.remaining)[0]),'full');assert.equal(T.dispatch(s,ids[1]),'missing');
- const restored=T.restore(T.snapshot(s));assert.deepEqual(restored.active,s.active);assert.equal(T.undo(restored).active.length,2);
+ const restored=T.restore(T.snapshot(s));assert.deepEqual(restored.active,s.active);assert.equal(T.undo(restored).active.length,s.puzzle.limit-1);
  const started=[ids[0]];for(let i=0;i<1200&&s.active.some(c=>['depart','queued'].includes(c.phase));i++){
   T.step(s,.04);const departing=s.active.filter(c=>c.phase==='depart');assert.ok(departing.length<=1);
   if(departing.length&&!started.includes(departing[0].id))started.push(departing[0].id);
@@ -99,12 +99,12 @@ test('rapid selections reserve slots and leave in order without overlapping depa
  assert.deepEqual(started,ids);assert.ok(!s.active.some(c=>['depart','queued'].includes(c.phase)));
 });
 test('a full truck releases its slot before leaving the road, including after save and undo',()=>{
- const s=T.create(1);for(const id of s.puzzle.solution.slice(0,3))assert.equal(T.dispatch(s,id),'ok');
+ const s=T.create(1);for(const id of s.puzzle.solution.slice(0,s.puzzle.limit))assert.equal(T.dispatch(s,id),'ok');
  let full;for(let i=0;i<15000&&!full&&!s.jammed;i++){T.step(s,.04);full=s.active.find(c=>c.loaded===s.puzzle.arrows[c.id].capacity);}
- assert.ok(full,'a truck fills during collection');assert.equal(full.phase,'road');assert.ok(full.distance<T.ROAD.length);assert.equal(T.workingCount(s),2);
- const id=G.available(s.puzzle,s.remaining)[0];assert.equal(T.dispatch(s,id),'ok');assert.equal(s.active.length,4);assert.equal(T.workingCount(s),3);
- const restored=T.restore(T.snapshot(s));assert.deepEqual(restored.active,s.active);assert.equal(T.workingCount(restored),3);
- const undone=T.undo(restored);assert.equal(T.workingCount(undone),2);assert.ok(undone.remaining.includes(id));assert.ok(undone.active.some(c=>c.id===full.id));
+ assert.ok(full,'a truck fills during collection');assert.equal(full.phase,'road');assert.ok(full.distance<T.ROAD.length);assert.equal(T.workingCount(s),s.puzzle.limit-1);
+ const id=G.available(s.puzzle,s.remaining)[0];assert.equal(T.dispatch(s,id),'ok');assert.equal(s.active.length,s.puzzle.limit+1);assert.equal(T.workingCount(s),s.puzzle.limit);
+ const restored=T.restore(T.snapshot(s));assert.deepEqual(restored.active,s.active);assert.equal(T.workingCount(restored),s.puzzle.limit);
+ const undone=T.undo(restored);assert.equal(T.workingCount(undone),s.puzzle.limit-1);assert.ok(undone.remaining.includes(id));assert.ok(undone.active.some(c=>c.id===full.id));
  advance(restored,8);assert.ok(restored.delivered.some(c=>c.id===full.id));
 });
 test('unfilled trucks return beyond the screen and reenter from the left in FIFO order with a gap',()=>{

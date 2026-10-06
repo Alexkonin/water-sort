@@ -55,17 +55,22 @@
   function fall(art,grains,tick=0,motion=S.create(grains.length)){return S.step(art,grains,motion,tick,PHYSICS_DT);}
   function canFall(art,grains){return S.canMove(art,grains);}
   function cleanCompleted(value){return Array.isArray(value)?[...new Set(value.filter(n=>Number.isInteger(n)&&n>=1&&n<=LEVELS))].sort((a,b)=>a-b):[];}
-  function create(level=1,sound=true,completed=[]){const puzzle=generate(level);return{puzzle,remaining:puzzle.arrows.map(a=>a.id),grains:puzzle.art.cells.slice(),motion:S.create(puzzle.art.cells.length),active:[],delivered:[],queue:[],history:[],sound,completed:cleanCompleted(completed),clock:0,sandTick:0,sandMoving:false,sandDirty:false,jammed:false};}
-  function baseSnapshot(s){return{version:VERSION,level:s.puzzle.level,clock:s.clock,sandTick:s.sandTick,motion:S.snapshot(s.motion),remaining:s.remaining.slice(),grains:s.grains.slice(),active:s.active.map(a=>({...a})),delivered:s.delivered.map(a=>({...a})),queue:s.queue.slice(),sound:s.sound,completed:s.completed.slice()};}
+  function create(level=1,sound=true,completed=[]){const puzzle=generate(level);return{puzzle,remaining:puzzle.arrows.map(a=>a.id),grains:puzzle.art.cells.slice(),motion:S.create(puzzle.art.cells.length),active:[],delivered:[],queue:[],history:[],sound,completed:cleanCompleted(completed),clock:0,sandTick:0,sandMoving:false,sandDirty:false,jammed:false,extraSlot:false};}
+  function baseSnapshot(s){return{version:VERSION,level:s.puzzle.level,extraSlot:s.extraSlot,clock:s.clock,sandTick:s.sandTick,motion:S.snapshot(s.motion),remaining:s.remaining.slice(),grains:s.grains.slice(),active:s.active.map(a=>({...a})),delivered:s.delivered.map(a=>({...a})),queue:s.queue.slice(),sound:s.sound,completed:s.completed.slice()};}
   function dispatch(s,id){
     if(s.jammed)return'jam';if(!s.remaining.includes(id))return'missing';
     if(G.blockers(s.puzzle,s.remaining,id).length)return'blocked';
-    if(workingCount(s)>=s.puzzle.limit)return'full';
+    if(workingCount(s)>=slotLimit(s))return'full';
     s.history.push(baseSnapshot(s));if(s.history.length>8)s.history.shift();
     s.remaining=s.remaining.filter(n=>n!==id);s.active.push({id,phase:s.active.some(c=>c.phase==='depart'||c.phase==='queued')?'queued':'depart',distance:0,loaded:0,credit:0});return'ok';
   }
   // Selected trucks reserve a slot; full trucks immediately release theirs.
   function workingCount(s){return s.active.filter(c=>c.loaded<s.puzzle.arrows[c.id].capacity).length;}
+  function slotLimit(s){return s.puzzle.limit+(s.extraSlot===true?1:0);}
+  function addSlot(s){
+    if(!s.jammed||s.extraSlot||!s.remaining.length)return false;
+    s.extraSlot=true;s.jammed=isJammed(s);return true;
+  }
   function roadSpeed(s){return SPEED*(!s.remaining.length&&!s.active.some(c=>c.phase==='queued')?3:1);}
   function finishedLoad(s,car){return car.loaded>=s.puzzle.arrows[car.id].capacity||!s.grains.includes(s.puzzle.arrows[car.id].color);}
   function pump(s){
@@ -74,7 +79,7 @@
   }
   function carPose(puzzle,car){return car.phase==='queued'?parked(puzzle.arrows[car.id]):pose(car.phase==='depart'?departure(puzzle.arrows[car.id]):ROAD,car.distance);}
   function isJammed(s){
-    if(workingCount(s)<s.puzzle.limit||s.active.some(c=>c.phase==='depart'||c.phase==='queued'||finishedLoad(s,c)))return false;
+    if(workingCount(s)<slotLimit(s)||s.active.some(c=>c.phase==='depart'||c.phase==='queued'||finishedLoad(s,c)))return false;
     const colors=new Set(frontier(s.puzzle.art,s.grains).map(i=>s.grains[i]));return!s.active.some(c=>colors.has(s.puzzle.arrows[c.id].color))&&!canFall(s.puzzle.art,s.grains);
   }
   function simulateTick(s,events){
@@ -120,6 +125,8 @@
     }
     const current=saved.version===VERSION,s=create(current?saved.level:1,saved.sound!==false,current?saved.completed:[]),p=s.puzzle,ids=s.remaining;
     if(!current)return s;
+    if(saved.extraSlot!==undefined&&typeof saved.extraSlot!=='boolean')return s;
+    const extraSlot=saved.extraSlot===true;
     if(!Array.isArray(saved.remaining)||new Set(saved.remaining).size!==saved.remaining.length||!saved.remaining.every(id=>ids.includes(id)))return s;
     const pending=ids.slice(),removed=ids.filter(id=>!saved.remaining.includes(id));while(removed.length){const i=removed.findIndex(id=>!G.blockers(p,pending,id).length);if(i<0)return s;const[id]=removed.splice(i,1);pending.splice(pending.indexOf(id),1);}
     if(!Array.isArray(saved.grains)||saved.grains.length!==p.art.cells.length||!saved.grains.every(c=>Number.isInteger(c)&&c>=-1&&c<6))return s;
@@ -129,15 +136,15 @@
     const used=new Set(saved.remaining);for(const c of [...saved.active,...saved.delivered]){if(!c||!ids.includes(c.id)||used.has(c.id)||!Number.isInteger(c.loaded)||c.loaded<0||c.loaded>p.arrows[c.id].capacity)return s;used.add(c.id);}if(used.size!==ids.length)return s;
     for(const c of saved.active){if(!['queued','depart','road','waiting'].includes(c.phase)||!Number.isFinite(c.distance)||c.distance<0||!Number.isFinite(c.credit)||c.credit<0)return s;
       const max=c.phase==='depart'?departure(p.arrows[c.id]).length:(c.phase==='waiting'||c.phase==='queued')?0:ROAD.length;if(c.distance>max||((c.phase==='depart'||c.phase==='queued')&&c.loaded))return s;}
-    if(saved.active.filter(c=>c.phase==='depart').length>1||workingCount({active:saved.active,puzzle:p})>p.limit)return s;
+    if(saved.active.filter(c=>c.phase==='depart').length>1||workingCount({active:saved.active,puzzle:p})>p.limit+(extraSlot?1:0))return s;
     for(const c of saved.delivered)if(c.loaded!==p.arrows[c.id].capacity&&saved.grains.includes(p.arrows[c.id].color))return s;
     for(let color=0;color<6;color++){const removed=p.art.cells.filter(c=>c===color).length-saved.grains.filter(c=>c===color).length,loaded=[...saved.active,...saved.delivered].filter(c=>p.arrows[c.id].color===color).reduce((n,c)=>n+c.loaded,0);if(removed!==loaded)return s;}
     if(!Array.isArray(saved.queue)||new Set(saved.queue).size!==saved.queue.length||saved.queue.length!==saved.active.filter(c=>c.phase==='waiting').length||!saved.queue.every(id=>saved.active.some(c=>c.id===id&&c.phase==='waiting')))return s;
-    Object.assign(s,{clock:Number.isFinite(saved.clock)&&saved.clock>=0&&saved.clock<PHYSICS_DT?saved.clock:0,sandTick:Number.isSafeInteger(saved.sandTick)&&saved.sandTick>=0?saved.sandTick:0,remaining:saved.remaining.slice(),grains:saved.grains.slice(),active:saved.active.map(c=>({...c,credit:c.credit<=.08?c.credit:0})),delivered:saved.delivered.map(c=>({...c})),queue:saved.queue.slice()});
+    Object.assign(s,{extraSlot,clock:Number.isFinite(saved.clock)&&saved.clock>=0&&saved.clock<PHYSICS_DT?saved.clock:0,sandTick:Number.isSafeInteger(saved.sandTick)&&saved.sandTick>=0?saved.sandTick:0,remaining:saved.remaining.slice(),grains:saved.grains.slice(),active:saved.active.map(c=>({...c,credit:c.credit<=.08?c.credit:0})),delivered:saved.delivered.map(c=>({...c})),queue:saved.queue.slice()});
     if(withHistory&&Array.isArray(saved.history))for(const h of saved.history.slice(-8)){if(h?.version!==VERSION||h?.level!==p.level)continue;const r=restore(h,false);if(JSON.stringify(r.grains)===JSON.stringify(h.grains)&&JSON.stringify(r.remaining)===JSON.stringify(h.remaining))s.history.push(baseSnapshot(r));}
     s.motion=S.restore(s.grains.length,saved.motion,s.grains);s.sandDirty=canFall(p.art,s.grains)||S.snapshot(s.motion).length>0;s.jammed=isJammed(s);return s;
   }
-  function undo(s){if(!s.history.length)return null;const history=s.history.slice(),last=history.pop(),r=restore(last,false);r.history=history;r.completed=s.completed.slice();r.sound=s.sound;return r;}
-  const api={VERSION,LEVELS,COLORS,NAMES,ART,PARK,ROAD,SPEED,ROAD_GAP,PICKUP_RADIUS,PHYSICS_DT,GRAIN_SCALE,Sand:S,route,generate,picture:n=>generate(n).art,pose,parked,departure,tilePosition,frontier,nearest,take,fall,canFall,carPose,create,dispatch,workingCount,roadSpeed,step,hint,won,complete,snapshot,restore,undo,isJammed};
+  function undo(s){if(!s.history.length)return null;const history=s.history.slice(),last=history.pop(),r=restore({...last,extraSlot:s.extraSlot||last.extraSlot},false);r.history=history;r.completed=s.completed.slice();r.sound=s.sound;return r;}
+  const api={VERSION,LEVELS,COLORS,NAMES,ART,PARK,ROAD,SPEED,ROAD_GAP,PICKUP_RADIUS,PHYSICS_DT,GRAIN_SCALE,Sand:S,route,generate,picture:n=>generate(n).art,pose,parked,departure,tilePosition,frontier,nearest,take,fall,canFall,carPose,create,dispatch,workingCount,slotLimit,addSlot,roadSpeed,step,hint,won,complete,snapshot,restore,undo,isJammed};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.SandTrucks=api;
 })(globalThis);

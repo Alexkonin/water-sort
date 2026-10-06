@@ -16,7 +16,7 @@
   function drawArt(dt=0){sandArt.draw(state.puzzle.art,state.grains,state.motion,dt);}
   function update(){
     const percent=Math.round(state.grains.filter(c=>c<0).length/state.grains.length*100);
-    $('#count').textContent=T.roadSpeed(state)>T.SPEED?'ПАРКОВКА ПУСТА · СКОРОСТЬ ×3':`ПАРКОВКА · ${state.remaining.length+state.active.filter(c=>c.phase==='queued').length} МАШИН`;$('#roadCount').textContent=`${T.workingCount(state)} / ${state.puzzle.limit}`;$('#roadCount').setAttribute('aria-label',`В работе ${T.workingCount(state)} из ${state.puzzle.limit}`);
+    $('#count').textContent=T.roadSpeed(state)>T.SPEED?'ПАРКОВКА ПУСТА · СКОРОСТЬ ×3':`ПАРКОВКА · ${state.remaining.length+state.active.filter(c=>c.phase==='queued').length} МАШИН`;$('#roadCount').textContent=`${T.workingCount(state)} / ${T.slotLimit(state)}`;$('#roadCount').setAttribute('aria-label',`В работе ${T.workingCount(state)} из ${T.slotLimit(state)}`);
     canvas.setAttribute('aria-label',`${state.puzzle.art.title}. Собрано ${percent}% песка.`);
   }
   function build(){
@@ -38,12 +38,12 @@
     }
     particleLayer=svg('g',{'pointer-events':'none','aria-hidden':'true'});scene.append(particleLayer);
     $('#level').setAttribute('aria-label',`Выбрать уровень. Сейчас ${state.puzzle.level}: ${state.puzzle.art.title}`);
-    drawArt();paintCars();update();save();tell(`Освободи выезд в сторону кабины. Лимит машин в работе: ${state.puzzle.limit}. Выбирай цвет нижнего слоя.`);if(T.won(state))win();else if(state.jammed)jam();
+    drawArt();paintCars();update();save();tell(`Освободи выезд в сторону кабины. Лимит машин в работе: ${T.slotLimit(state)}. Выбирай цвет нижнего слоя.`);if(T.won(state))win();else if(state.jammed)jam();
   }
   function tap(id){
     if(document.querySelector('dialog[open]'))return;const result=T.dispatch(state,id);
     if(result==='blocked'){audio.play('nope');tell('Путь перед кабиной занят. Сначала выпусти перекрывающую машину.');const g=groups.get(id);g.classList.add('blocked');setTimeout(()=>g.classList.remove('blocked'),450);return;}
-    if(result==='full'){tell(`Все места в работе заняты (${state.puzzle.limit}/${state.puzzle.limit}). Дождись заполнения кузова.`);return;}
+    if(result==='full'){tell(`Все места в работе заняты (${T.slotLimit(state)}/${T.slotLimit(state)}). Дождись заполнения кузова.`);return;}
     if(result!=='ok')return;audio.play('tap');tell(state.active.find(c=>c.id===id)?.phase==='queued'?'Самосвал выбран и выедет следом. Место в работе зарезервировано.':'Самосвал выезжает. Он соберёт свой цвет с нижнего края.');if(document.activeElement===groups.get(id))document.activeElement.blur();drawArt();paintCars();update();save();
   }
   function paintCars(){
@@ -71,7 +71,7 @@
     const art=state.puzzle.art,c=$('#finishedArt');c.width=art.width;c.height=art.height;const context=c.getContext('2d');art.cells.forEach((color,i)=>{context.fillStyle=T.COLORS[color];context.fillRect(i%art.width,Math.floor(i/art.width),1,1);});
     $('#next').textContent=state.puzzle.level===T.LEVELS?'Начать с первой картины':'Следующая картина →';openDialog('#winDialog');
   }
-  function jam(){const colors=[...new Set(T.frontier(state.puzzle.art,state.grains).map(i=>T.NAMES[state.grains[i]]))];$('#jamText').textContent=`Все места в работе заняты, а цвета этих машин закрыты. Снизу сейчас: ${colors.join(', ')}. Верни последний выезд и выбери другой цвет.`;$('#jamUndo').disabled=!state.history.length;save();openDialog('#jamDialog');}
+  function jam(){const colors=[...new Set(T.frontier(state.puzzle.art,state.grains).map(i=>T.NAMES[state.grains[i]]))];$('#jamText').textContent=`Все места в работе заняты, а цвета этих машин закрыты. Снизу сейчас: ${colors.join(', ')}. ${state.extraSlot?'Верни последний выезд и выбери другой цвет.':'Можно один раз за попытку добавить место для машины или вернуть последний выезд.'}`;$('#jamExtra').hidden=state.extraSlot||!state.remaining.length;$('#jamUndo').disabled=!state.history.length;save();openDialog('#jamDialog');}
   function rewind(){const r=T.undo(state);if(!r)return;audio.stop();state=r;build();tell('Машина вернулась на парковку, песок восстановлен. Выбери другой цвет.');}
   function tick(now){
     const dt=Math.min(.05,Math.max(0,(now-(last||now))/1000));last=now;
@@ -85,7 +85,7 @@
   function load(level){audio.stop();state=T.create(level,state.sound,state.completed);build();}
   function levels(page=Math.floor((state.puzzle.level-1)/10)){levelPage=Math.max(0,Math.min(Math.ceil(T.LEVELS/10)-1,page));const first=levelPage*10+1,last=Math.min(T.LEVELS,first+9);$('#levelsTitle').textContent=`Картины · ${T.LEVELS}`;$('#levelsRange').textContent=`${first}–${last} из ${T.LEVELS}`;$('#levelsPrev').disabled=levelPage===0;$('#levelsNext').disabled=last===T.LEVELS;const grid=$('#levels');grid.replaceChildren();const unlocked=Math.min(T.LEVELS,Math.max(0,...state.completed)+1);for(let n=first;n<=last;n++){const p=T.generate(n),b=document.createElement('button');b.disabled=n>unlocked;b.className=state.completed.includes(n)?'done':'';b.innerHTML=`<strong>${String(n).padStart(2,'0')}</strong><span>${p.art.title}</span><i>${state.completed.includes(n)?'✓':n>unlocked?'◇':'→'}</i>`;b.onclick=()=>load(n);grid.append(b);}openDialog('#levelsDialog');}
 
-  $('#restart').onclick=()=>load(state.puzzle.level);$('#jamUndo').onclick=rewind;$('#jamRestart').onclick=()=>load(state.puzzle.level);$('#level').onclick=()=>levels();$('#levelsPrev').onclick=()=>levels(levelPage-1);$('#levelsNext').onclick=()=>levels(levelPage+1);
+  $('#restart').onclick=()=>load(state.puzzle.level);$('#jamUndo').onclick=rewind;$('#jamExtra').onclick=()=>{if(!T.addSlot(state))return;$('#jamDialog').close();audio.play('complete');update();save();tell('Добавлено одно место до конца попытки. Выбери самосвал нужного цвета на парковке.');};$('#jamRestart').onclick=()=>load(state.puzzle.level);$('#level').onclick=()=>levels();$('#levelsPrev').onclick=()=>levels(levelPage-1);$('#levelsNext').onclick=()=>levels(levelPage+1);
   $('#next').onclick=()=>load(state.puzzle.level%T.LEVELS+1);$('#again').onclick=()=>load(state.puzzle.level);document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());for(const id of['#winDialog','#jamDialog'])$(id).addEventListener('cancel',e=>e.preventDefault());
   addEventListener('pagehide',save);document.addEventListener('visibilitychange',()=>{if(document.hidden)save();});build();requestAnimationFrame(tick);
   if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{}));

@@ -23,8 +23,7 @@
   function drawArt(dt=0){sandArt.draw(state.puzzle.art,state.grains,state.motion,dt);}
   function update(){
     const percent=Math.round(state.grains.filter(c=>c<0).length/state.grains.length*100);
-    $('#count').textContent=T.roadSpeed(state)>T.SPEED?'ПАРКОВКА ПУСТА · СКОРОСТЬ ×3':`ПАРКОВКА · ${state.remaining.length+state.active.filter(c=>c.phase==='queued').length} МАШИН`;$('#roadCount').textContent=`${T.workingCount(state)} / ${T.slotLimit(state)}`;$('#roadCount').setAttribute('aria-label',`В работе ${T.workingCount(state)} из ${T.slotLimit(state)}`);
-    const undo=$('#undo');undo.setAttribute('aria-disabled',!state.history.length);undo.setAttribute('tabindex',state.history.length?0:-1);undo.style.opacity=state.history.length?'1':'.35';
+    $('#roadCount').textContent=`${T.workingCount(state)} / ${T.slotLimit(state)}`;$('#roadCount').setAttribute('aria-label',`В работе ${T.workingCount(state)} из ${T.slotLimit(state)}`);
     canvas.setAttribute('aria-label',`${state.puzzle.art.title}. Собрано ${percent}% песка.`);
   }
   function build(){
@@ -34,9 +33,6 @@
     // The only visible road is the straight horizontal collection lane.
     rect(scene,-100,327,620,55,'#1c3036',0);path(scene,'M-100 327H520 M-100 382H520',{stroke:'#a9beb4','stroke-width':2});path(scene,'M-100 354H520',{stroke:'#d9dfc277','stroke-width':2,'stroke-dasharray':'11 14'});
     rect(scene,347,315,53,20,'#35564e',6);text(scene,374,329,'',{'text-anchor':'middle',id:'roadCount',class:'road-count'});
-    text(scene,24,398,'',{'text-anchor':'start',id:'count',class:'scene-label'});
-    const undo=svg('g',{id:'undo',role:'button','aria-label':'Вернуть последнюю машину'});
-    rect(undo,300,383,98,24,'#35564e',6);text(undo,349,398,'↶ Вернуть',{'text-anchor':'middle',class:'road-count'});undo.onclick=rewind;undo.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();rewind();}};scene.append(undo);
     rect(scene,22,405,376,373,'#b9c2a90b',10);
     for(let y=0;y<state.puzzle.height;y++)for(let x=0;x<state.puzzle.width;x++){const at=parkingPose({x:T.PARK.x+x*T.PARK.cell,y:T.PARK.y+y*T.PARK.cell});scene.append(svg('circle',{cx:at.x,cy:at.y,r:.9,fill:'#d2d9b724'}));}
     for(const a of state.puzzle.arrows){

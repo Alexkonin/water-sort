@@ -14,7 +14,7 @@
     // Introductory pictures need room for every color plus a mistaken choice.
     // Keep layouts and capacities intact so existing progress remains valid.
     const rows=d.rows.flatMap(row=>Array(GRAIN_SCALE).fill([...row].map(c=>c.repeat(GRAIN_SCALE)).join('')));
-    return{level,width:d.width||12,height:d.height||12,limit:level<=30?Math.max(d.limit||3,new Set(d.rows.join('')).size+1):d.limit||3,solution:d.solution.slice(),...(d.releaseFrames?{releaseFrames:d.releaseFrames.slice()}:{}),arrows:d.arrows.map(a=>({...a,capacity:a.capacity*GRAIN_SCALE**2,cells:a.cells.map(c=>c.slice())})),art:{width:rows[0].length,height:rows.length,cells:rows.join('').split('').map(Number),title:d.title}};
+    return{level,width:d.width||12,height:d.height||12,limit:level<=30?Math.max(d.limit||3,new Set(d.rows.join('')).size+1):d.limit||3,solution:d.solution.slice(),...(d.releaseFrames?{releaseFrames:d.releaseFrames.slice()}:{}),...(d.releaseTicks?{releaseTicks:d.releaseTicks.slice()}:{}),arrows:d.arrows.map(a=>({...a,capacity:a.capacity*GRAIN_SCALE**2,cells:a.cells.map(c=>c.slice())})),art:{width:rows[0].length,height:rows.length,cells:rows.join('').split('').map(Number),title:d.title}};
   }
   function route(vertices,radius=14){
     const points=[vertices[0]];
@@ -64,7 +64,7 @@
     if(G.blockers(s.puzzle,s.remaining,id).length)return'blocked';
     if(workingCount(s)>=slotLimit(s))return'full';
     s.history.push(baseSnapshot(s));if(s.history.length>8)s.history.shift();
-    s.remaining=s.remaining.filter(n=>n!==id);s.active.push({id,phase:s.active.some(c=>c.phase==='depart'||c.phase==='queued')?'queued':'depart',distance:0,loaded:0,credit:0});return'ok';
+    s.remaining=s.remaining.filter(n=>n!==id);s.active.push({id,phase:'depart',distance:0,loaded:0,credit:0});return'ok';
   }
   // Selected trucks reserve a slot; full trucks immediately release theirs.
   function workingCount(s){return s.active.filter(c=>c.loaded<s.puzzle.arrows[c.id].capacity).length;}
@@ -86,8 +86,8 @@
   }
   function simulateTick(s,events){
     const dt=PHYSICS_DT;if(s.sandDirty){const moved=fall(s.puzzle.art,s.grains,s.sandTick,s.motion);events.moved+=moved;s.sandDirty=moved>0;}s.sandTick++;pump(s);
-    // Accept clicks immediately; serialize the physical exits to avoid crossing cars.
-    if(!s.active.some(c=>c.phase==='depart')){const next=s.active.find(c=>c.phase==='queued');if(next)next.phase='depart';}
+    // Resume old queued saves in parallel; the road entrance still meters traffic.
+    for(const car of s.active)if(car.phase==='queued')car.phase='depart';
     const speed=roadSpeed(s);
     for(const car of s.active){
       const a=s.puzzle.arrows[car.id];
@@ -138,7 +138,7 @@
     const used=new Set(saved.remaining);for(const c of [...saved.active,...saved.delivered]){if(!c||!ids.includes(c.id)||used.has(c.id)||!Number.isInteger(c.loaded)||c.loaded<0||c.loaded>p.arrows[c.id].capacity)return s;used.add(c.id);}if(used.size!==ids.length)return s;
     for(const c of saved.active){if(!['queued','depart','road','waiting'].includes(c.phase)||!Number.isFinite(c.distance)||c.distance<0||!Number.isFinite(c.credit)||c.credit<0)return s;
       const max=c.phase==='depart'?departure(p.arrows[c.id]).length:(c.phase==='waiting'||c.phase==='queued')?0:ROAD.length;if(c.distance>max||((c.phase==='depart'||c.phase==='queued')&&c.loaded))return s;}
-    if(saved.active.filter(c=>c.phase==='depart').length>1||workingCount({active:saved.active,puzzle:p})>p.limit+(extraSlot?1:0))return s;
+    if(workingCount({active:saved.active,puzzle:p})>p.limit+(extraSlot?1:0))return s;
     for(const c of saved.delivered)if(c.loaded!==p.arrows[c.id].capacity&&saved.grains.includes(p.arrows[c.id].color))return s;
     for(let color=0;color<6;color++){const removed=p.art.cells.filter(c=>c===color).length-saved.grains.filter(c=>c===color).length,loaded=[...saved.active,...saved.delivered].filter(c=>p.arrows[c.id].color===color).reduce((n,c)=>n+c.loaded,0);if(removed!==loaded)return s;}
     if(!Array.isArray(saved.queue)||new Set(saved.queue).size!==saved.queue.length||saved.queue.length!==saved.active.filter(c=>c.phase==='waiting').length||!saved.queue.every(id=>saved.active.some(c=>c.id===id&&c.phase==='waiting')))return s;

@@ -4,12 +4,15 @@ function advance(s,seconds){for(let t=0;t<seconds;t+=.04)T.step(s,.04);}
 function ready(s){if(s.sandDirty||s.active.some(c=>c.phase==='depart'||c.loaded>=s.puzzle.arrows[c.id].capacity||!s.grains.includes(s.puzzle.arrows[c.id].color)))return false;const colors=new Set(T.frontier(s.puzzle.art,s.grains).map(i=>s.grains[i]));return!s.active.some(c=>colors.has(s.puzzle.arrows[c.id].color));}
 // The conservative certificate waits for settled sand before every dispatch.
 // This bounds the search, not the expected duration of a human playthrough.
+// Tick certificates record actual departure starts from the former serialized
+// traffic, preserving a winning strategy while players may now start together.
 const SOLVE_LIMIT=1800;
 function solve(level,random=false){const s=T.create(level);let time=0,frame=0,next=0,seed=level*137,first=null;while(!T.won(s)&&!s.jammed&&time<SOLVE_LIMIT){
  if(random){const free=G.available(s.puzzle,s.remaining);seed=(Math.imul(seed,1664525)+1013904223)>>>0;if(free.length)T.dispatch(s,free[Math.floor(seed/2**32*free.length)]);}
+ else if(s.puzzle.releaseTicks){while(next<s.puzzle.solution.length&&s.puzzle.releaseTicks[next]===frame){assert.equal(T.dispatch(s,s.puzzle.solution[next]),'ok',`level ${level}, tick ${frame}`);next++;}}
  else if(s.puzzle.releaseFrames){while(next<s.puzzle.solution.length&&s.puzzle.releaseFrames[next]===frame){assert.equal(T.dispatch(s,s.puzzle.solution[next]),'ok');next++;}}
  else if(next<s.puzzle.solution.length&&ready(s)){if(T.dispatch(s,s.puzzle.solution[next])==='ok')next++;}
- const events=T.step(s,.04);time+=.04;frame++;if(first===null&&events.length)first=time;
+ const dt=s.puzzle.releaseTicks?T.PHYSICS_DT:.04,events=T.step(s,dt);time+=dt;frame++;if(first===null&&events.length)first=time;
  assert.ok(T.workingCount(s)<=s.puzzle.limit);for(const c of s.active.filter(c=>c.phase==='road')){const at=T.carPose(s.puzzle,c);assert.equal(at.y,T.ART.y+T.ART.height+42);assert.equal(at.angle,90);}
  }return{s,time,first};}
 test('all 100 dense parking lots have many cars, real blockers, and a certified straight exit order',()=>{
@@ -20,7 +23,7 @@ test('all 100 dense parking lots have many cars, real blockers, and a certified 
  }assert.equal(T.LEVELS,100);assert.equal(arts.size,100);
 });
 test('new campaign certificates and late-level progress cover all 100 pictures',()=>{
- for(let n=11;n<=100;n++){const p=T.generate(n);assert.equal(p.releaseFrames.length,p.arrows.length);assert.ok(p.releaseFrames.every((f,i)=>Number.isInteger(f)&&f>=0&&(!i||f>=p.releaseFrames[i-1])));}
+ for(let n=11;n<=100;n++){const p=T.generate(n);const releases=p.releaseTicks||p.releaseFrames;assert.equal(releases.length,p.arrows.length);assert.ok(releases.every((f,i)=>Number.isInteger(f)&&f>=0&&(!i||f>=releases[i-1])));}
  const completed=Array.from({length:99},(_,i)=>i+1),s=T.create(100,false,completed),r=T.restore(T.snapshot(s));
  assert.equal(r.puzzle.level,100);assert.deepEqual(r.completed,completed);assert.equal(r.sound,false);
  const old=T.create(10,true,Array.from({length:9},(_,i)=>i+1));assert.equal(T.restore(T.snapshot(old)).puzzle.level,10);assert.deepEqual(T.restore(T.snapshot(old)).completed,old.completed);
@@ -85,18 +88,26 @@ test('fixed physics steps give the same grains and truck load at different displ
  const a=T.create(1),b=T.create(1);T.dispatch(a,0);T.dispatch(b,0);for(let n=0;n<100;n++)T.step(a,.04);for(let n=0;n<240;n++)T.step(b,1/60);
  assert.deepEqual(a.grains,b.grains);assert.deepEqual(a.active,b.active);assert.deepEqual(a.delivered,b.delivered);assert.equal(a.sandTick,b.sandTick);assert.deepEqual(a.motion,b.motion);
 });
-test('rapid selections reserve slots and leave in order without overlapping departures',()=>{
+test('rapid selections start together and merge onto the road with a gap',()=>{
  const s=T.create(1),free=G.available(s.puzzle,s.remaining),blocked=s.remaining.find(id=>!free.includes(id));assert.equal(T.dispatch(s,blocked),'blocked');
  const ids=s.puzzle.solution.slice(0,s.puzzle.limit);for(const id of ids)assert.equal(T.dispatch(s,id),'ok');
- assert.deepEqual(s.active.map(c=>c.phase),ids.map((_,i)=>i?'queued':'depart'));assert.equal(T.workingCount(s),s.puzzle.limit);
- assert.deepEqual(T.carPose(s.puzzle,s.active[1]),T.parked(s.puzzle.arrows[ids[1]]));
+ assert.ok(s.active.every(c=>c.phase==='depart'));assert.equal(T.workingCount(s),s.puzzle.limit);
  assert.equal(T.dispatch(s,G.available(s.puzzle,s.remaining)[0]),'full');assert.equal(T.dispatch(s,ids[1]),'missing');
+ T.step(s,T.PHYSICS_DT);assert.ok(s.active.every(c=>c.phase==='depart'&&c.distance>0));
  const restored=T.restore(T.snapshot(s));assert.deepEqual(restored.active,s.active);assert.equal(T.undo(restored).active.length,s.puzzle.limit-1);
- const started=[ids[0]];for(let i=0;i<1200&&s.active.some(c=>['depart','queued'].includes(c.phase));i++){
-  T.step(s,.04);const departing=s.active.filter(c=>c.phase==='depart');assert.ok(departing.length<=1);
-  if(departing.length&&!started.includes(departing[0].id))started.push(departing[0].id);
+ const entered=new Set();for(let i=0;i<1200;i++){
+  T.step(s,.04);const road=s.active.filter(c=>c.phase==='road').sort((a,b)=>b.distance-a.distance);
+  for(const car of road)entered.add(car.id);
+  for(let j=1;j<road.length;j++)assert.ok(road[j-1].distance-road[j].distance>=T.ROAD_GAP-1e-8);
+  if(entered.size===ids.length)break;
  }
- assert.deepEqual(started,ids);assert.ok(!s.active.some(c=>['depart','queued'].includes(c.phase)));
+ assert.equal(entered.size,ids.length);assert.ok(!s.active.some(c=>['depart','queued'].includes(c.phase)));
+});
+test('old queued saves resume all selected trucks without waiting for another departure',()=>{
+ const s=T.create(1);for(const id of s.puzzle.solution.slice(0,s.puzzle.limit))T.dispatch(s,id);
+ for(const c of s.active.slice(1))c.phase='queued';
+ const r=T.restore(T.snapshot(s));T.step(r,T.PHYSICS_DT);
+ assert.equal(r.active.length,s.active.length);assert.ok(r.active.every(c=>c.phase==='depart'&&c.distance>0));
 });
 test('a full truck releases its slot before leaving the road, including after save and undo',()=>{
  const s=T.create(1);for(const id of s.puzzle.solution.slice(0,s.puzzle.limit))assert.equal(T.dispatch(s,id),'ok');

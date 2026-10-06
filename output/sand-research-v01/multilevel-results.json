@@ -1,0 +1,27 @@
+{
+  "runs": [
+    {
+      "level": 1,
+      "frameCount": 1200,
+      "jammed": false
+    },
+    {
+      "level": 2,
+      "frameCount": 1200,
+      "jammed": false
+    },
+    {
+      "level": 11,
+      "frameCount": 1200,
+      "jammed": false
+    },
+    {
+      "level": 40,
+      "frameCount": 1200,
+      "jammed": false
+    }
+  ],
+  "maxIsolatedDarkPixels": 0,
+  "sampledEveryFrames": 12,
+  "frameDt": 0.04
+}

@@ -1,7 +1,7 @@
 <!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Проверка песка</title>
 <style>body{margin:0;padding:24px;background:#234b43;color:#f1ecd6;font:16px system-ui}main{max-width:900px;margin:auto}h1{font:32px Georgia}section{display:flex;gap:24px;flex-wrap:wrap}article{flex:1;min-width:280px}canvas{width:100%;border:3px solid #e7e1c6;border-radius:8px;box-sizing:border-box}button{background:#e7e1c6;color:#234b43;border:0;border-radius:8px;padding:12px;margin:14px 8px 8px 0;font:inherit}p{color:#c5ceb7}output{display:block;font-size:13px;color:#c5ceb7}</style>
 <main><h1>Осыпание и уплотнение песка</h1><p>Та же физика и отрисовка, что в игре. Эта проверка не использует игровые сохранения.</p><section><article><canvas id="heap" width="776" height="600" aria-label="Осыпание вертикальной насыпи"></canvas><button id="collapse">Повторить осыпание</button></article><article><canvas id="picture" width="776" height="600" aria-label="Сбор песка из нижней части картины"></canvas><button id="collect">Собрать снизу</button><button id="reset">Восстановить картину</button></article></section><output id="metrics"></output></main>
-<script src="../../arrow-escape.js"></script><script src="../../sand-trucks-levels.js"></script><script src="../../sand-trucks-sand.js"></script><script src="../../sand-trucks.js"></script><script src="../../sand-trucks-sand-art.js"></script><script>
+<script src="../../arrow-escape.js"></script><script src="../../sand-trucks-levels.js"></script><script src="../../sand-trucks-sand.js"></script><script src="../../sand-trucks.js"></script><script src="../../sand-trucks-surface.js"></script><script src="../../sand-trucks-sand-art.js"></script><script>
 const T=SandTrucks,S=T.Sand,art={width:96,height:80},renderers=['heap','picture'].map(id=>SandTruckSandArt.create(document.getElementById(id),T.COLORS));let fields=[],tick=0,last=0,clock=0,collect=0,drawMs=0,frames=0;
 function reset(i){const grains=i?T.generate(1).art.cells.slice():Array.from({length:96*80},(_,n)=>n%96>54&&Math.floor(n/96)>20?Math.floor(n/96/10)%3:-1);fields[i]={grains,motion:S.create(grains.length),dirty:true};}
 reset(0);reset(1);document.getElementById('collapse').onclick=()=>reset(0);document.getElementById('reset').onclick=()=>reset(1);document.getElementById('collect').onclick=()=>collect=180;
@@ -9,7 +9,7 @@ function frame(now){const dt=Math.min(.05,(now-(last||now))/1000);last=now;clock
  while(clock>=T.PHYSICS_DT){clock-=T.PHYSICS_DT;tick++;for(const f of fields)if(f.dirty)f.dirty=S.step(art,f.grains,f.motion,tick,T.PHYSICS_DT)>0;
   if(collect>0&&tick%4===0){const f=fields[1],start=(art.height-1)*art.width;for(let x=15;x<52;x++){const i=start+x;if(f.grains[i]>=0){f.grains[i]=-1;S.clear(f.motion,i);collect--;}}f.dirty=true;}
  }
- const begin=performance.now();fields.forEach((f,i)=>renderers[i].draw(art,f.grains,f.motion));drawMs+=performance.now()-begin;frames++;
+ const begin=performance.now();fields.forEach((f,i)=>renderers[i].draw(art,f.grains,f.motion,dt));drawMs+=performance.now()-begin;frames++;
  if(frames%60===0)document.getElementById('metrics').textContent=`Среднее время отрисовки двух картин: ${(drawMs/frames).toFixed(1)} мс · Песчинок: ${fields[0].grains.filter(c=>c>=0).length} / ${fields[1].grains.filter(c=>c>=0).length}`;
  requestAnimationFrame(frame);
 }requestAnimationFrame(frame);

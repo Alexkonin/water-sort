@@ -3,9 +3,9 @@
   const G=ArrowEscape,T=SandTrucks,$=s=>document.querySelector(s),NS='http://www.w3.org/2000/svg',KEY='sandtrucks.v1';
   let levelPage=0;
   let saved;try{saved=JSON.parse(localStorage.getItem(KEY));}catch{}
-  let state=T.restore(saved),last=0,saveClock=0,soundClock=0,particles=[],groups=new Map(),labels=new Map(),canvas,sandArt,particleLayer,presented=false;
+  let state=T.restore(saved),last=0,saveClock=0,particles=[],groups=new Map(),labels=new Map(),canvas,sandArt,particleLayer,presented=false;
   if(saved&&saved.version!==T.VERSION)try{localStorage.setItem('sandtrucks.backup.v'+saved.version,JSON.stringify(saved));}catch{}
-  const scene=$('#scene'),reduced=matchMedia('(prefers-reduced-motion: reduce)'),audio=GameAudio.create({enabled:()=>state.sound});
+  const scene=$('#scene'),reduced=matchMedia('(prefers-reduced-motion: reduce)'),audio=GameAudio.create({enabled:()=>state.sound}),sandAudio=SandTruckAudio.create({enabled:()=>state.sound});
   function svg(tag,attrs={}){const el=document.createElementNS(NS,tag);Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));return el;}
   function rect(g,x,y,w,h,fill,r=2,attrs={}){const el=svg('rect',{x,y,width:w,height:h,rx:r,fill,...attrs});g.append(el);return el;}
   function path(g,d,attrs={}){const el=svg('path',{d,...attrs});g.append(el);return el;}
@@ -72,24 +72,24 @@
     }
     particles=particles.filter(e=>{e.t+=dt;const car=state.active.find(c=>c.id===e.id);if(e.t>=e.duration||!car||car.phase!=='road'){e.el.remove();return false;}e.el.setAttribute('cx',e.x+e.vx*e.t);e.el.setAttribute('cy',e.y+.5*e.gravity*e.t*e.t);return true;});
   }
-  function openDialog(id){document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();}
+  function openDialog(id){sandAudio.stop();document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();}
   function win(){
     if(presented)return;presented=true;T.complete(state);save();audio.play('win');$('#winText').textContent=`«${state.puzzle.art.title}»: ${state.puzzle.arrows.length} самосвалов собрали весь песок.`;
     const art=state.puzzle.art,c=$('#finishedArt');c.width=art.width;c.height=art.height;const context=c.getContext('2d');art.cells.forEach((color,i)=>{context.fillStyle=T.COLORS[color];context.fillRect(i%art.width,Math.floor(i/art.width),1,1);});
     $('#next').textContent=state.puzzle.level===T.LEVELS?'Начать с первой картины':'Следующая картина →';openDialog('#winDialog');
   }
   function jam(){const colors=[...new Set(T.frontier(state.puzzle.art,state.grains).map(i=>T.NAMES[state.grains[i]]))];$('#jamText').textContent=`Все места в работе заняты, а цвета этих машин закрыты. Снизу сейчас: ${colors.join(', ')}. ${state.extraSlot?'Верни последний выезд и выбери другой цвет.':'Можно один раз за попытку добавить место для машины или вернуть последний выезд.'}`;$('#jamExtra').hidden=state.extraSlot||!state.remaining.length;$('#jamUndo').disabled=!state.history.length;save();openDialog('#jamDialog');}
-  function rewind(){const r=T.undo(state);if(!r)return;audio.stop();state=r;build();tell('Машина вернулась на парковку, песок восстановлен. Выбери другой цвет.');}
+  function rewind(){const r=T.undo(state);if(!r)return;audio.stop();sandAudio.stop();state=r;build();tell('Машина вернулась на парковку, песок восстановлен. Выбери другой цвет.');}
   function tick(now){
     const dt=Math.min(.05,Math.max(0,(now-(last||now))/1000));last=now;
     if(!document.querySelector('dialog[open]')&&!document.hidden){
       const before=state.active.map(c=>c.id+':'+c.phase).join('|'),working=T.workingCount(state),events=T.step(state,dt);paintCars();paintParticles(dt,events);
       if(events.length||events.moved||sandArt.moving)drawArt(dt);if(events.length||before!==state.active.map(c=>c.id+':'+c.phase).join('|'))update();
-      soundClock+=dt;if(events.length&&soundClock>.25){soundClock=0;audio.play('flow',{duration:.12});}if(T.workingCount(state)<working){tell('Кузов заполнен — можно выбрать следующий самосвал.');audio.play('complete');save();}
+      sandAudio.step(events.length,dt);if(T.workingCount(state)<working){tell('Кузов заполнен — можно выбрать следующий самосвал.');audio.play('complete');save();}
       saveClock+=dt;if(saveClock>=1){saveClock=0;if(state.active.length||state.sandMoving)save();}if(state.jammed)jam();else if(T.won(state))win();
     }requestAnimationFrame(tick);
   }
-  function load(level){audio.stop();state=T.create(level,state.sound,state.completed);build();}
+  function load(level){audio.stop();sandAudio.stop();state=T.create(level,state.sound,state.completed);build();}
   function levels(page=Math.floor((state.puzzle.level-1)/10)){levelPage=Math.max(0,Math.min(Math.ceil(T.LEVELS/10)-1,page));const first=levelPage*10+1,last=Math.min(T.LEVELS,first+9);$('#levelsTitle').textContent=`Картины · ${T.LEVELS}`;$('#levelsRange').textContent=`${first}–${last} из ${T.LEVELS}`;$('#levelsPrev').disabled=levelPage===0;$('#levelsNext').disabled=last===T.LEVELS;const grid=$('#levels');grid.replaceChildren();const unlocked=Math.min(T.LEVELS,Math.max(0,...state.completed)+1);for(let n=first;n<=last;n++){const p=T.generate(n),b=document.createElement('button');b.disabled=n>unlocked;b.className=state.completed.includes(n)?'done':'';b.innerHTML=`<strong>${String(n).padStart(2,'0')}</strong><span>${p.art.title}</span><i>${state.completed.includes(n)?'✓':n>unlocked?'◇':'→'}</i>`;b.onclick=()=>load(n);grid.append(b);}openDialog('#levelsDialog');}
 
   $('#restart').onclick=()=>load(state.puzzle.level);$('#jamUndo').onclick=rewind;$('#jamExtra').onclick=()=>{if(!T.addSlot(state))return;$('#jamDialog').close();audio.play('complete');update();save();tell('Добавлено одно место до конца попытки. Выбери самосвал нужного цвета на парковке.');};$('#jamRestart').onclick=()=>load(state.puzzle.level);$('#level').onclick=()=>levels();$('#levelsPrev').onclick=()=>levels(levelPage-1);$('#levelsNext').onclick=()=>levels(levelPage+1);

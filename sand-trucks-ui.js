@@ -22,6 +22,7 @@
   function transform(group,at){group.setAttribute('transform',`translate(${at.x} ${at.y}) rotate(${at.angle}) scale(${at.scale||1})`);}
   function drawArt(dt=0){sandArt.draw(state.puzzle.art,state.grains,state.motion,dt);}
   function update(){
+    $('#sound').setAttribute('aria-pressed',String(state.sound));$('#sound').setAttribute('aria-label',state.sound?'Выключить звук':'Включить звук');$('#sound use').setAttribute('href','icons.svg?v=63#'+(state.sound?'sound':'muted'));
     const percent=Math.round(state.grains.filter(c=>c<0).length/state.grains.length*100);
     $('#roadCount').textContent=`${T.workingCount(state)} / ${T.slotLimit(state)}`;$('#roadCount').setAttribute('aria-label',`В работе ${T.workingCount(state)} из ${T.slotLimit(state)}`);
     canvas.setAttribute('aria-label',`${state.puzzle.art.title}. Собрано ${percent}% песка.`);
@@ -92,6 +93,7 @@
   function load(level){audio.stop();sandAudio.stop();state=T.create(level,state.sound,state.completed);build();}
   function levels(page=Math.floor((state.puzzle.level-1)/10)){levelPage=Math.max(0,Math.min(Math.ceil(T.LEVELS/10)-1,page));const first=levelPage*10+1,last=Math.min(T.LEVELS,first+9);$('#levelsTitle').textContent=`Картины · ${T.LEVELS}`;$('#levelsRange').textContent=`${first}–${last} из ${T.LEVELS}`;$('#levelsPrev').disabled=levelPage===0;$('#levelsNext').disabled=last===T.LEVELS;const grid=$('#levels');grid.replaceChildren();const unlocked=Math.min(T.LEVELS,Math.max(0,...state.completed)+1);for(let n=first;n<=last;n++){const p=T.generate(n),b=document.createElement('button');b.disabled=n>unlocked;b.className=state.completed.includes(n)?'done':'';b.innerHTML=`<strong>${String(n).padStart(2,'0')}</strong><span>${p.art.title}</span><i>${state.completed.includes(n)?'✓':n>unlocked?'◇':'→'}</i>`;b.onclick=()=>load(n);grid.append(b);}openDialog('#levelsDialog');}
 
+  $('#sound').onclick=()=>{state.sound=!state.sound;sandAudio.stop();audio.sync();if(state.sound){sandAudio.unlock();audio.play('tap');}update();save();};
   $('#restart').onclick=()=>load(state.puzzle.level);$('#jamUndo').onclick=rewind;$('#jamExtra').onclick=()=>{if(!T.addSlot(state))return;$('#jamDialog').close();audio.play('complete');update();save();tell('Добавлено одно место до конца попытки. Выбери самосвал нужного цвета на парковке.');};$('#jamRestart').onclick=()=>load(state.puzzle.level);$('#level').onclick=()=>levels();$('#levelsPrev').onclick=()=>levels(levelPage-1);$('#levelsNext').onclick=()=>levels(levelPage+1);
   $('#next').onclick=()=>load(state.puzzle.level%T.LEVELS+1);$('#again').onclick=()=>load(state.puzzle.level);document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());for(const id of['#winDialog','#jamDialog'])$(id).addEventListener('cancel',e=>e.preventDefault());
   addEventListener('pagehide',save);document.addEventListener('visibilitychange',()=>{if(document.hidden)save();});build();requestAnimationFrame(tick);

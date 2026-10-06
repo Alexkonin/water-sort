@@ -54,12 +54,12 @@
     if(result==='full'){tell(`Все места в работе заняты (${T.slotLimit(state)}/${T.slotLimit(state)}). Дождись заполнения кузова.`);return;}
     if(result!=='ok')return;audio.play('tap');tell(state.active.find(c=>c.id===id)?.phase==='queued'?'Самосвал выбран и выедет следом. Место в работе зарезервировано.':'Самосвал выезжает. Он соберёт свой цвет с нижнего края.');if(document.activeElement===groups.get(id))document.activeElement.blur();drawArt();paintCars();update();save();
   }
-  function paintCars(){
+  function paintCars(dt=0){
     for(const[id,group]of groups){
       const car=state.active.find(c=>c.id===id),a=state.puzzle.arrows[id],label=labels.get(id);
       if(!car&&!state.remaining.includes(id)){group.remove();label.remove();groups.delete(id);labels.delete(id);continue;}
       const hidden=car?.phase==='waiting',at=displayPose(a,car);transform(group,at);group.style.display=hidden?'none':'';label.style.display=hidden?'none':'';group.classList.toggle('moving',!!car);group.classList.toggle('queued',car?.phase==='queued');group.setAttribute('tabindex',car?-1:0);group.setAttribute('aria-disabled',!!car);
-      SandTruckArt.update(group.firstElementChild,at.angle,car?car.loaded/a.capacity:0);
+      SandTruckArt.update(group.firstElementChild,at.angle,car?car.loaded/a.capacity:0,reduced.matches?0:dt);
       if(car){label.textContent=(car.phase==='depart'||car.phase==='queued')?'':`${car.loaded}/${a.capacity}`;label.setAttribute('x',at.x);label.setAttribute('y',at.y+24);group.setAttribute('aria-label',`${T.NAMES[a.color]}, ${car.phase==='queued'?'выбран, ожидает выезда':car.phase==='depart'?'выезжает':car.phase==='waiting'?'ожидает въезда':'на нижней дороге'}, груз ${car.loaded} из ${a.capacity}`);}
       else{label.textContent='';label.setAttribute('x',at.x);label.setAttribute('y',at.y+3);}
     }
@@ -84,7 +84,7 @@
   function tick(now){
     const dt=Math.min(.05,Math.max(0,(now-(last||now))/1000));last=now;
     if(!document.querySelector('dialog[open]')&&!document.hidden){
-      const before=state.active.map(c=>c.id+':'+c.phase).join('|'),working=T.workingCount(state),events=T.step(state,dt);paintCars();paintParticles(dt,events);
+      const before=state.active.map(c=>c.id+':'+c.phase).join('|'),working=T.workingCount(state),events=T.step(state,dt);paintCars(dt);paintParticles(dt,events);
       if(events.length||events.moved||sandArt.moving)drawArt(dt);if(events.length||before!==state.active.map(c=>c.id+':'+c.phase).join('|'))update();
       sandAudio.step(events.length,dt);if(T.workingCount(state)<working){tell('Кузов заполнен — можно выбрать следующий самосвал.');audio.play('complete');save();}
       saveClock+=dt;if(saveClock>=1){saveClock=0;if(state.active.length||state.sandMoving)save();}if(state.jammed)jam();else if(T.won(state))win();

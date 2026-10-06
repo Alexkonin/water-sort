@@ -11,12 +11,15 @@
   function circle(g,x,y,r,fill){return add(g,'circle',{cx:x,cy:y,r,fill});}
   function mix(a,b,t){const ca=[1,3,5].map(i=>parseInt(a.slice(i,i+2),16)),cb=[1,3,5].map(i=>parseInt(b.slice(i,i+2),16));return'#'+ca.map((v,i)=>Math.round(v+(cb[i]-v)*t).toString(16).padStart(2,'0')).join('');}
   function create(a,cell=28){
-    const g=el('g',{'data-truck-art':'storybook'}),long=a.cells.length===3,L=a.cells.length*cell-5,t=-L/2,b=L/2,bed=t+25,bh=b-bed,color=PALETTE[a.color];
+    const root=el('g',{'data-truck-art':'storybook'}),g=el('g',{transform:'scale(.82 1)'}),long=a.cells.length===3,L=a.cells.length*cell-11,t=-L/2,b=L/2,bed=t+25,bh=b-bed,color=PALETTE[a.color];
     const dark=mix(color,'#24483c',.58),mid=mix(color,'#365948',.25),light=mix(color,'#fff0ba',.43),metal='#b9b785',bronze='#867d50';
+    root.append(g);
     const faces=[];function face(node,nx,ny,base=color){faces.push({node,nx,ny,base});return node;}
-    // A soft silhouette and a recessed chassis anchor the weight to the ground.
-    box(g,-12.2,t+2,26,L,5,'#082a244d',{transform:'translate(1.1 1.6)'});
-    box(g,-8.5,t+1,17,L-1,3,'#253e36');
+    // One continuous chassis makes cabin and bed read as a single vehicle.
+    // The narrower drawing leaves air between neighbours; hit areas stay full size.
+    const silhouette=`M-7 ${t-1}Q-12 ${t-1}-12 ${t+5}V${b-3}Q-12 ${b+2}-7 ${b+2}H7Q12 ${b+2}12 ${b-3}V${t+5}Q12 ${t-1}7 ${t-1}Z`;
+    shape(g,silhouette,'#102c29',{stroke:'#102c29','stroke-width':2.5});
+    box(g,-10,t+1,20,L,4,mid);
     const axles=long?[t+10,b-23,b-10]:[t+10,b-10];
     for(const y of axles){
       box(g,-12.5,y-1,25,2,1,'#31473b');
@@ -39,8 +42,8 @@
     box(g,-4.8,t-.65,9.6,1.7,.7,bronze);for(const x of[-3,-1,1,3])box(g,x,t-.35,.8,1,.3,'#414d37');
     for(const x of[-9.5,6.4]){box(g,x,t+.4,3.1,2.5,1,bronze);box(g,x+.35,t+.3,2.35,1.75,.65,'#fff0b6');}
     // Windshield is blue-green glass, with one broad curved reflected patch.
-    shape(g,`M-8.2 ${t+10}Q0 ${t+8.4} 8.2 ${t+10}L7.3 ${t+15.4}Q0 ${t+16.6}-7.3 ${t+15.4}Z`,'#527e82');
-    shape(g,`M-6.7 ${t+10.5}Q-1 ${t+9.5} 5.8 ${t+10.1}L1.7 ${t+12.3}H-6.4Z`,'#afd4cd');
+    shape(g,`M-8.2 ${t+10}Q0 ${t+8.4} 8.2 ${t+10}L7.3 ${t+15.4}Q0 ${t+16.6}-7.3 ${t+15.4}Z`,'#203c42');
+    shape(g,`M-6.7 ${t+10.5}Q-1 ${t+9.5} 5.8 ${t+10.1}L1.7 ${t+12.3}H-6.4Z`,'#9cc5c4');
     shape(g,`M-6.2 ${t+14.5}L-.7 ${t+13.8}M1 ${t+14}L5.8 ${t+14.5}`,'none',{stroke:'#3d6468','stroke-width':.65});
     box(g,-7.8,t+17,15.6,5,1.9,dark);box(g,-7.2,t+16.5,14.2,4.6,1.6,color);
     face(box(g,-6,t+16.7,11.8,1.1,.5,light),0,-1);
@@ -69,9 +72,9 @@
     for(const y of[bed+5,...(long?[bed+17]:[]),b-5])for(const side of[-1,1]){box(g,side<0?-11.2:9,y,2,2.7,.4,mid);circle(g,side*10.05,y+1,.55,metal);}
     for(const x of[-6.5,4.4]){box(g,x,b-2.8,2.1,3.4,.6,bronze);box(g,x+.25,b-2.7,1.5,.8,.3,'#e5d1a0');}
     for(const x of[-10,7]){box(g,x,b+.2,3,1.8,.5,'#743f32');box(g,x+.4,b+.1,2.1,.8,.3,'#ed9676');}
-    box(g,-15,t-2,30,L+5,4,'none',{class:'selection'});
-    box(g,-14,t-2,28,L+5,3,'transparent');
-    g._truck={faces,window,cargo,bed:bed+4.5,bottom:b-4.2,angle:null,load:null};update(g,0,0);return g;
+    box(root,-14,-a.cells.length*cell/2+1,28,a.cells.length*cell-2,4,'none',{class:'selection'});
+    box(root,-14,-a.cells.length*cell/2+1,28,a.cells.length*cell-2,3,'transparent');
+    root._truck={faces,window,cargo,bed:bed+4.5,bottom:b-4.2,angle:null,load:null};update(root,0,0);return root;
   }
   function update(g,angle=0,load=0){
     const model=g._truck;if(!model)return;

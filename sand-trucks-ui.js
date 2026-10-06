@@ -1,7 +1,7 @@
 (function(){
   'use strict';
   const G=ArrowEscape,T=SandTrucks,$=s=>document.querySelector(s),NS='http://www.w3.org/2000/svg',KEY='sandtrucks.v1';
-  let levelPage=0,noticeTimer;
+  let levelPage=0;
   let saved;try{saved=JSON.parse(localStorage.getItem(KEY));}catch{}
   let state=T.restore(saved),last=0,saveClock=0,soundClock=0,particles=[],groups=new Map(),labels=new Map(),canvas,sandArt,particleLayer,presented=false;
   if(saved&&saved.version!==T.VERSION)try{localStorage.setItem('sandtrucks.backup.v'+saved.version,JSON.stringify(saved));}catch{}
@@ -10,7 +10,7 @@
   function rect(g,x,y,w,h,fill,r=2,attrs={}){const el=svg('rect',{x,y,width:w,height:h,rx:r,fill,...attrs});g.append(el);return el;}
   function path(g,d,attrs={}){const el=svg('path',{d,...attrs});g.append(el);return el;}
   function text(g,x,y,value,attrs={}){const el=svg('text',{x,y,...attrs});el.textContent=value;g.append(el);return el;}
-  function tell(message){$('#status').textContent=message;$('#status').classList.add('visible');clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>$('#status').classList.remove('visible'),4200);}
+  function tell(message){$('#status').textContent=message;}
   function save(){try{localStorage.setItem(KEY,JSON.stringify(T.snapshot(state)));}catch{}}
   // Enlarge the parking drawing without changing certified simulation paths.
   function parkingPose(at,amount=1){const scale=1+.08*amount;return{...at,x:210+(at.x-210)*scale,y:588+(at.y-588)*scale,scale};}
@@ -47,6 +47,7 @@
       scene.append(group);groups.set(a.id,group);labels.set(a.id,text(scene,0,0,'',{class:'car-load','text-anchor':'middle','aria-hidden':'true'}));
     }
     particleLayer=svg('g',{'pointer-events':'none','aria-hidden':'true'});scene.append(particleLayer);
+    $('#level').textContent=`Уровень ${state.puzzle.level} ▾`;
     $('#level').setAttribute('aria-label',`Выбрать уровень. Сейчас ${state.puzzle.level}: ${state.puzzle.art.title}`);
     drawArt();paintCars();update();save();tell(`Выбирай цвет снизу. В работе до ${T.slotLimit(state)} машин — оставляй место для другого цвета.`);if(T.won(state))win();else if(state.jammed)jam();
   }

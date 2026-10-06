@@ -3,6 +3,18 @@
   'use strict';
   const GRAVITY=600,MAX_SPEED=119,SLIDE_SPEED=120,EPS=1e-7;
   const scratch=new WeakMap();
+  const views=new WeakMap();
+  // Render positions follow grain identity across cell transfers. They are
+  // deliberately separate from collision state, saves and puzzle timing.
+  function visual(m,art,grains){
+    if(!views.has(m)){
+      const x=new Float64Array(grains.length),y=new Float64Array(grains.length);
+      for(let i=0;i<grains.length;i++){x[i]=i%art.width+m.slide[i];y[i]=Math.floor(i/art.width)+m.offset[i]+Math.abs(m.slide[i])*m.drop[i];}
+      views.set(m,{x,y});
+    }
+    return views.get(m);
+  }
+  function transferVisual(m,from,to){const view=views.get(m);if(view){view.x[to]=view.x[from];view.y[to]=view.y[from];}}
   function create(size){return{offset:new Float64Array(size),velocity:new Float64Array(size),slide:new Float64Array(size),drop:new Float64Array(size)};}
   function clear(m,i){m.offset[i]=m.velocity[i]=m.slide[i]=m.drop[i]=0;}
   function side(art,grains,i,dir){
@@ -21,7 +33,7 @@
   }
   function slideTo(grains,m,i,to,dir,dt,touched){
     m.slide[i]+=dir*SLIDE_SPEED*dt;
-    if(Math.abs(m.slide[i])>=1-EPS){grains[to]=grains[i];grains[i]=-1;const drop=m.drop[i];clear(m,i);clear(m,to);touched[to]=1;m.velocity[to]=drop?Math.min(SLIDE_SPEED,MAX_SPEED):0;}
+    if(Math.abs(m.slide[i])>=1-EPS){transferVisual(m,i,to);grains[to]=grains[i];grains[i]=-1;const drop=m.drop[i];clear(m,i);clear(m,to);touched[to]=1;m.velocity[to]=drop?Math.min(SLIDE_SPEED,MAX_SPEED):0;}
   }
   function step(art,grains,m,tick,dt){
     const w=art.width,h=art.height;let moving=0;
@@ -57,7 +69,7 @@
           let offset=desired-1,velocity=v;
           if(y+1===h-1){offset=0;velocity=0;}
           else if(grains[below+w]>=0&&offset>=m.offset[below+w]){offset=m.offset[below+w];velocity=Math.min(v,m.velocity[below+w]);}
-          grains[below]=grains[i];grains[i]=-1;m.offset[below]=offset;m.velocity[below]=velocity;m.slide[below]=0;clear(m,i);
+          transferVisual(m,i,below);grains[below]=grains[i];grains[i]=-1;m.offset[below]=offset;m.velocity[below]=velocity;m.slide[below]=0;clear(m,i);
         }else{m.offset[i]=Math.min(desired,space);m.velocity[i]=desired>=space&&grains[below]>=0?Math.min(v,m.velocity[below]):v;}
         moving++;continue;
       }
@@ -73,6 +85,6 @@
       if(drop!==0&&drop!==1)return create(size);seen.add(i);m.offset[i]=o;m.velocity[i]=v;m.slide[i]=s;m.drop[i]=drop;
     }return m;
   }
-  const api={GRAVITY,MAX_SPEED,SLIDE_SPEED,create,clear,canMove,step,snapshot,restore};
+  const api={GRAVITY,MAX_SPEED,SLIDE_SPEED,create,clear,canMove,step,snapshot,restore,visual};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.SandTruckSand=api;
 })(globalThis);

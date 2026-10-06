@@ -13,7 +13,7 @@
   function tell(message){$('#status').textContent=message;}
   function save(){try{localStorage.setItem(KEY,JSON.stringify(T.snapshot(state)));}catch{}}
   function transform(group,at){group.setAttribute('transform',`translate(${at.x} ${at.y}) rotate(${at.angle})`);}
-  function drawArt(){sandArt.draw(state.puzzle.art,state.grains,state.motion);}
+  function drawArt(dt=0){sandArt.draw(state.puzzle.art,state.grains,state.motion,dt);}
   function update(){
     const percent=Math.round(state.grains.filter(c=>c<0).length/state.grains.length*100);
     $('#count').textContent=T.roadSpeed(state)>T.SPEED?'ПАРКОВКА ПУСТА · СКОРОСТЬ ×3':`ПАРКОВКА · ${state.remaining.length+state.active.filter(c=>c.phase==='queued').length} МАШИН`;$('#roadCount').textContent=`${T.workingCount(state)} / ${state.puzzle.limit}`;$('#roadCount').setAttribute('aria-label',`В работе ${T.workingCount(state)} из ${state.puzzle.limit}`);
@@ -57,8 +57,13 @@
     }
   }
   function paintParticles(dt,events){
-    if(!reduced.matches)for(const e of events){if(particles.length>120)break;const pos=T.tilePosition(state.puzzle.art,e.index),el=svg('circle',{r:.65+(e.index%3)*.2,fill:T.COLORS[e.color]});particleLayer.append(el);particles.push({...pos,id:e.id,el,t:0});}
-    particles=particles.filter(e=>{e.t+=dt/.24;const car=state.active.find(c=>c.id===e.id);if(e.t>=1||!car||car.phase!=='road'){e.el.remove();return false;}const target=T.carPose(state.puzzle,car),t=e.t;e.el.setAttribute('cx',e.x+(target.x-12-e.x)*t);e.el.setAttribute('cy',e.y+(target.y-e.y)*t*t);return true;});
+    if(!reduced.matches)for(const e of events){
+      if(particles.length>=120)break;const car=state.active.find(c=>c.id===e.id);if(!car||car.phase!=='road')continue;
+      const pos=T.tilePosition(state.puzzle.art,e.index),target=T.carPose(state.puzzle,car),duration=.22+(e.index%5)*.008;
+      const spread=((e.index*17)%11-5)*.7,el=svg('circle',{r:.6+(e.index%3)*.15,fill:T.COLORS[e.color]});
+      particleLayer.append(el);particles.push({...pos,id:e.id,el,t:0,duration,vx:(target.x+T.roadSpeed(state)*duration-12+spread-pos.x)/duration,gravity:2*(target.y-pos.y)/(duration*duration)});
+    }
+    particles=particles.filter(e=>{e.t+=dt;const car=state.active.find(c=>c.id===e.id);if(e.t>=e.duration||!car||car.phase!=='road'){e.el.remove();return false;}e.el.setAttribute('cx',e.x+e.vx*e.t);e.el.setAttribute('cy',e.y+.5*e.gravity*e.t*e.t);return true;});
   }
   function openDialog(id){document.querySelectorAll('dialog[open]').forEach(d=>d.close());$(id).showModal();}
   function win(){
@@ -72,7 +77,7 @@
     const dt=Math.min(.05,Math.max(0,(now-(last||now))/1000));last=now;
     if(!document.querySelector('dialog[open]')&&!document.hidden){
       const before=state.active.map(c=>c.id+':'+c.phase).join('|'),working=T.workingCount(state),events=T.step(state,dt);paintCars();paintParticles(dt,events);
-      if(events.length||events.moved)drawArt();if(events.length||before!==state.active.map(c=>c.id+':'+c.phase).join('|'))update();
+      if(events.length||events.moved||sandArt.moving)drawArt(dt);if(events.length||before!==state.active.map(c=>c.id+':'+c.phase).join('|'))update();
       soundClock+=dt;if(events.length&&soundClock>.25){soundClock=0;audio.play('flow',{duration:.12});}if(T.workingCount(state)<working){tell('Кузов заполнен — можно выбрать следующий самосвал.');audio.play('complete');save();}
       saveClock+=dt;if(saveClock>=1){saveClock=0;if(state.active.length||state.sandMoving)save();}if(state.jammed)jam();else if(T.won(state))win();
     }requestAnimationFrame(tick);

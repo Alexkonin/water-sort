@@ -1,7 +1,7 @@
-/* Wagna's CC0 Falling Sand recording. One quiet stream follows real pickups. */
+/* Real sand falling between fingers (SoundDino). One stream follows pickups. */
 (function(root){
   'use strict';
-  function create({enabled=()=>true,url='audio/sand-trucks/falling-sand-soft-v2.mp3'}={}){
+  function create({enabled=()=>true,url='audio/sand-trucks/sand-through-fingers-v1.mp3'}={}){
     let context=null,buffer=null,voice=null,loading=null,tail=0,idle=0,audible=false;
     const file=fetch(url).then(r=>{if(!r.ok)throw new Error('Sand audio unavailable');return r.arrayBuffer();}).catch(()=>null);
     function unlock(){
@@ -11,7 +11,7 @@
       if(!loading)loading=file.then(async bytes=>{
         if(!bytes)return;const decoded=await context.decodeAudioData(bytes);
         // Keep the steady middle; crossfade the seam instead of replaying the attack.
-        const rate=decoded.sampleRate,first=Math.floor(.35*rate),end=Math.min(decoded.length,Math.floor(3.95*rate)),fade=Math.floor(.07*rate),length=end-first-fade;
+        const rate=decoded.sampleRate,first=Math.floor(.02*rate),end=Math.min(decoded.length,Math.floor(2.30*rate)),fade=Math.floor(.04*rate),length=end-first-fade;
         if(length<=fade)return;
         buffer=context.createBuffer(decoded.numberOfChannels,length,rate);
         for(let c=0;c<decoded.numberOfChannels;c++){
@@ -37,7 +37,7 @@
     function step(pickups,dt){
       if(!enabled()||document.hidden){stop();return;}
       if(pickups>0){tail=.16;idle=0;}else{tail=Math.max(0,tail-dt);idle+=dt;}
-      if(tail>0){start();if(voice&&!audible){audible=true;ramp(.24,.09);}}
+      if(tail>0){start();if(voice&&!audible){audible=true;ramp(.4,.06);}}
       else if(audible){audible=false;ramp(0,.22);}
       if(voice&&idle>.7)stop();
     }

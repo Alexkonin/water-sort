@@ -10,7 +10,20 @@ function create(canvas,colors){
   const w=canvas.width/art.width,h=canvas.height/art.height;ctx.clearRect(0,0,canvas.width,canvas.height);
   for(let color=0;color<colors.length;color++){
    ctx.fillStyle=colors[color];ctx.beginPath();
-   for(let i=0;i<grains.length;i++)if(grains[i]===color){const slide=m.slide[i],x=(i%art.width+slide)*w,y=(Math.floor(i/art.width)+m.offset[i]+Math.abs(slide)*m.drop[i])*h;ctx.rect(x-.2,y-.2,w+.4,h+.4);}
+   for(let i=0;i<grains.length;i++)if(grains[i]===color){
+    const slide=m.slide[i],x=(i%art.width+slide)*w,y=(Math.floor(i/art.width)+m.offset[i]+Math.abs(slide)*m.drop[i])*h;
+    let height=h;
+    // A cell transfer briefly leaves a one-grain pore in the dense mass.
+    // Join vertical neighbours across that pore; keep the free surface and
+    // larger gaps around detached falling grains visible.
+    if(!slide)for(let rows=1;rows<=2;rows++){
+     const below=i+rows*art.width;if(below>=grains.length)break;
+     if(grains[below]<0)continue;
+     if(!m.slide[below]){const gap=(rows+m.offset[below]-m.offset[i])*h;if(gap>h)height=gap;}
+     break;
+    }
+    ctx.rect(x-.2,y-.2,w+.4,height+.4);
+   }
    ctx.fill();
   }
   ctx.globalCompositeOperation='source-atop';ctx.drawImage(texture,0,0);

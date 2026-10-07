@@ -13,3 +13,5 @@ button:disabled{opacity:.45;cursor:default}dialog{width:min(390px,calc(100vw - 3
 .level-pages{display:flex;align-items:center;justify-content:space-between;margin:0 0 14px;font-size:13px}.level-pages button{width:36px;height:34px;border:0;border-radius:9px;background:#dce1cc;color:#365447;font-size:23px}
 
 header .hdr-side{gap:5px}header .hdr-side.right{justify-content:flex-end}
+
+#sand{position:absolute;display:block;pointer-events:none;border-radius:2px}

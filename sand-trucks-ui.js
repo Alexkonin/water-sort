@@ -21,6 +21,13 @@
   }
   function transform(group,at){group.setAttribute('transform',`translate(${at.x} ${at.y}) rotate(${at.angle}) scale(${at.scale||1})`);}
   function drawArt(dt=0){sandArt.draw(state.puzzle.art,state.grains,state.motion,dt);}
+  function layoutArt(){
+    if(!canvas)return;
+    const matrix=scene.getScreenCTM();if(!matrix)return;
+    const bounds=scene.parentElement.getBoundingClientRect(),origin=new DOMPoint(T.ART.x,T.ART.y).matrixTransform(matrix);
+    canvas.style.left=`${origin.x-bounds.left}px`;canvas.style.top=`${origin.y-bounds.top}px`;
+    canvas.style.width=`${T.ART.width*matrix.a}px`;canvas.style.height=`${T.ART.height*matrix.d}px`;
+  }
   function update(){
     $('#sound').setAttribute('aria-pressed',String(state.sound));$('#sound').setAttribute('aria-label',state.sound?'Выключить звук':'Включить звук');$('#sound use').setAttribute('href','icons.svg?v=63#'+(state.sound?'sound':'muted'));
     const percent=Math.round(state.grains.filter(c=>c<0).length/state.grains.length*100);
@@ -30,7 +37,9 @@
   function build(){
     particles=[];groups.clear();labels.clear();presented=false;scene.replaceChildren();document.querySelectorAll('dialog[open]').forEach(d=>d.close());
     rect(scene,T.ART.x-4,T.ART.y-4,T.ART.width+8,T.ART.height+8,'#e7e1c6',7);rect(scene,T.ART.x-1,T.ART.y-1,T.ART.width+2,T.ART.height+2,'#95a795',3);
-    const holder=svg('foreignObject',{x:T.ART.x,y:T.ART.y,width:T.ART.width,height:T.ART.height});canvas=document.createElement('canvas');canvas.id='sand';canvas.width=T.ART.width*2;canvas.height=T.ART.height*2;canvas.style.cssText='display:block;width:100%;height:100%;border-radius:2px';canvas.setAttribute('role','img');holder.append(canvas);scene.append(holder);sandArt=SandTruckSandArt.create(canvas,T.COLORS);
+    // Safari can paint a canvas inside foreignObject outside the SVG scale,
+    // covering the road. Keep it in HTML and match the actual scene transform.
+    canvas?.remove();canvas=document.createElement('canvas');canvas.id='sand';canvas.width=T.ART.width*2;canvas.height=T.ART.height*2;canvas.setAttribute('role','img');scene.parentElement.append(canvas);layoutArt();sandArt=SandTruckSandArt.create(canvas,T.COLORS);
     // The only visible road is the straight horizontal collection lane.
     rect(scene,-100,327,620,55,'#1c3036',0);path(scene,'M-100 327H520 M-100 382H520',{stroke:'#a9beb4','stroke-width':2});path(scene,'M-100 354H520',{stroke:'#d9dfc277','stroke-width':2,'stroke-dasharray':'11 14'});
     rect(scene,347,315,53,20,'#35564e',6);text(scene,374,329,'',{'text-anchor':'middle',id:'roadCount',class:'road-count'});
@@ -96,6 +105,7 @@
   $('#sound').onclick=()=>{state.sound=!state.sound;sandAudio.stop();audio.sync();if(state.sound){sandAudio.unlock();audio.play('tap');}update();save();};
   $('#restart').onclick=()=>load(state.puzzle.level);$('#jamUndo').onclick=rewind;$('#jamExtra').onclick=()=>{if(!T.addSlot(state))return;$('#jamDialog').close();audio.play('complete');update();save();tell('Добавлено одно место до конца попытки. Выбери самосвал нужного цвета на парковке.');};$('#jamRestart').onclick=()=>load(state.puzzle.level);$('#level').onclick=()=>levels();$('#levelsPrev').onclick=()=>levels(levelPage-1);$('#levelsNext').onclick=()=>levels(levelPage+1);
   $('#next').onclick=()=>load(state.puzzle.level%T.LEVELS+1);$('#again').onclick=()=>load(state.puzzle.level);document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());for(const id of['#winDialog','#jamDialog'])$(id).addEventListener('cancel',e=>e.preventDefault());
+  new ResizeObserver(layoutArt).observe(scene);addEventListener('resize',layoutArt);
   addEventListener('pagehide',save);document.addEventListener('visibilitychange',()=>{if(document.hidden)save();});build();requestAnimationFrame(tick);
   if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{}));
 })();

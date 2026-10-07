@@ -332,7 +332,7 @@
     <ol class="help-list">
       <li>Выбери башню и коснись свободной клетки — она встанет туда.</li>
       <li>Нажми «Начать волну». Враги пойдут от портала по дороге к твоей базе.</li>
-      <li>За каждого убитого дают золото. На него строй и улучшай башни.</li>
+      <li>За каждого убитого дают золото. На него строй и улучшай башни. Остаток после победы добавляется к обычному стартовому запасу следующего уровня.</li>
       <li>Башня при каждом выстреле выбирает ближайшего к себе видимого врага в радиусе атаки.</li>
       <li>Коснись поставленной башни — её можно улучшить или продать (вернётся 60%).</li>
       <li>Кнопка «Отмена» отменяет последнюю постройку, улучшение или продажу. Если башня уже успела выстрелить после постройки или улучшения, откат отключается. Улучшение замка нельзя отменить после полученного удара.</li>
@@ -599,14 +599,19 @@ function loadSave(){
   let d = null;
   try { d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch { d = null; }
   save.stars = (d && d.stars) || {};
+  save.goldRemaining = (d && d.goldRemaining) || {}; // остаток после последней победы на уровне
   save.seen = (d && d.seen) || {};        // кого уже встречали: подсказка о повадке показывается раз
   if (d && typeof d.sound === 'boolean') soundOn = d.sound;
 }
 function writeSave(){
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ stars: save.stars, seen: save.seen, sound: soundOn })); }
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ stars: save.stars, seen: save.seen, goldRemaining: save.goldRemaining, sound: soundOn })); }
   catch {}
 }
 loadSave();
+function carriedGold(level){
+  const gold = save.goldRemaining[level - 1];
+  return level > 0 && Number.isFinite(gold) && gold > 0 ? gold : 0;
+}
 // открыт уровень 0 и каждый следующий за пройденным
 /* Замков нет: любой уровень открыт сразу. Запирать все карты за прохождением
    предыдущей — значит заставлять переигрывать, чтобы добраться до интересной;
@@ -995,7 +1000,7 @@ function startLevel(i){
   G.castle = { type:'castle', lvl:1, palisade:0, x:gate.x - 0.5, y:gate.y - 0.5, cool:0, flash:0, aim:-Math.PI / 2 };
   G.hero = null;
   G.castleShake = 0; G.smokeT = 0;
-  G.lives = START_LIVES; G.gold = startGold(G.lv); G.dmgTaken = 0; G.reached = 0;
+  G.lives = START_LIVES; G.gold = startGold(G.lv) + carriedGold(G.lv); G.dmgTaken = 0; G.reached = 0;
   G.wave = 0; G.waveRunning = false; G.queue = []; G.spawnT = 0;
   G.foes = []; G.towers = []; G.shots = []; G.fx = [];
   G.armed = null; G.selected = null;
@@ -3542,12 +3547,16 @@ function levelWin(){
   G.over = true;
   clearUndo();
   const stars = G.dmgTaken === 0 ? 3 : G.dmgTaken <= 4 ? 2 : 1;
-  if (!save.stars[G.lv] || save.stars[G.lv] < stars){ save.stars[G.lv] = stars; writeSave(); }
+  if (!save.stars[G.lv] || save.stars[G.lv] < stars) save.stars[G.lv] = stars;
+  // Заменяем результат, не суммируем: повторная победа не дублирует бонус.
+  save.goldRemaining[G.lv] = G.gold;
+  writeSave();
   $('#winStars').textContent = '★★★'.slice(0, stars) + '☆☆☆'.slice(0, 3 - stars);
   $('#winTitle').textContent = 'Уровень ' + (G.lv + 1) + ' пройден!';
   $('#winSub').textContent = G.dmgTaken === 0
     ? (G.reached ? 'Дошли до ворот, но ударить не успели' : 'Ни один враг не дошёл до ворот')
     : 'Замок получил ' + G.dmgTaken + ' ' + plural(G.dmgTaken, 'удар', 'удара', 'ударов');
+  if (G.lv + 1 < MAPS.length) $('#winSub').textContent += ' · На следующий уровень: +' + G.gold + ' золота';
   $('#btnNext').style.display = G.lv + 1 < MAPS.length ? '' : 'none';
   showOverlay('ovWin');
   sndWin();

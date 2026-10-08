@@ -14,46 +14,35 @@
 <link rel="icon" href="favicon.ico?v=lukomorye1">
 <link rel="stylesheet" href="shell.css?v=58">
 <style>
-  #app{justify-content:center;gap:18px;max-width:520px;margin:0 auto;width:100%;touch-action:pan-y}
+  html,body{height:auto;min-height:100%;overflow:auto;overscroll-behavior-y:auto}
+  #app{height:auto;min-height:100dvh;gap:22px;max-width:850px;margin:0 auto;width:100%;padding:calc(env(safe-area-inset-top) + 26px) 16px calc(env(safe-area-inset-bottom) + 18px);touch-action:pan-y}
   .menu-head{text-align:center;flex:0 0 auto}
   .menu-head h1{margin:0;font-size:29px;font-weight:800;letter-spacing:.3px}
-  .menu-head p{margin:6px 0 0;font-size:14px;opacity:.8}
-
-  .games{
-    flex:0 1 auto;display:flex;flex-direction:column;gap:12px;
-    overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2px;
-  }
-  /* Карточка игры — ссылка, а не кнопка на JS: работает до загрузки скрипта,
-     открывается долгим тапом в новой вкладке и переживает любой сбой в JS. */
-  .game{
-    display:flex;align-items:center;gap:14px;text-align:left;text-decoration:none;color:var(--ink);
-    padding:16px;border-radius:22px;cursor:pointer;
-    background:linear-gradient(160deg,#faf6e7,#e9e4cd);
-    box-shadow:0 10px 26px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.14);
-    transition:transform .14s, box-shadow .2s;
-  }
-  .game:active{transform:scale(.975);box-shadow:0 6px 16px rgba(0,0,0,.3)}
-  .game .ico{
-    flex:0 0 auto;width:60px;height:60px;border-radius:19px;
-    display:flex;align-items:center;justify-content:center;font-size:31px;
-    background:#dce3c8;border:1px solid rgba(105,124,72,.2);
-  }
-  .game .ico .ui-icon{width:34px;height:34px;stroke-width:1.6}
-  .game .ico.lights{color:#8b7032}
-  .game .ico.flask{color:#3c7568}
-  .game .ico.castle{color:#6d7d46}
-  .game .arr{display:flex;align-items:center}
-  .game .txt{flex:1 1 auto;min-width:0}
-  .game .nm{font-size:17px;font-weight:800;letter-spacing:.2px}
-  .game .ds{font-size:12.5px;opacity:.85;margin-top:3px;line-height:1.35}
-  .game .pr{font-size:12px;font-weight:700;margin-top:7px;color:#647343}
-  .game .pr.none{color:#68715b;font-weight:600}
-  .game .arr{flex:0 0 auto;font-size:19px;opacity:.35}
-
+  .menu-head p{margin:6px 0 0;font-size:14px;color:var(--muted)}
+  .games{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px;align-content:start}
+  .game{display:flex;flex-direction:column;min-width:0;text-decoration:none;color:var(--ink);border-radius:19px;background:#f4efdb;box-shadow:0 5px 16px #061b1926;transition:transform .16s,box-shadow .16s}
+  .game:active{transform:scale(.975)}
+  .game .scene{aspect-ratio:18/11;overflow:hidden;border-radius:19px 19px 0 0;isolation:isolate}
+  .scene svg,.scene canvas{display:block;width:100%;height:100%;pointer-events:none}
+  .scene.castle{background:linear-gradient(145deg,#bccb8d,#7c9c67)}
+  .scene.flask{background:radial-gradient(ellipse at 50% 70%,#387065,#163e3e)}
+  .scene.truck{background:linear-gradient(145deg,#315d58,#173c37)}
+  .scene.lights{background:radial-gradient(ellipse,#315950,#142f33)}
+  .scene.mahjong{background:linear-gradient(145deg,#b7cbbb,#749b8c)}
+  .scene.memory{background:linear-gradient(145deg,#e7d6a9,#bdac7e)}
+  .game .txt{padding:11px 12px 12px;display:flex;flex-direction:column;flex:1}
+  .game .nm{font-size:16px;font-weight:800;line-height:1.2;margin:0}
+  .game .ds{font-size:12px;line-height:1.35;color:#52614e;margin:5px 0 11px;min-height:2.7em}
+  .game .meta{display:flex;align-items:center;gap:5px;margin-top:auto}
+  .game .pr{font-size:10.5px;line-height:1.35;color:#67715d;font-variant-numeric:tabular-nums}
+  .game .arr{display:flex;margin-left:auto;color:#6b785d;flex:0 0 auto}
+  .game .arr .ui-icon{width:16px;height:16px}
   .soon{opacity:.45;pointer-events:none}
-  .soon .pr{color:#68715b}
-
-  footer{flex:0 0 auto;text-align:center;font-size:11.5px;opacity:.7;padding-top:2px}
+  footer{text-align:center;font-size:11px;line-height:1.5;color:var(--muted);margin-top:auto}
+  @media(hover:hover){.game:hover{transform:translateY(-3px);box-shadow:0 9px 24px #061b1945}}
+  @media(min-width:700px){#app{padding-top:40px;gap:28px}.games{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.game .nm{font-size:18px}.game .ds{font-size:13px}.game .txt{padding:14px 16px}.game .pr{font-size:11px}}
+  @media(max-width:350px){#app{padding-inline:12px}.games{gap:12px 10px}.game .txt{padding:10px}.game .nm{font-size:15px}}
+  @media(prefers-reduced-motion:reduce){.game{transition:none}.game:hover,.game:active{transform:none}}
 </style>
 <link rel="stylesheet" href="palette.css?v=50">
 <script src="launch-history.js?v=61"></script>
@@ -66,11 +55,17 @@
     <p>Выбери, во что играть</p>
   </div>
 
-  <div class="games" id="games"></div>
+  <nav class="games" id="games" aria-label="Коллекция игр"></nav>
 
   <footer>Работает офлайн · прогресс хранится на этом устройстве</footer>
 </div>
 
+<script src="arsenal/gun/design/storybook-v04/gun.js?v=194"></script>
+<script src="bestiary/ugolek/animations/ugolek.js?v=194"></script>
+<script src="sand-trucks-art.js?v=194"></script>
+<script src="mahjong-glyphs.js?v=194"></script>
+<script src="mahjong-art.js?v=194"></script>
+<script src="menu-art.js?v=194"></script>
 <script>
 /* ============ список игр ============
    Одна запись на игру в порядке по умолчанию. Для новой игры нужно добавить объект:
@@ -84,7 +79,7 @@ const GAMES = [
     file: 'tower-defense.html',
     icon: 'castle',
     name: 'Защита башни',
-    desc: 'Ставь башни вдоль дороги и не пускай врагов к базе',
+    desc: 'Останови лесную армию',
     progress(){
       const d = read('towerdef.v1');
       if (!d || !d.stars) return null;
@@ -98,7 +93,7 @@ const GAMES = [
     file: 'water-sort.html',
     icon: 'flask',
     name: 'Разлей по цветам',
-    desc: 'Головоломка: разлей жидкость так, чтобы в каждой пробирке остался один цвет',
+    desc: 'Собери каждый цвет в колбу',
     progress(){
       const d = read('watersort.v1');
       return d && d.level > 1 ? 'уровень ' + d.level : null;
@@ -108,7 +103,7 @@ const GAMES = [
     file: 'sand-trucks.html',
     icon: 'truck',
     name: 'Песочные самосвалы',
-    desc: '100 песочных картин: распутывай парковку и собирай цвета самосвалами',
+    desc: 'Лови цветной песок в кузов',
     progress(){
       const d = read('sandtrucks.v1');
       return d && d.version === 5 ? 'уровень ' + d.level + ' · собрано ' + (Array.isArray(d.completed) ? d.completed.length : 0) + ' из 100' : null;
@@ -118,7 +113,7 @@ const GAMES = [
     file: 'forest-lights.html',
     icon: 'lights',
     name: 'Собери огоньки',
-    desc: 'Вращай кольцо и меняй огоньки тройками, чтобы каждый вернулся на своё место',
+    desc: 'Верни огоньки на свои места',
     progress(){
       const d = read('forestlights.v1');
       if (!d) return null;
@@ -131,7 +126,7 @@ const GAMES = [
     file: 'mahjong.html',
     icon: 'mahjong',
     name: 'Mahjong',
-    desc: 'Находи пары свободных плиток и разбирай многослойные раскладки',
+    desc: 'Находи пары, слой за слоем',
     progress(){
       const d = read('mahjong.v1');
       if (!d) return null;
@@ -143,7 +138,7 @@ const GAMES = [
     file: 'memory-cards.html',
     icon: 'memory',
     name: 'Лесные карточки',
-    desc: 'Запомни девять лесных символов и найди их места на закрытой карточке',
+    desc: 'Запомни, где прячутся находки',
     progress(){
       const d = read('memorycards.v1');
       if (!d) return null;
@@ -174,15 +169,17 @@ for (const g of (globalThis.GameLaunches ? globalThis.GameLaunches.rank(GAMES) :
   a.className = 'game' + (g.soon ? ' soon' : '');
   a.href = g.soon ? '#' : g.file;
   a.innerHTML =
-    '<div class="ico"></div>' +
-    '<div class="txt"><div class="nm"></div><div class="ds"></div>' +
-    '<div class="pr ' + (pr ? '' : 'none') + '"></div></div>' +
-    '<div class="arr"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=63#chevron"/></svg></div>';
-  a.querySelector('.ico').innerHTML = '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=63#' + g.icon + '"/></svg>';
-  a.querySelector('.ico').classList.add(g.icon);
+    '<div class="scene" aria-hidden="true"></div>' +
+    '<div class="txt"><h2 class="nm"></h2><p class="ds"></p>' +
+    '<div class="meta"><span class="pr"></span>' +
+    '<span class="arr"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=63#chevron"/></svg></span></div></div>';
+  const scene = a.querySelector('.scene');
+  scene.classList.add(g.icon);
+  // Art is decorative: a failed renderer must never hide the collection links.
+  try { globalThis.MenuArt?.render(scene, g.icon); } catch (error) { console.warn('Menu preview:', g.file, error); }
   a.querySelector('.nm').textContent = g.name;
   a.querySelector('.ds').textContent = g.desc;
-  a.querySelector('.pr').textContent = g.soon ? 'скоро' : (pr || 'ещё не играл');
+  a.querySelector('.pr').textContent = g.soon ? 'скоро' : (pr || 'Начать игру');
   box.appendChild(a);
 }
 }

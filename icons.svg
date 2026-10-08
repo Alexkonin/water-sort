@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg">
+  <symbol fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" id="info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></symbol>
+  <symbol fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" id="back" viewBox="0 0 24 24"><path d="m14 5-7 7 7 7"/></symbol>
   <symbol fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" id="menu" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></symbol>
-  <symbol fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" id="sound" viewBox="0 0 24 24"><path d="M11 4 6 8H3v8h3l5 4Z"/><path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
-  <symbol fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" id="muted" viewBox="0 0 24 24"><path d="M11 4 6 8H3v8h3l5 4Z"/><path d="m16 9 5 6m0-6-5 6"/></symbol>
   <symbol fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" id="restart" viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 1 7M4 4v6h6"/></symbol>
   <symbol fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" id="help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1 .6-1.5 1-1.5 2M12 17h.01"/></symbol>
   <symbol fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" id="castle" viewBox="0 0 24 24"><path d="M4 21V9H2V3h4v3h4V3h4v3h4V3h4v6h-2v12ZM9 21v-6a3 3 0 0 1 6 0v6"/></symbol>

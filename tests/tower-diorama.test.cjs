@@ -87,7 +87,7 @@ test('diorama loads and writes its own save without touching classic progress',(
   const data=new Map([['towerdef.v1',JSON.stringify(classic)]]);
   for(const file of ['tower-diorama.html','tower-defense.html']){
     const html=read(file),key=html.match(/const SAVE_KEY\s*= '([^']+)'/)[1];
-    const start=html.indexOf('let soundOn ='),end=html.indexOf('loadSave();',start)+'loadSave();'.length;
+    const start=html.indexOf('const save ='),end=html.indexOf('loadSave();',start)+'loadSave();'.length;
     const context=vm.createContext({SAVE_KEY:key,localStorage:{getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v)}});
     vm.runInContext(html.slice(start,end),context);
     if(file==='tower-diorama.html'){

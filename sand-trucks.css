@@ -1,11 +1,12 @@
 html,body{height:100%;min-height:0;overflow:hidden}body{background:radial-gradient(ellipse at 50% 15%,#315d50,#163b36 75%);color:#f4ecd6}
 #app{display:flex;flex-direction:column;max-width:510px;margin:auto;gap:5px;padding:max(8px,env(safe-area-inset-top)) 12px max(4px,env(safe-area-inset-bottom));height:100vh;height:100dvh;min-height:0}
-button,a{touch-action:manipulation}button{font:inherit;cursor:pointer}header{display:grid;grid-template-columns:78px 1fr 78px;align-items:center;min-height:38px;flex-shrink:0}.hdr-title{border:0;background:transparent;color:inherit;padding:0;font-family:Georgia,serif;font-size:20px;text-align:center}header .icon-btn{width:36px;height:36px;padding:0;border:0;background:#d1dfbe0e;color:#f4ecd6;border-radius:12px;font-size:27px;display:grid;place-items:center;text-decoration:none}
+button,a{touch-action:manipulation}button{font:inherit;cursor:pointer}header{display:grid;grid-template-columns:78px 1fr 78px;align-items:center;min-height:38px;flex-shrink:0}.hdr-title{border:0;background:transparent;color:inherit;padding:0;font-family:var(--ui-font);font-size:20px;text-align:center}header .icon-btn{width:36px;height:36px;padding:0;border:0;background:#d1dfbe0e;color:#f4ecd6;border-radius:12px;font-size:27px;display:grid;place-items:center;text-decoration:none}
 main{flex:1;min-height:0;position:relative;overflow:hidden;margin:0 -12px}#scene{width:100%;height:100%;display:block;overflow:visible;touch-action:pan-y}.truck{cursor:pointer;outline:none}.truck .selection{fill:none;stroke:transparent;stroke-width:2}.truck:focus-visible .selection{stroke:#fff0a1}.truck.blocked .selection{stroke:#ff9275}.truck.moving{pointer-events:none}.scene-label{font-family:system-ui;font-size:9px;letter-spacing:1.2px;fill:#bdc9b1}.car-load{font-family:system-ui;font-weight:750;font-size:9px;fill:#fff5db;paint-order:stroke;stroke:#193731;stroke-width:2.5px;stroke-linejoin:round;pointer-events:none}.road-count{font-family:system-ui;font-size:11px;fill:#eff0d3;font-weight:700}
-button:disabled{opacity:.45;cursor:default}dialog{width:min(390px,calc(100vw - 32px));max-height:85dvh;overflow:auto;border:0;border-radius:22px;padding:26px;color:#334f40;background:#f0eddc;box-shadow:0 24px 80px #0007}dialog::backdrop{background:#092c29bd;backdrop-filter:blur(5px)}dialog h2{font-family:Georgia,serif;font-weight:normal;font-size:26px;margin:10px 0 16px}dialog p{font-size:14px;line-height:1.6;color:#65705b}dialog .eyebrow{color:#7e866d}.cta{width:100%;min-height:44px}.ghost{width:100%;margin-top:8px;min-height:40px}#winDialog,#jamDialog{text-align:center}#finishedArt{width:100%;height:auto;display:block;image-rendering:pixelated;border-radius:10px}dialog .close{float:right;border:0;background:#dce1cc;color:#365447;width:30px;height:30px;border-radius:9px;font-size:23px}.levels{display:flex;flex-direction:column;gap:6px}.levels button{display:flex;align-items:center;gap:12px;border:1px solid #cdd4bd;border-radius:12px;background:#e4e8d6;text-align:left;padding:8px 10px;color:#355341}.levels strong{font-family:Georgia;font-size:20px;font-weight:normal}.levels span{font-size:13px}.levels i{margin-left:auto;font-style:normal}.levels .done{background:#d1e0c4}@media(max-width:360px){.hdr-title{font-size:18px}#app{padding-left:8px;padding-right:8px}main{margin-left:-8px;margin-right:-8px}#colors{gap:3px}.color-line{gap:5px}}
+button:disabled{opacity:.45;cursor:default}dialog{width:min(390px,calc(100vw - 32px));max-height:85dvh;overflow:auto;border:0;border-radius:22px;padding:26px;color:#334f40;background:#f0eddc;box-shadow:0 24px 80px #0007}dialog::backdrop{background:#092c29bd;backdrop-filter:blur(5px)}dialog h2{font-family:var(--ui-font);font-weight:normal;font-size:26px;margin:10px 0 16px}dialog p{font-size:14px;line-height:1.6;color:#65705b}dialog .eyebrow{color:#7e866d}.cta{width:100%;min-height:44px}.ghost{width:100%;margin-top:8px;min-height:40px}#winDialog,#jamDialog{text-align:center}#finishedArt{width:100%;height:auto;display:block;image-rendering:pixelated;border-radius:10px}dialog .close{float:right;border:0;background:#dce1cc;color:#365447;width:30px;height:30px;border-radius:9px;font-size:23px}.levels{display:flex;flex-direction:column;gap:6px}.levels button{display:flex;align-items:center;gap:12px;border:1px solid #cdd4bd;border-radius:12px;background:#e4e8d6;text-align:left;padding:8px 10px;color:#355341}.levels strong{font-family:var(--ui-font);font-size:20px;font-weight:normal}.levels span{font-size:13px}.levels i{margin-left:auto;font-style:normal}.levels .done{background:#d1e0c4}@media(max-width:360px){.hdr-title{font-size:18px}#app{padding-left:8px;padding-right:8px}main{margin-left:-8px;margin-right:-8px}#colors{gap:3px}.color-line{gap:5px}}
 
 
 .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+#sand{position:absolute;display:block;pointer-events:none;border-radius:2px}
 .eyebrow{font-size:8px;letter-spacing:2px;color:#7e866d}
 
 .truck.queued .selection{stroke:#e6daa0;stroke-width:1;stroke-dasharray:3 3}
@@ -14,4 +15,16 @@ button:disabled{opacity:.45;cursor:default}dialog{width:min(390px,calc(100vw - 3
 
 header .hdr-side{gap:5px}header .hdr-side.right{justify-content:flex-end}
 
-#sand{position:absolute;display:block;pointer-events:none;border-radius:2px}
+#status.show{position:absolute;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 60px);width:auto;height:auto;margin:0;padding:8px 12px;clip:auto;clip-path:none;overflow:visible;white-space:normal;background:#102f2df2;color:#f4ecd6;border-radius:12px;font-size:12px;text-align:center;pointer-events:none;z-index:2}
+
+/* Local action feedback also remains legible without animation. */
+.truck.blocked .selection{stroke:#ffb28c;stroke-width:2;stroke-dasharray:4 3}
+.truck.blocking .selection,.truck.slot-occupied .selection{stroke:#ffe5a6;stroke-width:3;stroke-dasharray:none}
+.truck.blocking{filter:drop-shadow(0 0 3px #ffac70)}
+.blocked-route,.blocked-route-shadow{fill:none;stroke:#ffca92;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.blocked-route-shadow{stroke:#193b35;stroke-width:6}
+#roadCountBadge.slots-full{stroke:#ffca92;stroke-width:3;fill:#66483b}
+.slots-label{font-family:system-ui;font-size:12px;font-weight:700;fill:#ffe5c2}
+.occupied-slot{stroke:#ffe5c2;stroke-width:2}
+.free-slot{stroke:#8aa298;stroke-width:1}
+.slot-mark{stroke:#193b35;stroke-width:2;stroke-linecap:round}

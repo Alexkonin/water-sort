@@ -1,0 +1,20 @@
+{
+  "license": "CC0 1.0",
+  "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "files": [
+    {
+      "file": "sand-on-sand.mp3",
+      "title": "sand pour on sand FF662.aif",
+      "author": "martinimeniscus",
+      "source": "https://freesound.org/people/martinimeniscus/sounds/199332/",
+      "download": "https://cdn.freesound.org/previews/199/199332_2320755-hq.mp3"
+    },
+    {
+      "file": "sand-and-salt.mp3",
+      "title": "pouring sand and salt 2.mp3",
+      "author": "mariethompson",
+      "source": "https://freesound.org/people/mariethompson/sounds/516920/",
+      "download": "https://cdn.freesound.org/previews/516/516920_2094018-hq.mp3"
+    }
+  ]
+}

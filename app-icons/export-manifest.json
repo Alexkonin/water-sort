@@ -1,0 +1,573 @@
+{
+  "source": "app-icons/source/lukomorye-approved-1254.png",
+  "exports": [
+    {
+      "file": "source/lukomorye-master-1024.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "source/lukomorye-safe-1024.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "stores/app-store-1024.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "stores/google-play-512.png",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA"
+    },
+    {
+      "file": "stores/universal-256.png",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "stores/universal-512.png",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "stores/universal-1024.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "web/icon-16.png",
+      "size": [
+        16,
+        16
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "web/icon-24.png",
+      "size": [
+        24,
+        24
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "web/icon-32.png",
+      "size": [
+        32,
+        32
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "web/icon-48.png",
+      "size": [
+        48,
+        48
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "web/icon-64.png",
+      "size": [
+        64,
+        64
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "web/icon-96.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "web/icon-128.png",
+      "size": [
+        128,
+        128
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "web/icon-144.png",
+      "size": [
+        144,
+        144
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "web/icon-152.png",
+      "size": [
+        152,
+        152
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "web/icon-180.png",
+      "size": [
+        180,
+        180
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "web/icon-192.png",
+      "size": [
+        192,
+        192
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "web/icon-256.png",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "web/icon-384.png",
+      "size": [
+        384,
+        384
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "web/icon-512.png",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "web/icon-1024.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "web/icon-maskable-192.png",
+      "size": [
+        192,
+        192
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "web/icon-maskable-512.png",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "web/icon-maskable-1024.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "ios/AppIcon.appiconset/icon-iphone-20@2x.png",
+      "size": [
+        40,
+        40
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "ios/AppIcon.appiconset/icon-iphone-20@3x.png",
+      "size": [
+        60,
+        60
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "ios/AppIcon.appiconset/icon-iphone-29@2x.png",
+      "size": [
+        58,
+        58
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "ios/AppIcon.appiconset/icon-iphone-29@3x.png",
+      "size": [
+        87,
+        87
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "ios/AppIcon.appiconset/icon-iphone-40@2x.png",
+      "size": [
+        80,
+        80
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "ios/AppIcon.appiconset/icon-iphone-40@3x.png",
+      "size": [
+        120,
+        120
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "ios/AppIcon.appiconset/icon-iphone-60@2x.png",
+      "size": [
+        120,
+        120
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "ios/AppIcon.appiconset/icon-iphone-60@3x.png",
+      "size": [
+        180,
+        180
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "ios/AppIcon.appiconset/icon-ipad-20@1x.png",
+      "size": [
+        20,
+        20
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "ios/AppIcon.appiconset/icon-ipad-20@2x.png",
+      "size": [
+        40,
+        40
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "ios/AppIcon.appiconset/icon-ipad-29@1x.png",
+      "size": [
+        29,
+        29
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "ios/AppIcon.appiconset/icon-ipad-29@2x.png",
+      "size": [
+        58,
+        58
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "ios/AppIcon.appiconset/icon-ipad-40@1x.png",
+      "size": [
+        40,
+        40
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "ios/AppIcon.appiconset/icon-ipad-40@2x.png",
+      "size": [
+        80,
+        80
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "ios/AppIcon.appiconset/icon-ipad-76@1x.png",
+      "size": [
+        76,
+        76
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "ios/AppIcon.appiconset/icon-ipad-76@2x.png",
+      "size": [
+        152,
+        152
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "ios/AppIcon.appiconset/icon-ipad-83.5@2x.png",
+      "size": [
+        167,
+        167
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "ios/AppIcon.appiconset/icon-app-store-1024.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "macos/AppIcon.appiconset/icon-16@1x.png",
+      "size": [
+        16,
+        16
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "macos/AppIcon.appiconset/icon-16@2x.png",
+      "size": [
+        32,
+        32
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "macos/AppIcon.appiconset/icon-32@1x.png",
+      "size": [
+        32,
+        32
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "macos/AppIcon.appiconset/icon-32@2x.png",
+      "size": [
+        64,
+        64
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "macos/AppIcon.appiconset/icon-128@1x.png",
+      "size": [
+        128,
+        128
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "macos/AppIcon.appiconset/icon-128@2x.png",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "macos/AppIcon.appiconset/icon-256@1x.png",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "macos/AppIcon.appiconset/icon-256@2x.png",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "macos/AppIcon.appiconset/icon-512@1x.png",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "macos/AppIcon.appiconset/icon-512@2x.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "android/res/mipmap-mdpi/ic_launcher.png",
+      "size": [
+        48,
+        48
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "android/res/mipmap-mdpi/ic_launcher_round.png",
+      "size": [
+        48,
+        48
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "android/res/mipmap-hdpi/ic_launcher.png",
+      "size": [
+        72,
+        72
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "android/res/mipmap-hdpi/ic_launcher_round.png",
+      "size": [
+        72,
+        72
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "android/res/mipmap-xhdpi/ic_launcher.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "android/res/mipmap-xhdpi/ic_launcher_round.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "android/res/mipmap-xxhdpi/ic_launcher.png",
+      "size": [
+        144,
+        144
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "android/res/mipmap-xxhdpi/ic_launcher_round.png",
+      "size": [
+        144,
+        144
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "android/res/mipmap-xxxhdpi/ic_launcher.png",
+      "size": [
+        192,
+        192
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "android/res/mipmap-xxxhdpi/ic_launcher_round.png",
+      "size": [
+        192,
+        192
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "windows/icon-44.png",
+      "size": [
+        44,
+        44
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "windows/icon-50.png",
+      "size": [
+        50,
+        50
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "windows/icon-71.png",
+      "size": [
+        71,
+        71
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "windows/icon-150.png",
+      "size": [
+        150,
+        150
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "windows/icon-256.png",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "windows/icon-310.png",
+      "size": [
+        310,
+        310
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "windows/icon-512.png",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "windows/icon-1024.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "mode": "RGB"
+    }
+  ]
+}

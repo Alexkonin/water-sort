@@ -386,7 +386,6 @@ const Diorama = (() => {
 draw=Diorama.draw;
 drawPortrait=Diorama.portrait;
 buildTerrain=Diorama.terrain;
-refreshSoundButton();
 startLevel(firstUnfinished());
 requestAnimationFrame(now=>{last=now;requestAnimationFrame(frame);});
 if(!Object.keys(save.stars).length)setTimeout(()=>showHint('Поставьте башни или включите «Прогулку Уголька»'),800);

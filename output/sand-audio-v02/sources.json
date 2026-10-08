@@ -1,0 +1,8 @@
+{
+  "processing": "HQ previews converted to 44.1 kHz MP3, normalized to -20 LUFS / -2 dBTP; flowing and glass limited to first 8 seconds.",
+  "files": [
+    {"file":"falling.mp3","title":"sandfall5.wav","author":"Wagna","source":"https://freesound.org/people/Wagna/sounds/326304/","license":"CC0 1.0","note":"Designed effect made from a gravel recording."},
+    {"file":"flowing.mp3","title":"Flowing Sand","author":"SteveMeli","source":"https://freesound.org/people/SteveMeli/sounds/215006/","license":"CC BY 3.0","licenseUrl":"https://creativecommons.org/licenses/by/3.0/"},
+    {"file":"glass.mp3","title":"sand pour on glass FF675.aif","author":"martinimeniscus","source":"https://freesound.org/people/martinimeniscus/sounds/199361/","license":"CC0 1.0"}
+  ]
+}

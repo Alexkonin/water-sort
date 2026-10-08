@@ -1,20 +1,20 @@
 // Офлайн-кэш. Меняй CACHE при каждом обновлении игры — старая версия сотрётся.
-const CACHE = 'games-v194';
+const CACHE = 'games-v202';
 /* Все страницы сборника кладём в кэш сразу при установке: переход из меню
    в игру должен работать офлайн с первого раза, а не после того, как игру
    один раз открыли онлайн. Добавляешь игру — дописываешь её сюда и в GAMES
    в index.html. */
 const ASSETS = [
-  './', './index.html', './menu-art.js', './shell.css', './palette.css', './icons.svg', './sound.js', './launch-history.js', './focus-mode.js',
+  './', './index.html', './menu-art.js', './shell.css', './palette.css', './icons.svg', './game-header.css', './ui-theme.css', './launch-history.js', './focus-mode.js',
   './arsenal/gun/design/storybook-v04/gun.js', './bestiary/kamnespin/animations/storybook-v03/kamnespin.js',
   './heroes/dobrynya/animations/dobrynya-topdown.js', './heroes/dobrynya/combat.js',
   './water-sort.html', './tower-defense.html', './bestiary/ugolek/animations/ugolek.js', './bestiary/vihrek/animations/vihrek.js', './bestiary/kamnespin/animations/kamnespin.js', './bestiary/pushinka/animations/pushinka.js', './bestiary/tumannik/animations/tumannik.js', './bestiary/dreven/animations/dreven.js', './bestiary/dozhdevik/animations/dozhdevik.js', './bestiary/fonarnik/animations/svetlyachok.js', './bestiary/rosnik/animations/rosnik.js', './bestiary/kroten/animations/kroten.js', './bestiary/solomennik/animations/solomennik.js', './bestiary/gulen/animations/gulen.js', './bestiary/skakunok/animations/skakunok.js', './bestiary/semyannitsa/animations/semyannitsa.js', './bestiary/zheludnik/animations/zheludnik.js', './bestiary/tennik/animations/tennik.js', './bestiary/hranitel/skins/forest-lord/animations/forest-lord.js', './bestiary/hranitel/skins/white-mask/animations/white-mask.js', './bestiary/hranitel/skins/river-serpent/animations/river-serpent.js', './bestiary/hranitel/skins/thunder-bull/animations/thunder-bull.js',
   './forest-lights.html', './forest-lights.js', './forest-lights-levels.js',
   './arrow-escape.html', './arrow-escape.js',
-  './sand-trucks.html', './sand-trucks.css', './sand-trucks-levels.js', './sand-trucks.js', './sand-trucks-sand.js', './sand-trucks-surface.js', './sand-trucks-sand-art.js', './sand-trucks-ui.js', './sand-trucks-art.js', './sand-trucks-audio.js', './audio/sand-trucks/sand-through-fingers-v1.mp3',
+  './sand-trucks.html', './sand-trucks.css', './sand-trucks-levels.js', './sand-trucks.js', './sand-trucks-sand.js', './sand-trucks-surface.js', './sand-trucks-sand-art.js', './sand-trucks-ui.js', './sand-trucks-art.js',
   './mahjong.html', './mahjong.css', './mahjong.js', './mahjong-glyphs.js', './mahjong-art.js', './mahjong-ui.js',
   './memory-cards.html', './memory-cards.js',
-  './manifest.json', './icon-192.png?v=lukomorye1', './icon-512.png?v=lukomorye1', './icon-180.png?v=lukomorye1', './icon-maskable-512.png?v=lukomorye1', './favicon.ico?v=lukomorye1'
+  './manifest.json', './icon-192.png?v=lukomorye2', './icon-512.png?v=lukomorye2', './icon-180.png?v=lukomorye2', './icon-maskable-512.png?v=lukomorye2', './favicon.ico?v=lukomorye2'
 ];
 
 self.addEventListener('install', e => {

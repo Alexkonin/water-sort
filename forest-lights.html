@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-180.png?v=lukomorye1">
-<link rel="icon" href="favicon.ico?v=lukomorye1">
+<link rel="apple-touch-icon" href="icon-180.png?v=lukomorye2">
+<link rel="icon" href="favicon.ico?v=lukomorye2">
 <link rel="stylesheet" href="shell.css?v=58">
 <link rel="stylesheet" href="palette.css?v=50">
 <script src="launch-history.js?v=60"></script>
@@ -64,7 +64,7 @@
 #lights .fl-board{width:min(100%,calc(100dvh - 280px));max-width:390px;flex-shrink:0;margin:8px auto}
 #lights .fl-guide{margin:0 0 14px}
 #lights .fl-controls{flex-shrink:0;margin-inline:-8px;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-#lights .fl-footer{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-top:12px;font-size:12px;text-align:center}
+#lights .fl-footer{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:8px;margin-top:12px;font-size:12px;text-align:center}
 #lights .fl-undo{width:auto;min-height:44px;height:44px;display:flex;gap:6px;padding:0 10px;justify-self:start;font-size:12px}
 #lights .fl-best{text-align:right;font-size:12px;line-height:1.4}
 .level-title{font-size:clamp(14px,4vw,17px);border:0;background:none;color:inherit;cursor:pointer;padding:3px 0;font-family:inherit}
@@ -87,17 +87,19 @@
 @media(max-height:480px){html,body{height:auto;overflow:auto}#app{height:auto;min-height:100dvh;touch-action:pan-y}#lights .fl-board{width:min(100%,280px)}#lights main{min-height:340px}}
 @media(prefers-reduced-motion:reduce){#lights .fl-flow{transition:none}}
 </style>
-<script src="sound.js?v=50"></script>
+
 <script src="forest-lights.js?v=50"></script>
 <script src="forest-lights-levels.js?v=50"></script>
+<link rel="stylesheet" href="game-header.css?v=200">
+<link rel="stylesheet" href="ui-theme.css?v=199">
 </head>
 <body>
 <div id="app">
-<header>
- <div class="hdr-side"><a href="index.html" class="icon-btn" aria-label="Все игры"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#menu"/></svg></a><button class="icon-btn" id="btnSound" aria-label="Выключить звук"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#sound"/></svg></button></div>
- <button class="hdr-title level-title" id="btnLevel" aria-label="Выбрать уровень"><span id="levelLabel">Уровень 1</span><small>Собери огоньки</small></button>
- <div class="hdr-side right"><button class="icon-btn" id="btnRestart" aria-label="Начать уровень заново"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#restart"/></svg></button><button class="icon-btn" id="btnHelp" aria-label="Как играть"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#help"/></svg></button></div>
-</header>
+<header class="game-header" aria-label="Меню игры">
+    <div class="hdr-side"><a class="icon-btn game-back"  href="index.html" aria-label="Назад к играм" title="Назад к играм"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg?v=195#back"/></svg></a></div>
+    <button type="button" class="game-level" id="btnLevel" aria-label="Выбрать уровень"><span id="levelLabel">Уровень 1</span> ▾</button>
+    <div class="hdr-side right"><button type="button" class="icon-btn game-undo" id="btnUndo" aria-label="Отменить ход" title="Отменить ход" disabled><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg?v=195#undo"/></svg></button><button type="button" class="icon-btn game-info" id="btnHelp" aria-label="Информация об игре" title="Информация об игре" aria-haspopup="dialog"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg?v=200#info"/></svg></button></div>
+  </header>
 <div id="lights"><div class="fl-game">
  <main> <div class="fl-board" role="img" aria-label="Восемь позиций по кругу. Три цветных огонька должны совпасть с отметками на внешнем ободке. Нижние три позиции соединяет медовая дуга.">
   <div class="fl-track"></div><div class="fl-gate"></div><svg class="fl-flow" viewBox="0 0 100 100" aria-hidden="true"><defs><marker id="fl-direction" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0 0 L5 2.5 L0 5 Z"/></marker></defs><path d="M31 69 Q50 58 69 69" marker-end="url(#fl-direction)"/><path d="M73 78 Q66 84 56 85" marker-end="url(#fl-direction)"/><path d="M44 85 Q34 84 27 78" marker-end="url(#fl-direction)"/></svg><div class="fl-seats"></div><div class="fl-homes"></div><div class="fl-beads"></div>
@@ -106,19 +108,18 @@
  <p class="fl-guide">Каждый огонёк — к своей отметке<small>Крути кольцо пальцем · нажми на медовую дугу для тройки</small></p>
  </main>
  <div class="fl-controls"><button type="button" data-move="L" aria-label="Повернуть кольцо влево"><span aria-hidden="true">↶</span>Кольцо</button><button type="button" class="fl-turn" data-move="T" aria-label="Переставить нижнюю тройку"><span aria-hidden="true">⟳</span>Тройка</button><button type="button" data-move="R" aria-label="Повернуть кольцо вправо"><span aria-hidden="true">↷</span>Кольцо</button></div>
- <div class="fl-footer"><button class="fl-undo" aria-label="Отменить ход"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#undo"/></svg>Назад</button><span>Ходов: <b class="fl-moves">0</b></span><span class="fl-best"></span></div>
+ <div class="fl-footer"><span>Ходов: <b class="fl-moves">0</b></span><span class="fl-best"></span></div>
 </div></div>
 </div>
 <div class="overlay" id="ovHelp" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
  <div class="card"><div class="big"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#lights"/></svg></div><h2 id="helpTitle">Как играть</h2>
- <p>Помоги лесным огонькам вернуться на свои места.</p>
+ <p>Расставь огоньки по отметкам на внешнем ободке: цвет и значок должны совпасть.</p>
  <ol class="help-list">
-  <li><strong>Найди пару.</strong> Совмести каждый шарик с неподвижной отметкой на внешнем ободке. Цвет и значок должны совпасть.</li>
-  <li><strong>Вращай кольцо.</strong> Потяни за кольцо или огонёк в нужную сторону. Можно также нажать на левую или правую сторону кольца либо воспользоваться кнопками.</li>
-  <li><strong>Меняй тройку.</strong> Нажми на медовую дугу или кнопку «Тройка». Правый огонёк идёт вниз, нижний — влево, левый — вправо. Пустые места участвуют в перестановке тоже.</li>
-  <li><strong>Пробуй спокойно.</strong> «Назад» отменяет ход, круглая стрелка сверху начинает уровень заново. Таймера нет.</li>
+  <li><strong>Вращай кольцо.</strong> Потяни за кольцо или огонёк. Можно нажать на левую или правую сторону кольца или на кнопку со стрелкой.</li>
+  <li><strong>Меняй нижнюю тройку.</strong> Нажми на золотистую дугу или кнопку «Тройка»: правый огонёк переместится вниз, нижний — влево, левый — вправо. Пустые места тоже перемещаются.</li>
+  <li><strong>Пробуй разные ходы.</strong> Кнопка отмены вверху возвращает предыдущий ход.</li>
  </ol>
- <p>1000 уровней: от двух до семи огоньков. Нажми на номер вверху, чтобы выбрать любой уровень. Прогресс сохраняется автоматически.</p>
+ <p>Таймера нет, прогресс сохраняется автоматически. Нажми на номер уровня, чтобы выбрать другой или начать заново.</p>
  <button class="cta" id="btnCloseHelp">Понятно, играем</button></div>
 </div>
 <div class="overlay" id="ovLevel" role="dialog" aria-modal="true" aria-labelledby="levelsTitle" hidden>
@@ -126,7 +127,7 @@
  <div class="level-pages"><button id="prevPage" aria-label="Предыдущие уровни">‹</button><span id="pageLabel"></span><button id="nextPage" aria-label="Следующие уровни">›</button></div>
  <div class="level-grid" id="levelGrid"></div>
  <form class="level-jump" id="jumpForm"><input id="levelInput" type="number" inputmode="numeric" min="1" max="1000" required placeholder="Номер от 1 до 1000" aria-label="Номер уровня"><button type="submit">Перейти</button></form><p id="levelError" role="alert"></p>
- <button class="ghost" id="btnCloseLevel">Закрыть</button></div>
+ <div class="game-menu-actions"><button type="button" class="ghost" id="btnRestart">Начать уровень заново</button></div><button class="ghost" id="btnCloseLevel">Закрыть</button></div>
 </div>
 <div class="overlay" id="ovWin" role="dialog" aria-modal="true" aria-labelledby="winTitle" hidden>
  <div class="card"><div class="big"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#trophy"/></svg></div><h2 id="winTitle">Все огоньки дома!</h2><p class="win-detail" id="winDetail"></p><button class="cta" id="btnNext">Следующий уровень</button><button class="ghost" id="btnReplay">Сыграть ещё раз</button></div>
@@ -144,11 +145,10 @@
  let saved={};try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch{}
  let {level,state,moves,history,best,completed,legacyBest}=ForestLights.restoreProgress(saved,levels,FOREST_CATALOG_VERSION);
  let puzzle=levels[level-1];
- let soundOn=saved.sound!==false,helpSeen=saved.helpSeen===true;
+ let helpSeen=saved.helpSeen===true;
  let busy=false,epoch=0,animations=[],activeDialog=null,previousFocus=null,page=0,gesture=null;
  const board=$('.fl-board');
- const sfx=GameAudio.create({enabled:()=>soundOn});
- function save(){try{localStorage.setItem(KEY,JSON.stringify({catalogVersion:FOREST_CATALOG_VERSION,level,state,moves,history,best,completed,legacyBest,sound:soundOn,helpSeen}));}catch{}}
+ function save(){try{localStorage.setItem(KEY,JSON.stringify({catalogVersion:FOREST_CATALOG_VERSION,level,state,moves,history,best,completed,legacyBest,helpSeen}));}catch{}}
  function point(i,r=32,angle=0){const a=(i*45-90+angle)*Math.PI/180;return [50+r*Math.cos(a),50+r*Math.sin(a)];}
  function place(el,i,r=32,angle=0){const [x,y]=point(i,r,angle);el.style.left=x+'%';el.style.top=y+'%';}
  function build(){
@@ -166,13 +166,10 @@
   document.querySelectorAll('.fl-bead').forEach(b=>place(b,state.indexOf(b.dataset.color)));
   $('.fl-status').textContent=matched===total?'Все дома!':matched+' из '+total+' на местах';
   board.setAttribute('aria-label','Огоньки по часовой стрелке от верха: '+[...state].map(x=>names[+x]).join(', ')+'. Совпадений: '+matched+' из '+total+'.');
-  $('.fl-moves').textContent=moves;$('.fl-undo').disabled=busy||!history.length;
+  $('.fl-moves').textContent=moves;$('#btnUndo').disabled=busy||!history.length;
   $('.fl-best').textContent=best[level]?'Лучшее: '+best[level]:'Минимум: '+puzzle.par;
   $('#levelLabel').textContent='Уровень '+level;
-  $('#btnSound').setAttribute('aria-label',soundOn?'Выключить звук':'Включить звук');
-  $('#btnSound').setAttribute('aria-pressed',String(soundOn));
-  $('#btnSound use').setAttribute('href','icons.svg?v=50#'+(soundOn?'sound':'muted'));
-  buttons.forEach(b=>b.disabled=busy||state===puzzle.target);
+  buttons.forEach(b=>{b.disabled=busy||state===puzzle.target;});
  }
  function cancelAnimation(){epoch++;animations.forEach(a=>a.cancel());animations=[];busy=false;gesture=null;board.classList.remove('fl-dragging');root.classList.remove('fl-trio-active','fl-moving');}
  function closeDialog(){
@@ -195,7 +192,7 @@
   $('#btnNext').textContent=level===1000?'К выбору уровней':'Следующий уровень';openDialog('#ovWin');
  }
  function start(n){
-  closeDialog();cancelAnimation();sfx.stop();level=n;puzzle=levels[level-1];state=puzzle.start;moves=0;history=[];
+  closeDialog();cancelAnimation();level=n;puzzle=levels[level-1];state=puzzle.start;moves=0;history=[];
   build();render();save();
  }
  async function move(kind,count=1,fromAngle=null){
@@ -203,7 +200,7 @@
   const before=state,token=epoch;
   busy=true;root.classList.add('fl-moving');root.classList.toggle('fl-trio-active',kind==='T');
   for(let n=0;n<count;n++){history.push(state);if(history.length>256)history.shift();state=step(state,kind);moves++;}
-  render();save();sfx.play(kind==='T'?'plop':'tap');
+  render();save();
   if(!reduced.matches){
    document.querySelectorAll('.fl-bead').forEach(bead=>{
     const from=before.indexOf(bead.dataset.color);if(kind==='T'&&(from<3||from>5))return;
@@ -219,7 +216,7 @@
   await Promise.all(animations.map(a=>a.finished.catch(()=>{})));
   if(token!==epoch)return;
   animations=[];busy=false;root.classList.remove('fl-trio-active','fl-moving');render();
- if(state===puzzle.target){sfx.play('win');win();}
+ if(state===puzzle.target){win();}
  }
  function wheelPosition(e){
   const rect=board.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width-.5,y=(e.clientY-rect.top)/rect.height-.5;
@@ -250,7 +247,7 @@
   }else if(arc)move('T');
   else move(side<0?'L':'R');
  }
- function undo(){if(busy||activeDialog||!history.length)return;state=history.pop();moves=Math.max(0,moves-1);sfx.play('tap');render();save();}
+ function undo(){if(busy||activeDialog||!history.length)return;state=history.pop();moves=Math.max(0,moves-1);render();save();}
  function renderLevels(){
   $('#levelGrid').replaceChildren();const first=page*50+1,last=Math.min(1000,first+49);
   $('#pageLabel').textContent=first+'–'+last+' из 1000';$('#prevPage').disabled=page===0;$('#nextPage').disabled=page===19;
@@ -272,11 +269,10 @@
  board.addEventListener('pointermove',trackGesture);
  board.addEventListener('pointerup',e=>endGesture(e));
  board.addEventListener('pointercancel',e=>endGesture(e,true));
- $('.fl-undo').addEventListener('click',undo);
+ $('#btnUndo').addEventListener('click',undo);
  $('#btnRestart').addEventListener('click',()=>start(level));
  $('#btnHelp').addEventListener('click',()=>openDialog('#ovHelp'));
  $('#btnCloseHelp').addEventListener('click',()=>{closeDialog();if(state===puzzle.target)win();});
- $('#btnSound').addEventListener('click',()=>{soundOn=!soundOn;sfx.sync();render();save();});
  $('#btnLevel').addEventListener('click',showLevels);$('#btnCloseLevel').addEventListener('click',closeDialog);
  $('#prevPage').addEventListener('click',()=>{if(page>0){page--;renderLevels();}});
  $('#nextPage').addEventListener('click',()=>{if(page<19){page++;renderLevels();}});
@@ -301,7 +297,7 @@
   else if(e.key.toLowerCase()==='t'||e.key.toLowerCase()==='е'){e.preventDefault();move('T');}
   else if(e.key.toLowerCase()==='z'){e.preventDefault();undo();}
  });
- document.addEventListener('visibilitychange',()=>{if(document.hidden){sfx.stop();save();}});
+ document.addEventListener('visibilitychange',()=>{if(document.hidden){save();}});
  window.addEventListener('pagehide',save);
  build();render();save();
  if(!helpSeen)openDialog('#ovHelp');else if(state===puzzle.target)win();

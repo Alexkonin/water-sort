@@ -1,0 +1,111 @@
+/* Общие материалы интерфейса. Подключать ПОСЛЕ CSS игры и game-header.css.
+   Только оболочка и управление: игровые объекты оформляются в CSS игр. */
+:root{
+  --ui-font:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,sans-serif;
+  --ui-text-micro:10px;
+  --ui-text-caption:12px;
+  --ui-text-body:14px;
+  --ui-text-control:16px;
+  --ui-text-title:22px;
+  --ui-text-display:28px;
+  --ui-radius-control:14px;
+  --ui-radius-panel:24px;
+  --ui-surface:linear-gradient(180deg,#faf6e7,var(--paper));
+  /* Акцент действия, выбор и награда имеют разные роли. */
+  --ui-primary:linear-gradient(180deg,var(--honey),var(--honey-dark));
+  --ui-selection:#426b57;
+  --ui-selection-soft:#e2ead7;
+  --ui-selection-on-dark:#bfd0a3;
+  --ui-reward:#8b7032;
+  --ui-secondary:#dce3c8;
+  --ui-complete:#c8d6b5;
+  --ui-glass:rgba(191,208,163,.10);
+  --ui-border:rgba(105,124,72,.24);
+  --ui-text-muted:#59684f;
+  --ui-backdrop:rgba(6,23,22,.76);
+  /* Свет сверху: тонкий верхний блик и рассеянная тень строго вниз. */
+  --ui-shadow-control:inset 0 1px 0 #fff6,0 2px 6px #061b191a;
+  --ui-shadow-glass:inset 0 1px 0 #f4efdb14,0 2px 6px #061b191a;
+  --ui-shadow-panel:inset 0 1px 0 #fff9,0 12px 32px #061b1933;
+  --ui-shadow-dialog:inset 0 1px 0 #fff9,0 24px 60px #061b1966;
+  --ui-disabled-opacity:.4;
+}
+body{font-family:var(--ui-font);font-size:var(--ui-text-body)}
+body :is(button,input,select,textarea){font-family:var(--ui-font)}
+body #lights .fl-game{font-family:var(--ui-font)}
+body :is(dialog,.overlay .card){
+  color:var(--ink);background:var(--ui-surface);border:1px solid var(--ui-border);
+  border-radius:var(--ui-radius-panel);box-shadow:var(--ui-shadow-dialog);
+  padding:24px 22px 20px;max-height:86dvh;overflow-y:auto;
+}
+body dialog{width:min(390px,calc(100vw - 32px));touch-action:pan-y}
+body .overlay{background:var(--ui-backdrop);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+body dialog::backdrop{background:var(--ui-backdrop);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+body :is(dialog,.card) h2{font-family:var(--ui-font);font-size:var(--ui-text-title);font-weight:700;line-height:1.25;margin:0 0 10px;letter-spacing:0}
+body :is(dialog,.card) :is(p,li){font-size:var(--ui-text-body);line-height:1.55;color:var(--ui-text-muted);opacity:1}
+body :is(dialog,.card) .help-list{opacity:1}
+body :is(.eyebrow,.prompt-kicker){font-size:var(--ui-text-micro);font-weight:700;letter-spacing:.12em}
+body .menu-head h1{font-size:var(--ui-text-display);line-height:1.2;font-weight:700}
+body .intro h1{font-size:var(--ui-text-title);line-height:1.25;font-weight:700}
+body :is(.game .nm,.prompt-main){font-size:var(--ui-text-control);font-weight:700;line-height:1.3}
+body :is(.game .ds,.game .pr,.intro p,.prompt-note,.panel-top,.board-top,.board-tools,.level-summary,.game-foot){font-size:var(--ui-text-caption);line-height:1.4}
+body .game .nm{font-size:var(--ui-text-control)}
+body :is(.game-panel,.table,.game){background:var(--ui-surface);border-radius:var(--ui-radius-panel);box-shadow:var(--ui-shadow-panel)}
+body .game .scene{border-radius:var(--ui-radius-panel) var(--ui-radius-panel) 0 0}
+
+/* Одна форма управления; плотные панели сохраняют собственную компоновку. */
+body :is(.cta,.ghost,.btn,.go,.spd,.twr,.sel button,.controls button,.level-pages button,.levels button,.level-grid button,.lvlGrid button,.mapGrid button,.lvlPick button,.level-jump button,.board-tools button,dialog .close),
+body #lights :is(.fl-controls button,.fl-undo){
+  border:1px solid var(--ui-border);border-radius:var(--ui-radius-control);
+  font-family:var(--ui-font);font-weight:600;line-height:1.3;
+  transition:transform .12s,filter .12s;cursor:pointer;touch-action:manipulation;
+}
+body :is(.cta,.go,.actions .cta){background:var(--ui-primary);color:var(--ink);box-shadow:var(--ui-shadow-control);font-size:var(--ui-text-control);font-weight:700;min-height:48px;padding:8px 12px}
+body .actions :is(.cta,.ghost){min-height:44px}
+body :is(.ghost,.lvlPick button,.level-jump button,.level-pages button,.levels button,.level-grid button,.lvlGrid button,.mapGrid button,.board-tools button,dialog .close){
+  color:var(--ink);background:var(--ui-secondary);box-shadow:var(--ui-shadow-control);font-size:var(--ui-text-body);min-height:44px;
+}
+body :is(button.ghost,.actions .ghost){background:transparent;box-shadow:none;border-color:var(--ui-border);padding:8px 12px}
+body :is(.btn,.spd,.twr,.controls button),body #lights :is(.fl-controls button,.fl-undo){
+  color:var(--cream);background:var(--ui-glass);border-color:var(--line);box-shadow:var(--ui-shadow-glass);font-size:var(--ui-text-caption);
+}
+body #lights .fl-controls .fl-turn{background:var(--ui-primary);color:var(--ink);box-shadow:var(--ui-shadow-control)}
+body :is(.level-pages button,dialog .close){width:44px;height:44px;flex-shrink:0;font-size:var(--ui-text-title);padding:0}
+body dialog .close{margin:-8px -6px 4px 8px}
+body .levels strong{font-family:var(--ui-font);font-size:var(--ui-text-control);font-weight:700}
+body .levels span{font-size:var(--ui-text-body)}
+body :is(.levels,.level-grid,.mapGrid) button.done{background:var(--ui-complete)}
+body :is(.level-grid,.lvlGrid,.mapGrid) button:is(.current,.cur){background:var(--ui-selection-soft);box-shadow:var(--ui-shadow-control),inset 0 0 0 2px var(--ui-selection)}
+body :is(.twr,.spd).on{background:#4e6040;border-color:var(--ui-selection-on-dark);box-shadow:var(--ui-shadow-glass),inset 0 0 0 1px var(--ui-selection-on-dark)}
+/* Награда — небольшой знак или звёзды, без заливки главной кнопки. */
+body #ovWin .big,body #winDialog .dialog-mark,body :is(.stars-big,.mapGrid .st){color:var(--ui-reward)}
+body .sel :is(.up,.hire){background:var(--ui-primary);color:var(--ink);box-shadow:var(--ui-shadow-control)}
+body .sel .sell{background:var(--ui-glass);box-shadow:var(--ui-shadow-glass)}
+body :is(.lvlPick,.level-jump) input{font:600 var(--ui-text-control)/1.3 var(--ui-font);border:1px solid var(--ui-border);border-radius:var(--ui-radius-control);background:#fffbee;color:var(--ink);min-height:44px;box-shadow:inset 0 1px 3px #061b1912}
+body :is(.lvlPick,.level-jump) input::placeholder{color:var(--ui-text-muted)}
+body :is(.hint,.deadbar){border-radius:var(--ui-radius-control);font-family:var(--ui-font);font-size:var(--ui-text-caption);box-shadow:var(--ui-shadow-glass)}
+body .hint{background:#102f2df2}
+body :is(.stat,.build-tip,.sel){background:var(--ui-glass);border-radius:var(--ui-radius-control);box-shadow:var(--ui-shadow-glass)}
+@media(min-width:600px) and (min-aspect-ratio:1/1){
+  body .command-panel{background:var(--ui-glass);border-radius:var(--ui-radius-panel);box-shadow:var(--ui-shadow-glass),0 12px 32px #061b1933}
+}
+
+/* Недоступность едина только у управления, не у плиток, колб и карточек. */
+body :is(.cta,.ghost,.btn,.go,.spd,.twr,.sel button,.controls button,.level-pages button,.levels button,.level-grid button,.lvlGrid button,.mapGrid button,.lvlPick button,.level-jump button,.board-tools button):disabled,
+body #lights :is(.fl-controls button,.fl-undo):disabled,
+body #app .game-header .icon-btn:disabled{
+  opacity:var(--ui-disabled-opacity);filter:none;box-shadow:none;transform:none;cursor:default;pointer-events:none;
+}
+body .sel :is(.up,.hire,.sell):disabled{opacity:var(--ui-disabled-opacity);filter:none;box-shadow:none;transform:none;pointer-events:none}
+body .twr.poor{opacity:var(--ui-disabled-opacity)}
+body :is(.cta,.ghost,.btn,.go,.spd,.twr,.sel button,.controls button,.level-pages button,.levels button,.level-grid button,.lvlGrid button,.mapGrid button,.lvlPick button,.level-jump button,.board-tools button,dialog .close):active:not(:disabled),
+body #lights :is(.fl-controls button,.fl-undo):active:not(:disabled){transform:scale(.96)}
+body :is(dialog,.card) :is(button,input):focus-visible{outline:2px solid var(--olive);outline-offset:3px}
+@media(hover:hover){
+  body :is(.cta,.ghost,.btn,.go,.spd,.twr,.sel button,.controls button,.level-pages button,.levels button,.level-grid button,.lvlGrid button,.mapGrid button,.lvlPick button,.level-jump button,.board-tools button,dialog .close):hover:not(:disabled){filter:brightness(1.04)}
+  body .game:hover{box-shadow:var(--ui-shadow-panel)}
+}
+@media(prefers-reduced-motion:reduce){
+  body :is(.cta,.ghost,.btn,.go,.spd,.twr,.sel button,.controls button,.level-pages button,.levels button,.level-grid button,.lvlGrid button,.mapGrid button,.lvlPick button,.level-jump button,.board-tools button,dialog .close),
+  body #lights :is(.fl-controls button,.fl-undo){transition:none}
+}

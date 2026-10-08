@@ -1,0 +1,23 @@
+{
+  "library": "SoundDino",
+  "source": "https://sounddino.com/en/effects/natural-sand/",
+  "usageStatement": "Category page states free, royalty-free, no attribution, commercial and personal projects. Not CC0.",
+  "processing": "None. Downloaded MP3 recordings presented as supplied.",
+  "files": [
+    {
+      "file": "bucket.mp3",
+      "title": "Pouring sand out of a bucket",
+      "download": "https://sounddino.com/mp3/17/pouring-sand-out-of-a-bucket.mp3"
+    },
+    {
+      "file": "fingers.mp3",
+      "title": "The sound where sand pours from the hands, between the fingers",
+      "download": "https://sounddino.com/mp3/17/the-sound-where-sand-pours-from-the-hands-between-the-fingers.mp3"
+    },
+    {
+      "file": "plastic.mp3",
+      "title": "Pour the sand on the plastic surface",
+      "download": "https://sounddino.com/mp3/17/pour-the-sand-on-the-plastic-surface.mp3"
+    }
+  ]
+}

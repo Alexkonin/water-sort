@@ -10,12 +10,12 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Лукоморье">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-180.png?v=lukomorye1">
-<link rel="icon" href="favicon.ico?v=lukomorye1">
+<link rel="apple-touch-icon" href="icon-180.png?v=lukomorye2">
+<link rel="icon" href="favicon.ico?v=lukomorye2">
 <link rel="stylesheet" href="shell.css?v=58">
 <script src="launch-history.js?v=60"></script>
 <script src="focus-mode.js?v=65"></script>
-<script src="sound.js?v=48"></script>
+
 <script src="bestiary/ugolek/animations/ugolek.js?v=88"></script>
 <script src="bestiary/vihrek/animations/vihrek.js?v=134"></script>
 <script src="bestiary/kamnespin/animations/kamnespin.js?v=90"></script>
@@ -149,8 +149,8 @@
     .twr .em{grid-row:auto;grid-column:auto;justify-content:center}
     .twr .em .ui-icon{width:22px;height:22px}
     .twr .nm{font-size:10px}.twr .pc{font-size:11px}
-    .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
-    .go{grid-column:1/-1;min-height:48px;font-size:14px}.spd{width:100%;min-height:44px;border-radius:11px}
+    .row2{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
+    .go{grid-column:auto;min-height:48px;font-size:14px}.spd{width:100%;min-height:44px;border-radius:11px}
     .control-label{display:inline;font-size:11px;font-weight:500}
     #hint{bottom:calc(env(safe-area-inset-bottom) + 22px);left:var(--board-center,50%);max-width:min(48vw,440px)}
   }
@@ -169,7 +169,7 @@
     #stLives{grid-column:auto}#stLives .castle-rank,.stat-label,.build-heading{display:none}
     .stat{min-height:36px;font-size:13px;padding:6px;justify-content:center;gap:5px}
     .stat .ui-icon{width:16px;height:16px}
-    .twr{row-gap:1px;padding:2px}.twr .em .ui-icon{width:18px;height:18px}.row2{grid-template-columns:minmax(0,1fr) 44px 44px;gap:5px}
+    .twr{row-gap:1px;padding:2px}.twr .em .ui-icon{width:18px;height:18px}.row2{grid-template-columns:minmax(0,1fr) 44px;gap:5px}
     .go{grid-column:auto;font-size:12px;min-height:44px}.spd{min-height:44px}.control-label{display:none}
   }
   @media(prefers-reduced-motion:reduce){.twr,.go,.wave-track span{transition:none}.stat.hurt,.stat.gain{animation:none}}
@@ -229,21 +229,15 @@
   .beast p.st{opacity:.5;font-size:10.5px}
 </style>
 <link rel="stylesheet" href="palette.css?v=48">
+<link rel="stylesheet" href="game-header.css?v=200">
+<link rel="stylesheet" href="ui-theme.css?v=199">
 </head>
 <body>
 <div id="app">
-  <header>
-    <div class="hdr-side">
-      <a class="icon-btn" id="btnMenu" href="index.html" title="В меню" aria-label="В меню"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=48#menu"/></svg></a>
-      <button class="icon-btn" id="btnSound" title="Звук" aria-label="Звук"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=48#sound"/></svg></button>
-    </div>
-    <div class="hdr-title" id="title" role="button" tabindex="0" title="Выбрать уровень">
-      Уровень <span id="lvNum">1</span> ▾<small id="lvName">—</small>
-    </div>
-    <div class="hdr-side right">
-      <button class="icon-btn" id="btnRestart" title="Заново" aria-label="Начать заново"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=48#restart"/></svg></button>
-      <button class="icon-btn" id="btnHelp" title="Как играть" aria-label="Как играть"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=48#help"/></svg></button>
-    </div>
+  <header class="game-header" aria-label="Меню игры">
+    <div class="hdr-side"><a class="icon-btn game-back" id="btnMenu" href="index.html" aria-label="Назад к играм" title="Назад к играм"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg?v=195#back"/></svg></a></div>
+    <button type="button" class="game-level" id="title" aria-label="Выбрать уровень">Уровень <span id="lvNum">1</span> ▾<small id="lvName">—</small></button>
+    <div class="hdr-side right"><button type="button" class="icon-btn game-undo" id="btnUndo" aria-label="Отменить ход" title="Отменить ход" disabled><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg?v=195#undo"/></svg></button><button type="button" class="icon-btn game-info" id="btnHelp" aria-label="Информация об игре" title="Информация об игре" aria-haspopup="dialog"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg?v=200#info"/></svg></button></div>
   </header>
 
   <aside class="command-panel" aria-label="Управление обороной">
@@ -275,7 +269,7 @@
     </div>
     <div class="row2">
       <button class="go" id="btnGo">Начать волну</button>
-      <button class="spd undo" id="btnUndo" title="Нечего отменять" aria-label="Нечего отменять" disabled><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=48#undo"/></svg><span class="control-label">Отмена</span></button>
+
       <button class="spd" id="btnSpd" title="Скорость игры" aria-label="Скорость игры: 1×">×1</button>
     </div>
   </footer>
@@ -322,6 +316,7 @@
     </div>
     <div class="mapGrid" id="mapGrid"></div>
     <button class="ghost" id="btnCloseMaps">Закрыть</button>
+<div class="game-menu-actions"><button type="button" class="ghost" id="btnRestart">Начать уровень заново</button></div>
   </div>
 </div>
 
@@ -329,22 +324,17 @@
   <div class="card">
     <div class="big"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=48#castle"/></svg></div>
     <h2>Как играть</h2>
+    <p>Защити замок: построй башни вдоль дороги и отбей все волны врагов.</p>
     <ol class="help-list">
-      <li>Выбери башню и коснись свободной клетки — она встанет туда.</li>
-      <li>Нажми «Начать волну». Враги пойдут от портала по дороге к твоей базе.</li>
-      <li>За каждого убитого дают золото. На него строй и улучшай башни. Остаток после победы добавляется к обычному стартовому запасу следующего уровня.</li>
-      <li>Башня при каждом выстреле выбирает ближайшего к себе видимого врага в радиусе атаки.</li>
-      <li>Коснись поставленной башни — её можно улучшить или продать (вернётся 60%).</li>
-      <li>Кнопка «Отмена» отменяет последнюю постройку, улучшение или продажу. Если башня уже успела выстрелить после постройки или улучшения, откат отключается. Улучшение замка нельзя отменить после полученного удара.</li>
-      <li>Все башни можно развить с 1-го до 5-го разряда на любой карте. Перед улучшением видны цена и прибавка к силе.</li>
-      <li>Пушка ускоряет стрельбу, мороз сильнее замедляет, молния на старших разрядах цепляет до пяти врагов, мортира увеличивает площадь взрыва. Корпус меняется с каждым разрядом.</li>
-      <li>Дошедший до ворот враг не исчезает: он бьёт замок, пока жив. Башни продолжают по нему стрелять. Зато у ворот он открытая мишень — броня не спасает, урон двойной. Держи оборону у ворот.</li>
-      <li>Нажми на замок или показатель его прочности: у него пять разрядов. На уровнях 2–4 улучшается частокол: он снижает входящий урон на 10%, 20% и 30%, но не чинит замок. Частокол перекрывает соседнюю дорожную клетку перед замком. У него своя прочность: 20, 35 и 50. При нескольких подходах пролёты образуют одну защиту с общей прочностью. Пока он цел, принимает удары на себя; после разрушения замок остаётся без брони. Постройка даёт частоколу 20 прочности, следующие улучшения добавляют по 15 к текущей и максимальной прочности, сохраняя полученный урон. Отдельного ремонта нет. На 5-м уровне замок полностью чинится, а его максимальная прочность растёт с 20 до 60. Улучшения действуют на текущей карте. Кончилась прочность — база прорвана.</li>
-      <li><b>Камнеспины</b> гасят слабые удары: по ним бьёт пушка и мортира, а молния почти бесполезна.</li>
-      <li>На поздних картах к замку ведёт несколько дорог, а у врагов появляются повадки: одни не мёрзнут, другие уходят под землю, лечат соседей или рассыпаются спорами. При первой встрече игра подскажет, чем брать; все вместе — в бестиарии.</li>
-      <li>Угольки собираются в небольшие отряды с первых волн. Позже появляются смешанные группы с Камнеспинами, носителями аур, Туманниками и Тенниками; доля бойцов в строю растёт с уровнем. Каждый держит своё место, после гибели ведущего его заменяет передний оставшийся боец. Быстрые враги выходят позже и догоняют группу. Росник выбирает раненого тяжёлого союзника рядом, Гулень — группу бойцов на своей дороге. После гибели ведущего поддержка может найти другую цель. Замедление помогает разорвать строй. Добрыню задерживает ведущий; поддержка остаётся позади не дольше трёх секунд, а быстрые враги прорываются к замку.</li>
-      <li>Добрыня: открой карточку замка и найми за 80 золота, выбери героя и коснись любой клетки дороги — он дойдёт туда по дороге. Атакует всех видимых врагов рядом. До трёх наземных бойцов останавливаются драться; остальные, быстрые и летающие идут к замку. Щит снижает урон спереди между ударами. Улучшения до уровней 2 и 3 стоят 100 и 180 золота. После поражения возвращается у замка через 10 секунд; между волнами лечится. Клик вне карты снимает выбор героя. На новой карте героя нужно нанять заново.</li>
-      <li>Три звезды дают, если замок не получил ни одного удара.</li>
+      <li><strong>Построй оборону.</strong> Выбери башню, нажми на свободную клетку рядом с дорогой, затем нажми «Начать волну». Башни сами стреляют по ближайшему видимому врагу в радиусе атаки.</li>
+      <li><strong>Зарабатывай золото.</strong> За побеждённых врагов ты получаешь золото на постройку и улучшения. Остаток после победы добавляется к начальному запасу следующего уровня.</li>
+      <li><strong>Улучшай башни.</strong> Нажми на башню, чтобы улучшить её до 5-го разряда или продать за 60% всех затрат на неё. Пушка стреляет быстрее, мороз сильнее замедляет, молния поражает до пяти целей, а у мортиры растёт площадь взрыва.</li>
+      <li><strong>Береги замок.</strong> Дойдя до ворот, враги продолжают атаковать. Здесь башни наносят им двойной урон и игнорируют броню. Если прочность замка закончится, ты проиграешь.</li>
+      <li><strong>Укрепляй ворота.</strong> Нажми на замок или его прочность. Со 2-го разряда замок защищает частокол: он принимает удары на себя, пока не разрушится. Улучшения до 4-го разряда не чинят замок; 5-й разряд полностью восстанавливает его и повышает прочность до 60. Улучшения действуют только на текущей карте.</li>
+      <li><strong>Учитывай повадки врагов.</strong> Против Камнеспинов используй пушку и мортиру. Враги могут лечить соседей, прятаться под землёй или сопротивляться морозу. Замедление помогает разорвать их строй. Подробности — в бестиарии.</li>
+      <li><strong>Позови Добрыню.</strong> Найми героя за 80 золота в карточке замка. Выбери его, затем нажми на дорогу, чтобы отправить туда. Он атакует врагов рядом и задерживает до трёх наземных бойцов; быстрые и летающие останавливаются только после его удара. Щит снижает урон спереди между атаками. Между волнами герой лечится. После гибели или на новой карте его нужно нанять заново с 1-го уровня.</li>
+      <li><strong>Отменяй действия.</strong> Кнопка отмены вверху возвращает последнюю постройку, улучшение или продажу. Постройку или улучшение башни можно отменить, пока она не выстрелит. Улучшение замка — пока враг не ударит по замку или частоколу.</li>
+      <li><strong>Заработай три звезды.</strong> Пройди уровень без урона самому замку. Удары, которые полностью поглотил частокол, не мешают получить три звезды.</li>
     </ol>
     <button class="ghost" id="btnBook">Бестиарий</button>
     <button class="cta" id="btnCloseHelp">Понятно</button>
@@ -355,14 +345,14 @@
   <div class="card">
     <div class="big"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=48#book"/></svg></div>
     <h2>Бестиарий</h2>
-    <p>Кто ходит по дорогам и с какого уровня. У поздних свои повадки — они в подписи.</p>
+    <p>Враги, их особенности и уровни, на которых они появляются.</p>
     <div class="book" id="book"></div>
     <button class="ghost" id="btnCloseBook">Закрыть</button>
   </div>
 </div>
 
 <script src="heroes/dobrynya/animations/dobrynya-topdown.js?v=126"></script>
-<script src="heroes/dobrynya/combat.js?v=138"></script>
+<script src="heroes/dobrynya/combat.js?v=140"></script>
 <script>
 /* ============================================================
    ЗАЩИТА БАШНИ
@@ -593,7 +583,6 @@ const hpScale = (L, W, k) => {
 const mapFactor = paths => clamp(paths.length / paths.reduce((sum, p) => sum + 1 / p.len, 0) / 32, 0.6, 1.0);
 
 /* ============ сохранение ============ */
-let soundOn = true;
 const save = {};                 // save.stars[levelIndex] = 1..3
 function loadSave(){
   let d = null;
@@ -601,12 +590,10 @@ function loadSave(){
   save.stars = (d && d.stars) || {};
   save.goldRemaining = (d && d.goldRemaining) || {}; // остаток после последней победы на уровне
   save.seen = (d && d.seen) || {};        // кого уже встречали: подсказка о повадке показывается раз
-  if (d && typeof d.sound === 'boolean') soundOn = d.sound;
 }
 function writeSave(){
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ stars: save.stars, seen: save.seen, goldRemaining: save.goldRemaining, sound: soundOn })); }
-  catch {}
-}
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ stars: save.stars, seen: save.seen, goldRemaining: save.goldRemaining })); }
+  catch{}}
 loadSave();
 function carriedGold(level){
   const gold = save.goldRemaining[level - 1];
@@ -891,24 +878,6 @@ function layout(){
 const px = v => OX + v * CELL;
 const py = v => OY + v * CELL;
 
-/* ============ звук ============ */
-const sfx = GameAudio.create({enabled: () => soundOn});
-const sndShot = (kind, tier = 1) => sfx.play('shot', {kind, tier});
-const sndKill = f => sfx.play('kill', {voice:FOES[f.type].voice});
-const sndFoe = f => {
-  const voice = FOES[f.type].voice;
-  if (voice) sfx.play('creature', {voice, event:'appear'});
-};
-const sndBoom = () => sfx.play('boom');
-const sndBuild = () => sfx.play('build');
-const sndSell = () => sfx.play('sell');
-const sndLeak = () => sfx.play('leak');
-const sndTap = () => sfx.play('tap');
-const sndNope = () => sfx.play('nope');
-const sndWave = () => sfx.play('wave');
-const sndWin = () => sfx.play('win');
-const sndLose = () => sfx.play('lose');
-
 /* ============ подсказка ============ */
 let hintT = 0;
 function showHint(text, ms){
@@ -979,14 +948,14 @@ function undoLastAction(){
     G.selected = restored;
     showHint('Продажа отменена');
   }
-  sndTap();
+
   refreshHud();
   refreshUndo();
 }
 
 /* ============ старт уровня ============ */
 function startLevel(i){
-  sfx.stop();
+
   G.lv = clamp(i, 0, MAPS.length - 1);
   const m = MAPS[G.lv];
   G.paths = buildPaths(m);
@@ -1228,7 +1197,7 @@ function startWave(){
   G.waveRunning = true;
   G.wave++;
   refreshHud();
-  sndWave();
+
 }
 
 /* opts — для существ, которых выпускает другое существо: своя дорога и место
@@ -1249,7 +1218,7 @@ function spawn(type, scale, opts){
   f.pos = foePos(f);
   for (const [k, p] of b.tr) if (TRAITS[k].init) TRAITS[k].init(f, p);
   G.foes.push(f);
-  sndFoe(f);
+
   // первая встреча: одна подсказка на существо за всю игру — чем его брать
   if (b.intro && !save.seen[type]){ save.seen[type] = 1; writeSave(); showHint(b.name + ': ' + b.intro, 3400); }
   return f;
@@ -1335,7 +1304,7 @@ function dmgFoe(f, dmg, kind, accuracyKind=kind){
     if(f.type==='puffball')G.fx.push({kind:'puffballBurst',x:p.x,y:p.y,r:f.r,h:foeHeading(f),t:0,life:.8});
     else G.fx.push({ kind:'puff', x: p.x, y: p.y, t: 0, life: 0.45, color: f.color, parts: parts(7, 0.9, (f.d * 1000) | 0) });
     for (const [k, q] of b.tr) if (TRAITS[k].death) TRAITS[k].death(f, q, p);   // дождевик рассыпается спорами
-    sndKill(f);
+
     flash('#stGold', 'gain');
   }
   return real;
@@ -1435,7 +1404,7 @@ function fireCastle(){
   t.cool = 1 / st.rate; t.flash = 0.14;
   G.shots.push({ kind:'arrow', x:tx, y:sy, target:best.f, sp:12, dmg:st.dmg,
     vx:Math.cos(t.aim), vy:Math.sin(t.aim), heavy:t.lvl === 5 });
-  sndShot(t.lvl === 5 ? 'ballista' : 'arrow', t.lvl);
+
 }
 
 function fireTower(t){
@@ -1448,7 +1417,7 @@ function fireTower(t){
   t.aim = Math.atan2(best.p.y - ty, best.p.x - tx);
   t.cool = 1 / st.rate;
   t.flash = 0.07; t.recoil = 1;
-  sndShot(b.kind, t.lvl);
+
 
   if (b.kind === 'chain'){
     // молния: цепочка по ближайшим от предыдущего звена
@@ -1539,9 +1508,9 @@ function update(dt){
     if (f.slowT > 0){ f.slowT -= dt; if (f.slowT <= 0) f.slow = 0; }
     if (f.hit > 0) f.hit -= dt;
     f.evade=Math.max(0,(f.evade||0)-dt);
+    if (!f.siege && f.buff.heal > 0 && f.hp < f.hpMax) f.hp = Math.min(f.hpMax, f.hp + f.hpMax * f.buff.heal * dt);
+    if (DobrynyaCombat.enemy(f, dt)) continue;
     if (!f.siege){
-      if (f.buff.heal > 0 && f.hp < f.hpMax) f.hp = Math.min(f.hpMax, f.hp + f.hpMax * f.buff.heal * dt);
-      if (DobrynyaCombat.enemy(f, dt)) continue;
       if (!f.buff.hold) f.d += (f.squad || f.supportTarget ? f.marchSpeed : f.sp * f.buff.sp * (1 - f.slow)) * dt;
       // тяжёлая поступь: облачко пыли на каждом шаге
       if (FOES[f.type].dust){
@@ -1572,7 +1541,7 @@ function update(dt){
       damageCastle(b.hit, f);
       G.castleShake = 1;
       flash('#stLives', 'hurt');
-      sndLeak();
+
       const gate = siegeFrame(f).b, q = foePos(f);
       G.fx.push({ kind:'leak', x: gate.x, y: gate.y, t: 0, life: 0.4, parts: parts(5, 0.7, (G.t * 997) | 0) });
       if(f.type!=='grunt'&&f.type!=='runner'&&f.type!=='tank'&&f.type!=='swarm'&&f.type!=='ghost'&&f.type!=='golem'&&f.type!=='puffball'&&f.type!=='spore'&&f.type!=='lantern'&&f.type!=='dew'&&f.type!=='mole'&&f.type!=='straw'&&f.type!=='drummer'&&f.type!=='leaper'&&f.type!=='acorn'&&f.type!=='shade'&&!(f.type==='boss'&&(f.skin||0)<=3)) G.fx.push({ kind:'slash', x: (q.x + gate.x) / 2, y: (q.y + gate.y) / 2, a: Math.atan2(gate.y - q.y, gate.x - q.x), t: 0, life: 0.22 });
@@ -1605,7 +1574,7 @@ function update(dt){
           if (Math.hypot(p.x - s.to.x, p.y - s.to.y) <= s.splash + f.r) dmgFoe(f, s.dmg, 'splash');
         }
         G.fx.push({ kind:'boom', x: s.to.x, y: s.to.y, t: 0, life: 0.42, r: s.splash, parts: parts(6, 1.4, (s.to.x * 977 + s.to.y * 131) | 0) });
-        sndBoom();
+
       }
       continue;
     }
@@ -3299,12 +3268,6 @@ function refreshHud(){
 }
 
 const TOWER_ICONS = {"gun": "<svg width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><use href=\"icons.svg?v=48#gun\"/></svg>", "frost": "<svg width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><use href=\"icons.svg?v=48#frost\"/></svg>", "tesla": "<svg width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><use href=\"icons.svg?v=48#tesla\"/></svg>", "mortar": "<svg width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"ui-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><use href=\"icons.svg?v=48#mortar\"/></svg>"};
-function refreshSoundButton(){
-  const btn = $('#btnSound');
-  btn.innerHTML = soundOn ? '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=48#sound"/></svg>' : '<svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=48#muted"/></svg>';
-  btn.setAttribute('aria-label', soundOn ? 'Выключить звук' : 'Включить звук');
-  btn.setAttribute('aria-pressed', String(soundOn));
-}
 
 let paletteBuilt = false;
 function refreshPalette(){
@@ -3364,7 +3327,7 @@ function refreshCastleSel(){
   $('#selName').textContent = 'Замок · ' + t.lvl + '/5';
   $('#selStats').textContent = 'Прочность ' + castleHealth() + '/' + st.hp + '\nЧастокол ' + (t.palisade || 0) + '/' + st.palisadeHp + ' · броня ' + ((t.palisade || 0) > 0 ? Math.round(st.armor * 100) : 0) + '%';
   const up = $('#btnUp');
-  up.disabled = cost === null || G.gold < cost;
+  up.disabled = cost === null || G.gold < cost || (t.lvl === 4 && G.lives >= st.hp);
   up.firstChild.textContent = cost === null ? 'Максимум' : t.lvl === 4 ? 'Починить' : 'Частокол';
   $('#upCost').textContent = cost === null ? '5 / 5' : cost + ' зол.';
   up.setAttribute('aria-label', cost === null ? 'Замок достиг максимального разряда 5' : 'Улучшить замок до разряда ' + (t.lvl + 1) + ' за ' + cost + ' золота');
@@ -3373,7 +3336,7 @@ function refreshCastleSel(){
     $('#selStats').textContent = 'Прочность ' + castleHealth() + '/' + st.hp + ' → ' +
       (next.repair ? next.hp : castleHealth()) + '/' + next.hp +
       '\nЧастокол ' + (t.palisade || 0) + '/' + st.palisadeHp + (next.palisadeHp > st.palisadeHp ? ' → ' + Number(((t.palisade || 0) + next.palisadeHp - st.palisadeHp).toFixed(2)) + '/' + next.palisadeHp : '');
-    up.setAttribute('title', next.name + (next.repair ? ': полная починка, прочность 60' : ': броня ' + Math.round(next.armor * 100) + '%'));
+    up.setAttribute('title', next.repair && G.lives >= st.hp ? 'Замок цел — починка не требуется' : next.name + (next.repair ? ': полная починка, прочность 60' : ': броня ' + Math.round(next.armor * 100) + '%'));
   } else {
     up.setAttribute('title', 'Замок полностью улучшен');
   }
@@ -3433,7 +3396,7 @@ cv.addEventListener('pointerdown', ev => {
   if (x < 0 || y < 0 || x >= COLS || y >= ROWS) return;
 
   if(G.selected === G.hero && G.hero && G.roadKey.has(x+','+y)){DobrynyaCombat.move(x,y);return;}
-  if(G.hero && !G.hero.revive && Math.hypot(x+.5-G.hero.x,y+.5-G.hero.y)<.7){DobrynyaCombat.select();return;}
+  if(G.hero && Math.hypot(x+.5-G.hero.x,y+.5-G.hero.y)<.7){DobrynyaCombat.select();return;}
   if (G.castle.lvl >= 2 && palisadeFrames().some(({b}) => Math.floor(b.x) === x && Math.floor(b.y) === y)){ selectCastle(); return; }
   if (x === G.castle.x && y === G.castle.y){ selectCastle(); return; }
   const hit = G.towers.find(t => t.x === x && t.y === y);
@@ -3441,20 +3404,20 @@ cv.addEventListener('pointerdown', ev => {
     G.selected = hit;
     G.armed = null;
     refreshSel(); refreshPalette();
-    sndTap();
+
     return;
   }
   if (G.armed){
     const b = TOWERS[G.armed];
-    if (!cellFree(x, y)){ sndNope(); showHint('Здесь не построить'); return; }
-    if (G.gold < b.cost){ sndNope(); showHint('Не хватает золота: нужно ' + b.cost); return; }
+    if (!cellFree(x, y)){  showHint('Здесь не построить'); return; }
+    if (G.gold < b.cost){  showHint('Не хватает золота: нужно ' + b.cost); return; }
     G.gold -= b.cost;
     const t = { type: G.armed, x, y, lvl: 1, cool: 0, aim: null };
     G.towers.push(t);
     setUndo({ kind:'build', tower:t, cost:b.cost, label:'постройку «' + b.name + '»' });
     G.armed = null;
     G.selected = t;
-    sndBuild();
+
     refreshHud(); refreshSel();
     return;
   }
@@ -3466,22 +3429,22 @@ $('#palette').addEventListener('click', ev => {
   if (!el || G.over) return;
   const key = el.dataset.t, b = TOWERS[key];
   if (G.gold < b.cost){
-    sndNope();
+
     showHint(b.name + ' стоит ' + b.cost + ' золота');
     return;
   }
   G.armed = G.armed === key ? null : key;
   G.selected = null;
-  sndTap();
+
   refreshPalette(); refreshSel();
   if (G.armed) showHint('Коснись свободной клетки');
 });
 
 $('#btnUp').addEventListener('click', () => {
   const t = G.selected; if (!t || G.over || G.paused) return;
-  if(t.type === 'hero'){if(DobrynyaCombat.upgrade(t)){sndBuild();refreshHud();refreshSel();}else sndNope();return;}
+  if(t.type === 'hero'){if(DobrynyaCombat.upgrade(t)){refreshHud();refreshSel();}return;}
   const c = upCost(t);
-  if (c === null || G.gold < c){ sndNope(); return; }
+  if (c === null || G.gold < c || (t.type === 'castle' && t.lvl === 4 && G.lives >= castleStats().hp)){  return; }
   const from = t.lvl, lives = G.lives, palisade = t.palisade || 0;
   G.gold -= c; t.lvl++;
   if (t.type === 'castle'){
@@ -3489,7 +3452,7 @@ $('#btnUp').addEventListener('click', () => {
     if (castleStats().palisadeHp > CASTLE_TIERS[from].palisadeHp) t.palisade = Number((palisade + castleStats().palisadeHp - CASTLE_TIERS[from].palisadeHp).toFixed(2));
     setUndo({ kind:'castleUpgrade', tower:t, from, lives, palisade, cost:c, label:'улучшение замка' });
   } else setUndo({ kind:'upgrade', tower:t, from, cost:c, label:'улучшение «' + TOWERS[t.type].name + '»' });
-  sndBuild();
+
   refreshHud(); refreshSel();
 });
 $('#btnSell').addEventListener('click', () => {
@@ -3499,7 +3462,7 @@ $('#btnSell').addEventListener('click', () => {
   G.gold += gold;
   G.towers = G.towers.filter(x => x !== t);
   G.selected = null;
-  sndSell();
+
   refreshHud(); refreshSel();
 });
 
@@ -3507,7 +3470,7 @@ function selectCastle(){
   if (G.over || G.paused) return;
   G.selected = G.castle;
   G.armed = null;
-  refreshSel(); refreshPalette(); sndTap();
+  refreshSel(); refreshPalette();
 }
 $('#stLives').addEventListener('click', selectCastle);
 $('#btnHero').addEventListener('click', () => DobrynyaCombat.select());
@@ -3524,7 +3487,7 @@ $('#btnSpd').addEventListener('click', () => {
   $('#btnSpd').textContent = '×' + G.speed;
   $('#btnSpd').setAttribute('aria-label', 'Скорость игры: ' + G.speed + '×');
   $('#btnSpd').classList.toggle('on', G.speed === 2);
-  sndTap();
+
 });
 $('#btnRestart').addEventListener('click', () => { startLevel(G.lv); showHint('Уровень начат заново'); });
 document.addEventListener('keydown', e => {
@@ -3533,13 +3496,6 @@ document.addEventListener('keydown', e => {
     e.preventDefault();
     undoLastAction();
   }
-});
-$('#btnSound').addEventListener('click', () => {
-  soundOn = !soundOn;
-  sfx.sync();
-  refreshSoundButton();
-  writeSave();
-  if (soundOn) sndTap();
 });
 
 /* ============ итоги уровня ============ */
@@ -3559,14 +3515,14 @@ function levelWin(){
   if (G.lv + 1 < MAPS.length) $('#winSub').textContent += ' · На следующий уровень: +' + G.gold + ' золота';
   $('#btnNext').style.display = G.lv + 1 < MAPS.length ? '' : 'none';
   showOverlay('ovWin');
-  sndWin();
+
 }
 function levelLose(){
   G.over = true;
   clearUndo();
   $('#loseSub').textContent = 'Отбито волн: ' + Math.max(0, G.wave - 1) + ' из ' + waveCount(G.lv);
   showOverlay('ovLose');
-  sndLose();
+
 }
 
 /* ============ оверлеи ============
@@ -3578,7 +3534,7 @@ const OVERLAYS = ['ovWin','ovLose','ovMaps','ovHelp','ovBook'];
 let prevOv = null;
 function showOverlay(id){
   if (id !== 'ovMaps' && document.activeElement === $('#lvInput')) $('#lvInput').blur();
-  if (id) sfx.stop();
+
   for (const k of OVERLAYS) $('#' + k).classList.toggle('show', k === id);
   // при закрытии пауза снимается, только если уровень ещё идёт
   G.paused = id ? true : G.over;
@@ -3615,7 +3571,7 @@ function openMaps(){
   renderMapPage();
   $('#lvInput').value = G.lv + 1;
   showOverlay('ovMaps');
-  sndTap();
+
   // Scroll only the grid, leaving the game viewport in place on phones.
   const grid = $('#mapGrid'), cur = grid.children[G.lv % MAP_PAGE_SIZE];
   if (cur){
@@ -3642,7 +3598,7 @@ $('#btnWinMaps').addEventListener('click', openMaps);
 $('#btnLoseMaps').addEventListener('click', openMaps);
 $('#btnNext').addEventListener('click', () => startLevel(G.lv + 1));
 $('#btnRetry').addEventListener('click', () => startLevel(G.lv));
-$('#btnHelp').addEventListener('click', () => { showOverlay('ovHelp'); sndTap(); });
+$('#btnHelp').addEventListener('click', () => { showOverlay('ovHelp');  });
 $('#btnCloseHelp').addEventListener('click', () => showOverlay(null));
 
 /* ============ книга бестиария ============
@@ -3705,7 +3661,7 @@ function openBook(){
   showOverlay('ovBook');
 }
 function closeBook(){ bookRows = null; showOverlay(prevBook); }
-$('#btnBook').addEventListener('click', () => { openBook(); sndTap(); });
+$('#btnBook').addEventListener('click', () => { openBook();  });
 $('#btnCloseBook').addEventListener('click', closeBook);
 $('#ovBook').addEventListener('click', e => { if (e.target.id === 'ovBook') closeBook(); });
 
@@ -3791,7 +3747,6 @@ document.addEventListener('visibilitychange', () => {
 })();
 
 /* ============ пуск ============ */
-refreshSoundButton();
 startLevel(firstUnfinished());
 requestAnimationFrame(now => { last = now; requestAnimationFrame(frame); });
 if (!Object.keys(save.stars).length) setTimeout(() => showHint('Выберите башню и поставьте её у дороги'), 800);

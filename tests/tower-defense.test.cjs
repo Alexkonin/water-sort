@@ -225,3 +225,17 @@ test('persistent inspection supports direct tower, castle and build selection wi
   assert.equal(h.G.selected,null);
   tap(2,1);assert.equal(h.G.selected,second);assert.equal(h.G.armed,null,'inspection cancels placement');
 });
+
+test('castle repair requires actual castle damage and updates availability with health',()=>{
+  const h=setup();h.G.selected=h.G.castle;h.G.castle.lvl=4;h.G.lives=20;
+  h.G.castle.palisade=0;const gold=h.G.gold;h.c.refreshSel();
+  assert.equal(h.$('#btnUp').disabled,true);
+  assert.match(h.$('#btnUp').title,/починка не требуется/);
+  h.$('#btnUp').click();assert.equal(h.G.castle.lvl,4);assert.equal(h.G.gold,gold);
+  h.G.lives=19.99;h.c.refreshSel();assert.equal(h.$('#btnUp').disabled,false);
+  h.G.lives=20;h.c.refreshSel();assert.equal(h.$('#btnUp').disabled,true);
+  h.G.lives=19.99;h.G.gold=269;h.c.refreshSel();assert.equal(h.$('#btnUp').disabled,true);
+  h.G.gold=270;h.c.refreshSel();assert.equal(h.$('#btnUp').disabled,false);
+  h.$('#btnUp').click();assert.equal(h.G.castle.lvl,5);assert.equal(h.G.lives,60);assert.equal(h.G.gold,0);
+  assert.equal(h.$('#btnUp').disabled,true);
+});

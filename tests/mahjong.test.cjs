@@ -175,3 +175,41 @@ test('all geometries have full support, no same-layer overlap and varied half-gr
   }
   assert.ok(geometries.size>=600);
 });
+
+
+test('every portrait layout stays narrow and uses the height of a phone',()=>{
+  for(let level=1;level<=G.LEVELS;level++){
+    const {tiles,rows}=G.layout(level);
+    const width=Math.max(...tiles.map(t=>t.x))+1,height=Math.max(...tiles.map(t=>t.y))+1;
+    assert.ok(width<=8,`wide layout at level ${level}: ${width}`);
+    assert.ok(rows===height&&height<=12,`tall layout at level ${level}: ${height}`);
+    assert.ok(width*52<height*70,`landscape layout at level ${level}`);
+    assert.equal(tiles.length,level<=10?32:level<=30?48:level<=60?72:level<=100?96:level<=150?120:144);
+  }
+});
+
+test('version 2 deals and shuffle histories survive the portrait generator change',()=>{
+  const crypto=require('node:crypto'),hash=crypto.createHash('sha256');
+  for(let level=1;level<=G.LEVELS;level++){
+    const puzzle=G.generate(level,2);hash.update(JSON.stringify(puzzle));
+  }
+  assert.equal(hash.digest('hex'),'242c320c0183e8ea068cdaed3e0ddf5f4ee1569b8ce673fd2668cb99dc2ce392');
+  for(const level of [1,11,31,64,101,151,9999,10000]){
+    const puzzle=G.generate(level,2),actions=[{kind:'pair',ids:puzzle.solution[0]},{kind:'shuffle',seed:7654}];
+    const state=G.restore({version:2,level,actions,completed:[1,64],helpSeen:true});
+    assert.equal(state.version,2);assert.deepEqual(state.puzzle,puzzle);
+    assert.deepEqual(state.actions,actions);assert.deepEqual(state.tiles,G.replay(puzzle,actions));
+    assert.deepEqual(state.completed,[1,64]);assert.equal(state.helpSeen,true);
+  }
+  const puzzle=G.generate(64,2),actions=puzzle.solution.map(ids=>({kind:'pair',ids}));
+  assert.equal(G.restore({version:2,level:64,actions}).tiles.length,0);
+});
+
+test('unstarted old deals adopt portrait layouts without losing achievements',()=>{
+  for(const version of [1,2]){
+    const state=G.restore({version,level:64,actions:[],completed:[1,2,63],helpSeen:true});
+    assert.equal(state.version,G.VERSION);assert.deepEqual(state.puzzle,G.generate(64));
+    assert.deepEqual(state.completed,[1,2,63]);assert.deepEqual(state.actions,[]);
+    assert.equal(state.helpSeen,true);
+  }
+});

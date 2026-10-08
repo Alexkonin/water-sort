@@ -57,8 +57,8 @@
   function fall(art,grains,tick=0,motion=S.create(grains.length)){return S.step(art,grains,motion,tick,PHYSICS_DT);}
   function canFall(art,grains){return S.canMove(art,grains);}
   function cleanCompleted(value){return Array.isArray(value)?[...new Set(value.filter(n=>Number.isInteger(n)&&n>=1&&n<=LEVELS))].sort((a,b)=>a-b):[];}
-  function create(level=1,sound=true,completed=[]){const puzzle=generate(level);return{puzzle,remaining:puzzle.arrows.map(a=>a.id),grains:puzzle.art.cells.slice(),motion:S.create(puzzle.art.cells.length),active:[],delivered:[],queue:[],history:[],sound,completed:cleanCompleted(completed),clock:0,sandTick:0,sandMoving:false,sandDirty:false,jammed:false,extraSlot:false};}
-  function baseSnapshot(s){return{version:VERSION,level:s.puzzle.level,extraSlot:s.extraSlot,clock:s.clock,sandTick:s.sandTick,motion:S.snapshot(s.motion),remaining:s.remaining.slice(),grains:s.grains.slice(),active:s.active.map(a=>({...a})),delivered:s.delivered.map(a=>({...a})),queue:s.queue.slice(),sound:s.sound,completed:s.completed.slice()};}
+  function create(level=1,sound=false,completed=[]){const puzzle=generate(level);return{puzzle,remaining:puzzle.arrows.map(a=>a.id),grains:puzzle.art.cells.slice(),motion:S.create(puzzle.art.cells.length),active:[],delivered:[],queue:[],history:[],sound:false,completed:cleanCompleted(completed),clock:0,sandTick:0,sandMoving:false,sandDirty:false,jammed:false,extraSlot:false};}
+  function baseSnapshot(s){return{version:VERSION,level:s.puzzle.level,extraSlot:s.extraSlot,clock:s.clock,sandTick:s.sandTick,motion:S.snapshot(s.motion),remaining:s.remaining.slice(),grains:s.grains.slice(),active:s.active.map(a=>({...a})),delivered:s.delivered.map(a=>({...a})),queue:s.queue.slice(),sound:false,completed:s.completed.slice()};}
   function dispatch(s,id){
     if(s.jammed)return'jam';if(!s.remaining.includes(id))return'missing';
     if(G.blockers(s.puzzle,s.remaining,id).length)return'blocked';
@@ -125,7 +125,7 @@
       const grains=Array.isArray(saved.grains)?saved.grains.flatMap((c,i)=>i%w===0?Array.from({length:GRAIN_SCALE},()=>saved.grains.slice(i,i+w).flatMap(v=>Array(GRAIN_SCALE).fill(v))).flat():[]):[];
       saved={...saved,version:VERSION,grains,clock:0,sandTick:0,active:Array.isArray(saved.active)?saved.active.map(c=>({...c,loaded:c?.loaded*GRAIN_SCALE**2})):saved.active,delivered:Array.isArray(saved.delivered)?saved.delivered.map(c=>({...c,loaded:c?.loaded*GRAIN_SCALE**2})):saved.delivered,history:[]};
     }
-    const current=saved.version===VERSION,s=create(current?saved.level:1,saved.sound!==false,current?saved.completed:[]),p=s.puzzle,ids=s.remaining;
+    const current=saved.version===VERSION,s=create(current?saved.level:1,false,current?saved.completed:[]),p=s.puzzle,ids=s.remaining;
     if(!current)return s;
     if(saved.extraSlot!==undefined&&typeof saved.extraSlot!=='boolean')return s;
     const extraSlot=saved.extraSlot===true;
@@ -146,7 +146,7 @@
     if(withHistory&&Array.isArray(saved.history))for(const h of saved.history.slice(-8)){if(h?.version!==VERSION||h?.level!==p.level)continue;const r=restore(h,false);if(JSON.stringify(r.grains)===JSON.stringify(h.grains)&&JSON.stringify(r.remaining)===JSON.stringify(h.remaining))s.history.push(baseSnapshot(r));}
     s.motion=S.restore(s.grains.length,saved.motion,s.grains);s.sandDirty=canFall(p.art,s.grains)||S.snapshot(s.motion).length>0;s.jammed=isJammed(s);return s;
   }
-  function undo(s){if(!s.history.length)return null;const history=s.history.slice(),last=history.pop(),r=restore({...last,extraSlot:s.extraSlot||last.extraSlot},false);r.history=history;r.completed=s.completed.slice();r.sound=s.sound;return r;}
+  function undo(s){if(!s.history.length)return null;const history=s.history.slice(),last=history.pop(),r=restore({...last,extraSlot:s.extraSlot||last.extraSlot},false);r.history=history;r.completed=s.completed.slice();r.sound=false;return r;}
   const api={VERSION,LEVELS,COLORS,NAMES,ART,PARK,ROAD,SPEED,ROAD_GAP,PICKUP_RADIUS,PHYSICS_DT,GRAIN_SCALE,Sand:S,route,generate,picture:n=>generate(n).art,pose,parked,departure,tilePosition,frontier,nearest,take,fall,canFall,carPose,create,dispatch,workingCount,slotLimit,addSlot,roadSpeed,step,hint,won,complete,snapshot,restore,undo,isJammed};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.SandTrucks=api;
 })(globalThis);

@@ -57,8 +57,8 @@ test('installation bypasses HTTP cache and activation only removes older game ca
   assert.deepEqual(h.removed,['games-v1']);
 });
 
-test('new HTML cannot receive previous CSS, sound code or SVG while online',async()=>{
-  for(const path of ['shell.css','sound.js','icons.svg']){
+test('new HTML cannot receive previous CSS, header styles or SVG while online',async()=>{
+  for(const path of ['shell.css','game-header.css','icons.svg']){
     const h=setup();h.entries.set(base+path,response('old asset'));
     const res=await h.event('fetch',{url:base+path,method:'GET',mode:'cors'});
     assert.equal(res.body,'fresh');assert.equal(h.calls[0].options.cache,'no-cache');
@@ -66,7 +66,7 @@ test('new HTML cannot receive previous CSS, sound code or SVG while online',asyn
   }
 });
 test('versioned CSS, sound and icons resolve to the installed assets offline',async()=>{
-  for(const path of ['shell.css','sound.js','icons.svg']){
+  for(const path of ['shell.css','game-header.css','icons.svg']){
     const h=setup({offline:true});h.entries.set(base+path,response('installed '+path));
     const res=await h.event('fetch',{url:base+path+'?v=45',method:'GET',mode:'cors'});
     assert.equal(res.body,'installed '+path);

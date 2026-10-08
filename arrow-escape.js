@@ -147,7 +147,7 @@
       }
       if(!removed.length){remaining=candidate.slice();lives=saved.lives;hints=Number.isInteger(saved.hints)&&saved.hints>=0?saved.hints:0;}
     }
-    return {level,puzzle,remaining,lives,hints,best,sound:saved.sound!==false,grid:saved.grid===true,helpSeen:saved.helpSeen===true};
+    return {level,puzzle,remaining,lives,hints,best,sound:false,grid:saved.grid===true,helpSeen:saved.helpSeen===true};
   }
   const api={VERSION,LEVELS,LIVES,generate,direction,ray,blockers,available,solve,movingCells,restore};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArrowEscape=api;

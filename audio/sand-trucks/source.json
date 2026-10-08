@@ -1,9 +1,0 @@
-{
-  "file": "sand-through-fingers-v1.mp3",
-  "title": "The sound where sand pours from the hands, between the fingers",
-  "library": "SoundDino",
-  "source": "https://sounddino.com/en/effects/natural-sand/",
-  "download": "https://sounddino.com/mp3/17/the-sound-where-sand-pours-from-the-hands-between-the-fingers.mp3",
-  "usageStatement": "The source page allows commercial and personal use, describes the files as free and royalty-free with no attribution required. Not CC0.",
-  "processing": "Constant gain +24 dB because the original recording is very quiet; MP3 at 44.1 kHz / 128 kbps. No EQ, compression or pitch changes. Playback loops seconds 0.02 to 2.30 with a 40 ms seam crossfade and pickup-driven gain envelope."
-}

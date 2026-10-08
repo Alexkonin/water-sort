@@ -78,7 +78,7 @@
       }
     }
     const deal=Number.isSafeInteger(source.deal)&&source.deal>=0&&source.deal<=0xFFFFFFFF?source.deal:0;
-    return {level,deal,best,sound:source.sound!==false,helpSeen:source.helpSeen===true};
+    return {level,deal,best,sound:false,helpSeen:source.helpSeen===true};
   }
   const api={COUNT,ITEMS,make,fresh,stars,restore};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;

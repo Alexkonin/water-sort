@@ -1,5 +1,5 @@
 // Офлайн-кэш. Меняй CACHE при каждом обновлении игры — старая версия сотрётся.
-const CACHE = 'games-v203';
+const CACHE = 'games-v217';
 /* Все страницы сборника кладём в кэш сразу при установке: переход из меню
    в игру должен работать офлайн с первого раза, а не после того, как игру
    один раз открыли онлайн. Добавляешь игру — дописываешь её сюда и в GAMES
@@ -14,6 +14,46 @@ const ASSETS = [
   './sand-trucks.html', './sand-trucks.css', './sand-trucks-levels.js', './sand-trucks.js', './sand-trucks-sand.js', './sand-trucks-surface.js', './sand-trucks-sand-art.js', './sand-trucks-ui.js', './sand-trucks-art.js',
   './mahjong.html', './mahjong.css', './mahjong.js', './mahjong-glyphs.js', './mahjong-art.js', './mahjong-ui.js',
   './memory-cards.html', './memory-cards.js',
+  './memory-art/v1/leaf.png',
+  './memory-art/v1/acorn.png',
+  './memory-art/v1/mushroom.png',
+  './memory-art/v1/feather.png',
+  './memory-art/v1/sun.png',
+  './memory-art/v1/moon.png',
+  './memory-art/v1/star.png',
+  './memory-art/v1/drop.png',
+  './memory-art/v1/mountain.png',
+  './memory-art/v1/flower.png',
+  './memory-art/v1/paw.png',
+  './memory-art/v1/lantern.png',
+  './memory-art/v1/tree.png',
+  './memory-art/v1/pinecone.png',
+  './memory-art/v1/clover.png',
+  './memory-art/v1/fern.png',
+  './memory-art/v1/berry.png',
+  './memory-art/v1/sprout.png',
+  './memory-art/v1/apple.png',
+  './memory-art/v1/pumpkin.png',
+  './memory-art/v1/fox.png',
+  './memory-art/v1/owl.png',
+  './memory-art/v1/rabbit.png',
+  './memory-art/v1/butterfly.png',
+  './memory-art/v1/fish.png',
+  './memory-art/v1/bee.png',
+  './memory-art/v1/snail.png',
+  './memory-art/v1/bird.png',
+  './memory-art/v1/cloud.png',
+  './memory-art/v1/snowflake.png',
+  './memory-art/v1/rainbow.png',
+  './memory-art/v1/fire.png',
+  './memory-art/v1/wave.png',
+  './memory-art/v1/comet.png',
+  './memory-art/v1/compass.png',
+  './memory-art/v1/key.png',
+  './memory-art/v1/bell.png',
+  './memory-art/v1/tent.png',
+  './memory-art/v1/book.png',
+  './memory-art/v1/clock.png',
   './manifest.json', './icon-192.png?v=lukomorye2', './icon-512.png?v=lukomorye2', './icon-180.png?v=lukomorye2', './icon-maskable-512.png?v=lukomorye2', './favicon.ico?v=lukomorye2'
 ];
 

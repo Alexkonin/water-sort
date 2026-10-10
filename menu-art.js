@@ -77,11 +77,11 @@
   }
 
   function memory(host){
-    const symbols=['leaf','acorn','moon','mushroom','sun','flower','leaf','moon','acorn'];
+    const symbols=['leaf','acorn','moon','mushroom','fox','flower','butterfly','sun','pinecone'];
     let art='<defs><pattern id="menu-card-back" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="9" height="9" fill="#e9eedf"/><path d="M0 0V9" stroke="#ccd9bc" stroke-width="3"/></pattern></defs><g transform="translate(211 37) rotate(13 44 70)"><rect width="89" height="144" rx="13" fill="#b0bc9a"/><rect x="0" y="-4" width="89" height="144" rx="13" fill="#f3efdd"/><rect x="8" y="4" width="73" height="128" rx="8" fill="url(#menu-card-back)" stroke="#adb99b"/><text x="44" y="80" text-anchor="middle" fill="#809767" font-size="32">✦</text></g><g transform="translate(65 22) rotate(-8 75 85)"><rect y="5" width="155" height="172" rx="15" fill="#344e3730"/><rect width="155" height="172" rx="15" fill="#f3efdd" stroke="#aeba97"/><text x="77" y="18" text-anchor="middle" font-size="12" fill="#aa9568">✦</text>';
     symbols.forEach((symbol,i)=>{
       const x=12+(i%3)*45,y=27+Math.floor(i/3)*45;
-      art+=`<rect x="${x}" y="${y}" width="41" height="41" rx="7" fill="#fffcf0" stroke="#adb99b"/><svg x="${x+9}" y="${y+8}" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${i%3===0?'#4d7654':i%3===1?'#9b773c':'#5a8390'}" stroke-width="1.65"><use href="icons.svg?v=68#memory-${symbol}"/></svg>`;
+      art+=`<rect x="${x}" y="${y}" width="41" height="41" rx="7" fill="#fffcf0" stroke="#adb99b"/><image x="${x+3}" y="${y+3}" width="35" height="35" href="memory-art/v1/${symbol}.png" style="mix-blend-mode:darken"/>`;
     });
     host.innerHTML=svg(art+'</g>');
   }

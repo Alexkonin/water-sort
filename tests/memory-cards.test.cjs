@@ -6,11 +6,19 @@ const game=require('../memory-cards.js');
 
 test('40 distinct symbols have drawings and each question has one unambiguous position',()=>{
   assert.equal(game.ITEMS.length,40);
-  const svg=fs.readFileSync(path.join(__dirname,'../icons.svg'),'utf8');
+  const sw=fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8');
+  let artBytes=0;
   for(const item of game.ITEMS){
-    assert.match(svg,new RegExp('id="memory-'+item.id+'"'));
+    const file='memory-art/v1/'+item.id+'.png';
+    const png=fs.readFileSync(path.join(__dirname,'..',file));
+    assert.equal(png.subarray(0,8).toString('hex'),'89504e470d0a1a0a',file);
+    assert.equal(png.readUInt32BE(16),256,file+' width');
+    assert.equal(png.readUInt32BE(20),256,file+' height');
+    assert.ok(sw.includes("'./"+file+"'"),file+' must work offline on first visit');
+    artBytes+=png.length;
     assert.ok(['plant','animal','sky','object'].includes(item.group));
   }
+  assert.ok(artBytes<4*1024*1024,'all 40 runtime illustrations stay under 4 MiB');
   assert.equal(new Set(game.ITEMS.map(item=>item.id)).size,game.ITEMS.length);
   const layouts=new Set();
   for(let level=1;level<=game.COUNT;level++){

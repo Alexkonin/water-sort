@@ -36,7 +36,8 @@
   .memory-card::after{content:"ЛЕСНАЯ КОЛЛЕКЦИЯ";display:block;text-align:center;font-size:8px;letter-spacing:2.4px;color:#829274;margin-top:8px}
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}
   .cell{aspect-ratio:1;border:1px solid #adb99b;border-radius:13px;display:flex;align-items:center;justify-content:center;background:#fffcf0;color:#456d5c;position:relative;padding:0;box-shadow:0 2px 4px #4c604118}
-  .cell svg{width:48%;height:48%;stroke-width:1.65}
+  .memory-art{display:block;object-fit:contain;mix-blend-mode:darken;pointer-events:none;user-select:none}
+  .cell .memory-art{width:84%;height:84%}
   .cell.face{background:#faf7e9}
   .cell.back{background:repeating-linear-gradient(45deg,#dee7d1 0,#dee7d1 2px,#e9eedf 2px,#e9eedf 10px);color:#91a27b}
   .cell.back::before{content:"✦";font-size:26px;font-weight:400;opacity:.74}
@@ -51,7 +52,7 @@
   .prompt-kicker{text-transform:uppercase;font-size:10px;font-weight:800;letter-spacing:2px;color:#829071;margin-bottom:5px}
   .prompt-main{font-size:18px;font-weight:750;line-height:1.25;color:var(--ink)}
   .prompt-main.with-icon{display:flex;align-items:center;gap:9px}
-  .prompt-main svg{width:25px;height:25px;color:#658363;stroke-width:1.7}
+  .prompt-main .memory-art{width:36px;height:36px;flex:0 0 36px}
   .prompt-note{font-size:12px;color:#607357;line-height:1.35;margin-top:5px;min-height:16px}
   .actions{display:flex;gap:8px;height:50px;flex:0 0 50px}
   .actions .cta{height:100%;min-height:0;font-size:15px}
@@ -124,7 +125,16 @@
   let remaining=0,deadline=0,frame=0;
   let answerHistory=[];
   function save(){try{localStorage.setItem(KEY,JSON.stringify({level,deal,best,helpSeen}));}catch{}}
-  function icon(item){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('ui-icon');svg.setAttribute('aria-hidden','true');svg.style.color={plant:'#4d7654',animal:'#a66a52',sky:'#5a8390',object:'#9b773c'}[item.group];const use=document.createElementNS('http://www.w3.org/2000/svg','use');use.setAttribute('href','icons.svg?v=68#memory-'+item.id);svg.append(use);return svg;}
+  const artLoads=new Map();
+  function artPath(item){return 'memory-art/v1/'+item.id+'.png';}
+  function icon(item){const img=new Image();img.className='memory-art';img.alt='';img.setAttribute('aria-hidden','true');img.draggable=false;img.src=artPath(item);return img;}
+  function loadArt(item){
+    if(!artLoads.has(item.id)){
+      const img=new Image();img.src=artPath(item);
+      artLoads.set(item.id,img.decode().catch(error=>{artLoads.delete(item.id);throw error;}));
+    }
+    return artLoads.get(item.id);
+  }
   function timerTick(){
     if(phase!=='preview'||document.hidden||$('#helpDialog').open||$('#levelsDialog').open)return;
     remaining=Math.max(0,deadline-performance.now());
@@ -155,7 +165,7 @@
     $('#levelLabel').textContent='Уровень '+level;
     $('#progressText').textContent='Пройдено '+Object.keys(best).length+' из '+MemoryCards.COUNT;
     const primary=$('#primary'),secondary=$('#secondary'),kicker=$('#promptKicker'),main=$('#promptMain'),note=$('#promptNote');
-    main.replaceChildren();main.classList.remove('with-icon');primary.hidden=false;secondary.hidden=true;
+    main.replaceChildren();main.classList.remove('with-icon');primary.hidden=false;primary.disabled=false;secondary.hidden=true;
     $('.timer-track').style.visibility=phase==='preview'?'visible':'hidden';
     if(phase==='ready'){
       $('#phaseLabel').textContent='Карточка готова';$('#counter').textContent=card.questions.length+' '+questionWord(card.questions.length);
@@ -182,7 +192,20 @@
     cancelAnimationFrame(frame);answerHistory=[];level=n;({deal,card}=MemoryCards.fresh(n,deal,card));phase='ready';question=0;correct=0;answered=false;chosen=-1;remaining=0;
     if($('#levelsDialog').open)$('#levelsDialog').close();render();save();
   }
-  function reveal(){phase='preview';remaining=card.seconds*1000;render();resumeTimer();}
+  async function reveal(){
+    const pendingCard=card,button=$('#primary');
+    button.disabled=true;button.textContent='Загружаем рисунки…';
+    try{await Promise.all(pendingCard.slots.filter(Boolean).map(loadArt));}
+    catch{
+      if(card===pendingCard&&phase==='ready'){
+        button.disabled=false;button.textContent='Показать карточку';
+        $('#promptNote').textContent='Не удалось загрузить рисунки. Попробуй ещё раз.';
+      }
+      return;
+    }
+    if(card!==pendingCard||phase!=='ready')return;
+    phase='preview';remaining=card.seconds*1000;render();resumeTimer();
+  }
   function hideCard(){cancelAnimationFrame(frame);phase='quiz';question=0;answered=false;render();$('#grid button').focus({preventScroll:true});}
   function answer(index){
     if(phase!=='quiz'||answered)return;

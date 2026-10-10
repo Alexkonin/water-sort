@@ -49,7 +49,7 @@ function showPicker(index){
  }
  $('#removeWagon').hidden=selectedWagon>=state.staged.length;palette.querySelector('button:not(:disabled)')?.focus();
 }
-function clearFeedback(){const parking=$('#parking');delete parking.dataset.gate;parking.querySelectorAll('.hit,.obstacle').forEach(b=>b.classList.remove('hit','obstacle'));}
+function clearFeedback(){const parking=$('#parking');parking.querySelectorAll('.hit,.obstacle').forEach(b=>b.classList.remove('hit','obstacle'));}
 function cancelAnimations(){for(const animation of [...arrivals.values(),...gateAnimations.values()])animation.cancel();arrivals.clear();gateAnimations.clear();}
 function animateBatch(garage,ids){
  if(reducedMotion.matches)return;
@@ -83,33 +83,24 @@ function buildGarages(){
  $('#garages').replaceChildren();
  for(const g of state.garages){
   const rule=G.GARAGE_RULES[g.id],b=document.createElement('button');b.className='garage';b.dataset.kind=rule.kind;
-  b.innerHTML=`<span class="garage-roof">${['А','Б','В'][g.id]}<span class="garage-rule">${rule.required?'✓ '+rule.required:'←'}</span><i class="garage-lamp"></i></span><span class="garage-bay"><span class="shutter"></span><span class="garage-preview"></span><span class="garage-lock">${lockIcon}<b></b></span><span class="garage-progress"></span></span><span class="garage-status"></span>`;
+  b.innerHTML=`<span class="garage-drive" aria-hidden="true"></span><span class="garage-roof">${['А','Б','В'][g.id]}<span class="garage-rule">${rule.required?'✓ '+rule.required:''}</span><i class="garage-lamp"></i></span><span class="garage-bay"><span class="shutter"></span><span class="garage-preview"></span><span class="garage-lock">${lockIcon}<b></b></span><span class="garage-progress"></span></span><span class="garage-status"></span>`;
   b.onclick=()=>{
    const view=G.garageView(state,g);clearFeedback();
    if(!view.unlocked){const left=view.required-view.completed;hint(`Гараж ${['А','Б','В'][g.id]} · заполни ещё ${left} ${left===1?'самосвал':'самосвала'} до краёв`);return;}
    if(!view.ready){hint(`Гараж ${['А','Б','В'][g.id]} пополняется · ${Math.ceil(g.refill)} с`);return;}
-   if(!view.open){$('#parking').dataset.gate=g.id;G.garageBlockers(state,g).forEach(c=>$('#parking').querySelector(`[data-car="${c.id}"]`)?.classList.add('obstacle'));hint('Освободи въезд или место для трёх машин');return;}
+   if(!view.open){G.garageBlockers(state,g).forEach(c=>$('#parking').querySelector(`[data-car="${c.id}"]`)?.classList.add('obstacle'));hint('Освободи въезд или место для трёх машин');return;}
    const firstId=state.nextId;if(act(()=>G.openGarage(state,g.id),'Новая партия в депо.')){animateBatch(g,state.apron.filter(c=>c.id>=firstId).map(c=>c.id));hint('Новая партия занимает свободные места');}
   };$('#garages').append(b);
- }
-}
-function renderBays(){
- const parking=$('#parking');parking.querySelectorAll('.parking-entry,.parking-bay').forEach(b=>b.remove());
- for(const g of state.garages){const marker=document.createElement('span');marker.className='parking-entry';marker.dataset.gate=g.id;marker.style.top=`${(g.id+.5)/3*100}%`;marker.textContent='‹';marker.setAttribute('aria-hidden','true');parking.append(marker);}
- for(const bay of G.parkingBays(state)){
-  const xs=bay.cells.map(p=>p[0]),ys=bay.cells.map(p=>p[1]),el=document.createElement('span');el.className='parking-bay';el.setAttribute('aria-hidden','true');
-  el.style.left=`${Math.min(...xs)/G.PARKING_WIDTH*100}%`;el.style.top=`${Math.min(...ys)/G.PARKING_HEIGHT*100}%`;el.style.width=`${(Math.max(...xs)-Math.min(...xs)+1)/G.PARKING_WIDTH*100}%`;el.style.height=`${(Math.max(...ys)-Math.min(...ys)+1)/G.PARKING_HEIGHT*100}%`;parking.append(el);
  }
 }
 function renderControls(force=false){
  const key=JSON.stringify([state.apron,state.garages.map(g=>[Math.ceil(g.refill),g.batch,G.garageView(state,g).canOpen]),state.staged,state.trucks.map(t=>t.id),state.completedTrucks,state.phase,state.cycle,state.deliveryRuns,state.phase==='road'&&G.nextTrainKind(state)==='delivery'?Math.floor((state.grains.length+state.added-state.collected)*.1):null,state.train?.lap,state.history.length,G.won(state)]);
  if(!force&&key===uiKey)return;uiKey=key;
  if(state.phase!=='road'||G.nextTrainKind(state)==='delivery'||G.won(state))closePicker();
- renderBays();
  const canDrive=state.phase==='road'&&G.collectingTrucks(state).length<G.ROAD_LIMIT&&!G.won(state);
  state.garages.forEach((g,i)=>{
   const view=G.garageView(state,g),button=$('#garages').children[i],mode=!view.unlocked?'locked':!view.ready?'refill':!view.open?'blocked':view.canOpen?'ready':'waiting';button.dataset.mode=mode;button.disabled=G.won(state);
-  const status=mode==='locked'?`Полных ${view.completed}/${view.required}`:mode==='refill'?`${Math.ceil(g.refill)} с · пополнение`:mode==='blocked'?'Освободи въезд':mode==='ready'?'Выпустить':'Ждём поезд';
+  const status=mode==='locked'?`Полных ${view.completed}/${view.required}`:mode==='refill'?`${Math.ceil(g.refill)} с`:mode==='blocked'?'Въезд занят':mode==='ready'?'Выпустить':'Ждём поезд';
   button.querySelector('.garage-status').textContent=status;button.querySelector('.garage-lock b').textContent=`${view.completed}/${view.required}`;
   button.querySelector('.garage-preview').innerHTML=view.ready?`<i style="--preview:${C[view.previewColor]}"></i><span>?</span><span>?</span>`:`<span>↻ ${Math.ceil(g.refill)} с</span>`;
   button.setAttribute('aria-label',`Гараж ${['А','Б','В'][g.id]}. ${view.kind==='road'?'Открывается при свободном проезде':`Разблокируется после ${view.required} полных самосвалов`}. ${status}. ${view.unlocked&&view.ready?`В партии есть самосвал цвета «${G.NAMES[view.previewColor]}», цвета двух других машин скрыты.`:''}`);
@@ -118,8 +109,8 @@ function renderControls(force=false){
  for(const [id,b] of existing)if(!state.apron.some(c=>c.id===id))b.remove();
  for(const car of state.apron){
   let button=existing.get(car.id);const [dx,dy]=G.direction(car),angle=Math.atan2(dy,dx)*180/Math.PI,dir=dx>0?'вправо':dx<0?'влево':dy>0?'вниз':'вверх';
-  const arrow=dx>0?'→':dx<0?'←':dy>0?'↓':'↑',xs=car.cells.map(p=>p[0]),ys=car.cells.map(p=>p[1]);
-  if(!button){button=document.createElement('button');button.className='parking-car';button.dataset.car=car.id;button.append(truckIcon(car));const marker=document.createElement('span');marker.className='car-arrow';marker.setAttribute('aria-hidden','true');marker.textContent=arrow;button.append(marker);parking.append(button);}
+  const xs=car.cells.map(p=>p[0]),ys=car.cells.map(p=>p[1]);
+  if(!button){button=document.createElement('button');button.className='parking-car';button.dataset.car=car.id;button.append(truckIcon(car));parking.append(button);}
   button.style.left=`${Math.min(...xs)/G.PARKING_WIDTH*100}%`;button.style.top=`${Math.min(...ys)/G.PARKING_HEIGHT*100}%`;button.style.width=`${(dx?car.cells.length:1)/G.PARKING_WIDTH*100}%`;button.style.height=`${(dy?car.cells.length:1)/G.PARKING_HEIGHT*100}%`;
   button.style.setProperty('--angle',`${angle}deg`);button.style.setProperty('--length',car.cells.length);button.classList.toggle('vertical',!!dy);button.dataset.direction=dir;button.disabled=!canDrive||arrivals.has(car.id);button.setAttribute('aria-label',`${G.NAMES[car.color]}, ${car.type==='long'?'длинный':'короткий'} самосвал. Вместимость ${car.capacity}. Выезд ${dir}`);
   button.onclick=()=>{
@@ -135,23 +126,25 @@ function renderControls(force=false){
  for(let i=0;i<slots;i++){
   let b=composition.children[i];if(!b){b=document.createElement('button');b.className='wagon-slot';composition.append(b);}
   const w=wagons[i];b.className='wagon-slot'+(w?' filled':'')+(selectedWagon===i?' active':'');
-  b.innerHTML=(w?icon('wagon',w.color,delivery?w.loaded/w.capacity:0):'<span class="plus">+</span>')+`<span class="slot-index">${i+1}</span>`+(w?`<span class="cargo-bar" style="--cargo:${C[w.color]};--fill:${100*w.loaded/w.capacity}%"><i></i></span>`:'');
+  b.innerHTML=(w?icon('wagon',w.color,delivery?w.loaded/w.capacity:0):`<span class="empty-wagon">${icon('wagon',2)}<span class="plus">+</span></span>`)+`<span class="wagon-label">${w?G.NAMES[w.color]:'Цвет'}</span><span class="slot-index">${i+1}</span>`+(w?`<span class="cargo-bar" style="--cargo:${C[w.color]};--fill:${100*w.loaded/w.capacity}%"><i></i></span>`:'');
   b.disabled=state.phase!=='road'||delivery||G.won(state);b.setAttribute('aria-label',w?`${delivery?'Груз доставки':'Вагон'} ${i+1}: ${G.NAMES[w.color]}${delivery?'':'. Изменить цвет'}`:`Добавить вагон ${i+1}`);b.onclick=()=>showPicker(i);
  }
- $('#trainTitle').textContent=delivery?'Доставка ←':'Сбор →';
- $('#trainCaption').textContent=delivery?(state.phase==='rail'?'Песок летит из вагонов в картину':`${wagons.length} ${wagons.length===1?'вагон':'вагона'} · песка ${wagons.reduce((n,w)=>n+w.loaded,0)} · освободи место`):state.phase==='rail'?(wagons.length?'Вагоны собирают свой цвет':'Пустой рейс · подготовь вагоны заранее'):state.phase==='closing'?'Состав готов · ждём освобождения дороги':wagons.length?`${wagons.length}/3 вагонов · нажми, чтобы изменить цвет`:'Нажми + и выбери цвета до приезда поезда';
+ $('.train-dock').dataset.kind=delivery?'delivery':'collection';
+ $('#trainTitle').textContent=delivery?'Поезд с песком':'Поезд за песком';
+ $('#trainCaption').textContent=delivery?(state.phase==='rail'?'Добавляет песок в картину':`${wagons.length} ${wagons.length===1?'вагон':'вагона'} · песка ${wagons.reduce((n,w)=>n+w.loaded,0)}`):state.phase==='rail'?(wagons.length?'Вагоны собирают свой цвет':'Пустой рейс · подготовь вагоны заранее'):state.phase==='closing'?(wagons.length?'Цвета выбраны · ждём машины':'Без вагонов · пустой рейс'):wagons.length?`${wagons.length} из 3 готовы · поедет сам`:'Выбери цвета вагонов';
  $('#recallTrucks').disabled=!state.trucks.length||G.won(state);$('#undo').disabled=!state.history.length;
 }
 function renderLive(){
  $('#completedTrucks').textContent=state.completedTrucks;
- if(state.tick>hintUntil){const text=state.phase!=='road'?'Поезд в работе · парковка ждёт':G.collectingTrucks(state).length===G.ROAD_LIMIT?'Все места сбора заняты · ждём заполнения':state.garages.some(g=>G.garageView(state,g).canOpen)?'Проезд свободен · открой гараж':'Выезд по стрелкам · убери тех, кто мешает';if($('#parkingHint').textContent!==text)$('#parkingHint').textContent=text;}
+ if(state.tick>hintUntil){const text=state.phase!=='road'?'Поезд в работе · парковка ждёт':G.collectingTrucks(state).length===G.ROAD_LIMIT?'Все места сбора заняты · ждём заполнения':state.garages.some(g=>G.garageView(state,g).canOpen)?'Проезд свободен · открой гараж':'Машины выезжают вперёд · освободи путь';if($('#parkingHint').textContent!==text)$('#parkingHint').textContent=text;}
  const delivery=state.train?state.train.kind==='delivery':G.nextTrainKind(state)==='delivery',seconds=Math.ceil(Math.max(0,state.roadRemaining-1e-7)),dock=$('.train-dock');
  const time=G.won(state)?'Готово':state.phase==='road'?`00:${String(seconds).padStart(2,'0')}`:state.phase==='closing'?'···':delivery?'← ×2':`${state.train.lap}/${state.train.laps}`;
  $('#railClock').textContent=time;$('#railClock').setAttribute('aria-label',state.phase==='road'?`До ${delivery?'доставки':'перекрытия'} ${seconds} секунд`:delivery?'Идёт доставка песка':`Круг ${state.train?.lap||0}`);
  $('#trainState').textContent=state.phase==='road'?'до перекрытия':state.phase==='closing'?'ждём машины':delivery?'выгрузка':'круг · скорость ×2';dock.dataset.phase=state.phase;dock.dataset.urgent=String(state.phase==='road'&&seconds<=5);
+ if(state.phase==='road'&&!delivery&&!state.staged.length)$('#trainCaption').textContent=seconds<=5?'Нет вагонов — уедет пустым':'Выбери цвета вагонов';
  state.garages.forEach((g,i)=>$('#garages').children[i].style.setProperty('--refill',`${g.refill>0?(1-g.refill/G.GARAGE_REFILL)*100:0}%`));
  const collecting=G.collectingTrucks(state),slots=$('#roadSlots');for(let i=0;i<G.ROAD_LIMIT;i++){let slot=slots.children[i];if(!slot){slot=document.createElement('span');slots.append(slot);}const t=collecting[i];slot.className='road-slot'+(t?' loaded':'');slot.style.setProperty('--cargo',t?C[t.color]:'transparent');slot.style.setProperty('--fill',t?`${100*t.loaded/t.capacity}%`:'0%');slot.title=t?`${G.NAMES[t.color]} · ${Math.floor(100*t.loaded/t.capacity)}% кузова`:'Свободное место';}
- $('#truckCount').textContent=`Сбор ${collecting.length}/${G.ROAD_LIMIT}`;$('.road-status').classList.toggle('full',G.collectingTrucks(state).length===G.ROAD_LIMIT);
+ $('#truckCount').textContent=`Машины ${collecting.length}/${G.ROAD_LIMIT}`;$('.road-status').classList.toggle('full',G.collectingTrucks(state).length===G.ROAD_LIMIT);
  const wagons=state.train?.wagons; if(wagons)wagons.forEach((w,i)=>{const bar=$('#composition').children[i]?.querySelector('.cargo-bar');if(bar)bar.style.setProperty('--fill',`${100*w.loaded/w.capacity}%`);});
 }
 function rr(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke();}}
@@ -196,6 +189,23 @@ function resize(){
 function load(level){cancelAnimations();closePicker();$('#parking').replaceChildren();state=newGame(level);$('#roadTrucks').replaceChildren();roadCars.clear();particles=[];wonShown=false;uiKey='';$('#victory').hidden=true;$('#levelButton').textContent=`КАРТИНА ${String(state.level).padStart(2,'0')} / ${G.LEVELS.length} ⌄`;$('#levelButton').setAttribute('aria-label',`Выбрать картину. ${state.level}: ${state.art.title}`);canvas.setAttribute('aria-label',`${state.art.title}. Песочная картина, автомобильная дорога и общий железнодорожный путь`);document.querySelectorAll('dialog[open]').forEach(d=>d.close());buildGarages();hint('Выбирай машины со свободным выездом');save();renderControls(true);renderLive();resize();}
 $('#undo').onclick=()=>{if(G.undo(state)){cancelAnimations();closePicker();$('#parking').replaceChildren();$('#roadTrucks').replaceChildren();roadCars.clear();wonShown=false;$('#victory').hidden=true;particles=[];buildGarages();hint('Ход отменён');renderControls(true);renderLive();draw(0);}};
 $('#recallTrucks').onclick=()=>{if(act(()=>G.recall(state),'Машины ушли на обслуживание.'))hint('Дорога свободна · можно отправлять новые машины');};
+const TRAIN_GUIDE_KEY='sanddepot.train-guide.v1';
+function showTrainGuide(){
+ closePicker();const delivery=state.train?state.train.kind==='delivery':G.nextTrainKind(state)==='delivery';
+ $('#trainGuideEyebrow').textContent=delivery?'ПОЕЗД С ПЕСКОМ':'ПОЕЗД ЗА ПЕСКОМ';
+ $('#trainGuideTitle').textContent=delivery?'Доставка песка':'Выбери цвета вагонов';
+ $('#trainGuidePurpose').innerHTML=delivery?'Этот поезд <b>добавляет песок</b> в свободные клетки картины. Цвета и число вагонов заданы — выбирать их не нужно.':'Каждый вагон забирает из картины <b>только свой цвет</b>. Подготовь до трёх вагонов — одинаковые цвета тоже можно.';
+ $('#trainGuideDeparture').innerHTML='Когда таймер дойдёт до нуля, дорога перекроется. Поезд отправится <b>сам, как только уедут машины</b>.';
+ $('#trainGuideWarning').textContent=delivery?'Освобождай картину самосвалами до приезда поезда.':'Без вагонов поезд уедет пустым.';
+ $('#trainExample').classList.toggle('delivery-example',delivery);
+ const exampleColors=delivery?(state.train?.wagons||G.deliveryManifest(state)).map(w=>w.color):G.LEVELS[state.level-1].palette.slice(0,3);
+ $('#trainExample').innerHTML=exampleColors.map(c=>`<span><i style="--sand:${C[c]}"></i>${icon('wagon',c,.55)}</span>`).join('');
+ $('#startTrainSetup').textContent=state.phase==='road'&&!delivery?(state.staged.length?'К выбору вагонов':'Выбрать первый цвет'):'Понятно';$('#trainGuide').showModal();
+}
+$('#trainHelp').onclick=showTrainGuide;
+$('#closeTrainGuide').onclick=()=>$('#trainGuide').close();
+$('#trainGuide').addEventListener('close',()=>{try{localStorage.setItem(TRAIN_GUIDE_KEY,'seen');}catch{}last=0;});
+$('#startTrainSetup').onclick=()=>{$('#trainGuide').close();showPicker(Math.min(state.staged.length,2));};
 $('#help').onclick=()=>{closePicker();$('#rules').showModal();};$('#next').onclick=()=>load(state.level%G.LEVELS.length+1);
 $('#closePicker').onclick=()=>closePicker(true);$('#removeWagon').onclick=()=>{if(G.removeWagon(state,selectedWagon)){closePicker();renderControls(true);}};
 function levels(page=Math.floor((state.level-1)/10)){
@@ -225,5 +235,5 @@ function frame(now){
   if(G.won(state)&&!wonShown){wonShown=true;closePicker();const previous=best[state.level];best[state.level]=Math.min(Number.isFinite(previous)?previous:Infinity,state.moves);if(!completed.includes(state.level))completed.push(state.level);completed.sort((a,b)=>a-b);save();$('#result').textContent=`${state.moves} отправлений · лучший результат ${best[state.level]}`;$('#next').textContent=state.level===G.LEVELS.length?'К первой картине →':'Следующая картина →';$('#victory').hidden=false;}
  }requestAnimationFrame(frame);
 }
-document.addEventListener('visibilitychange',()=>{last=0;});const observer=new ResizeObserver(resize);observer.observe($('.yard'));observer.observe($('.scene-wrap'));load(state.level);requestAnimationFrame(frame);
+document.addEventListener('visibilitychange',()=>{last=0;});const observer=new ResizeObserver(resize);observer.observe($('.yard'));observer.observe($('.scene-wrap'));load(state.level);let guideSeen=false;try{guideSeen=localStorage.getItem(TRAIN_GUIDE_KEY)==='seen';}catch{}if(!guideSeen)showTrainGuide();requestAnimationFrame(frame);
 })();

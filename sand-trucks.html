@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#183d38"><title>Песочные самосвалы</title>
-<link rel="icon" href="favicon.ico?v=lukomorye2"><link rel="apple-touch-icon" href="icon-180.png?v=lukomorye2"><link rel="stylesheet" href="shell.css?v=58"><link rel="stylesheet" href="palette.css?v=51"><link rel="stylesheet" href="sand-trucks.css?v=202"><script src="launch-history.js?v=61"></script>
+<link rel="icon" href="favicon.ico?v=lukomorye2"><link rel="apple-touch-icon" href="icon-180.png?v=lukomorye2"><link rel="stylesheet" href="shell.css?v=58"><link rel="stylesheet" href="palette.css?v=51"><link rel="stylesheet" href="sand-trucks.css?v=203"><script src="launch-history.js?v=61"></script>
 <link rel="stylesheet" href="game-header.css?v=200">
 <link rel="stylesheet" href="ui-theme.css?v=199">
 </head><body>
@@ -11,7 +11,6 @@
     <button type="button" class="game-level" id="level" aria-label="Выбрать уровень">Уровень 1 ▾</button>
     <div class="hdr-side right"><button type="button" class="icon-btn game-undo" id="undo" aria-label="Отменить ход" title="Отменить ход" disabled><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg?v=195#undo"/></svg></button><button type="button" class="icon-btn game-info" id="help" aria-label="Информация об игре" title="Информация об игре" aria-haspopup="dialog"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg?v=200#info"/></svg></button></div>
   </header>
-<p id="status" class="sr-only" role="status" aria-live="polite"></p>
 <main aria-label="Песочная картина, нижняя дорога и парковка"><svg id="scene" viewBox="10 0 400 780" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="Самосвалы и песочная картина"></svg></main>
 </div>
 <dialog id="helpDialog" aria-labelledby="helpTitle">
@@ -29,5 +28,5 @@
 <dialog id="jamDialog" aria-labelledby="jamTitle"><span class="eyebrow">НЕТ СВОБОДНЫХ МЕСТ</span><h2 id="jamTitle">Нужен другой цвет</h2><p id="jamText"></p><button class="cta" id="jamExtra">Добавить место для машины</button><button class="ghost" id="jamUndo">Вернуть последнюю машину</button><button class="ghost" id="jamRestart">Начать заново</button></dialog>
 <dialog id="winDialog" aria-labelledby="winTitle"><span class="eyebrow">ВЕСЬ ПЕСОК СОБРАН</span><h2 id="winTitle">Картина собрана!</h2><canvas id="finishedArt" aria-label="Собранная картина"></canvas><p id="winText"></p><button class="cta" id="next">Следующая картина →</button><button class="ghost" id="again">Собрать ещё раз</button></dialog>
 <dialog id="levelsDialog" aria-labelledby="levelsTitle"><button class="close" data-close aria-label="Закрыть уровни">×</button><h2 id="levelsTitle">Картины</h2><nav class="level-pages" aria-label="Страницы уровней"><button id="levelsPrev" aria-label="Предыдущие 10 уровней">‹</button><span id="levelsRange"></span><button id="levelsNext" aria-label="Следующие 10 уровней">›</button></nav><div id="levels" class="levels"></div><div class="game-menu-actions"><button type="button" class="ghost" id="restart">Начать уровень заново</button></div></dialog>
-<script src="arrow-escape.js?v=172"></script><script src="sand-trucks-levels.js?v=9"></script><script src="sand-trucks-sand.js?v=4"></script><script src="sand-trucks.js?v=195"></script><script src="sand-trucks-art.js?v=5"></script><script src="sand-trucks-surface.js?v=1"></script><script src="sand-trucks-sand-art.js?v=6"></script><script src="sand-trucks-ui.js?v=202"></script>
+<script src="arrow-escape.js?v=172"></script><script src="sand-trucks-levels.js?v=9"></script><script src="sand-trucks-sand.js?v=4"></script><script src="sand-trucks.js?v=195"></script><script src="sand-trucks-art.js?v=5"></script><script src="sand-trucks-surface.js?v=1"></script><script src="sand-trucks-sand-art.js?v=6"></script><script src="sand-trucks-ui.js?v=203"></script>
 </body></html>

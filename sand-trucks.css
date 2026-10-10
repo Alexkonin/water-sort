@@ -5,7 +5,6 @@ main{flex:1;min-height:0;position:relative;overflow:hidden;margin:0 -12px}#scene
 button:disabled{opacity:.45;cursor:default}dialog{width:min(390px,calc(100vw - 32px));max-height:85dvh;overflow:auto;border:0;border-radius:22px;padding:26px;color:#334f40;background:#f0eddc;box-shadow:0 24px 80px #0007}dialog::backdrop{background:#092c29bd;backdrop-filter:blur(5px)}dialog h2{font-family:var(--ui-font);font-weight:normal;font-size:26px;margin:10px 0 16px}dialog p{font-size:14px;line-height:1.6;color:#65705b}dialog .eyebrow{color:#7e866d}.cta{width:100%;min-height:44px}.ghost{width:100%;margin-top:8px;min-height:40px}#winDialog,#jamDialog{text-align:center}#finishedArt{width:100%;height:auto;display:block;image-rendering:pixelated;border-radius:10px}dialog .close{float:right;border:0;background:#dce1cc;color:#365447;width:30px;height:30px;border-radius:9px;font-size:23px}.levels{display:flex;flex-direction:column;gap:6px}.levels button{display:flex;align-items:center;gap:12px;border:1px solid #cdd4bd;border-radius:12px;background:#e4e8d6;text-align:left;padding:8px 10px;color:#355341}.levels strong{font-family:var(--ui-font);font-size:20px;font-weight:normal}.levels span{font-size:13px}.levels i{margin-left:auto;font-style:normal}.levels .done{background:#d1e0c4}@media(max-width:360px){.hdr-title{font-size:18px}#app{padding-left:8px;padding-right:8px}main{margin-left:-8px;margin-right:-8px}#colors{gap:3px}.color-line{gap:5px}}
 
 
-.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
 #sand{position:absolute;display:block;pointer-events:none;border-radius:2px}
 .eyebrow{font-size:8px;letter-spacing:2px;color:#7e866d}
 
@@ -14,8 +13,6 @@ button:disabled{opacity:.45;cursor:default}dialog{width:min(390px,calc(100vw - 3
 .level-pages{display:flex;align-items:center;justify-content:space-between;margin:0 0 14px;font-size:13px}.level-pages button{width:36px;height:34px;border:0;border-radius:9px;background:#dce1cc;color:#365447;font-size:23px}
 
 header .hdr-side{gap:5px}header .hdr-side.right{justify-content:flex-end}
-
-#status.show{position:absolute;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 60px);width:auto;height:auto;margin:0;padding:8px 12px;clip:auto;clip-path:none;overflow:visible;white-space:normal;background:#102f2df2;color:#f4ecd6;border-radius:12px;font-size:12px;text-align:center;pointer-events:none;z-index:2}
 
 /* Local action feedback also remains legible without animation. */
 .truck.blocked .selection{stroke:#ffb28c;stroke-width:2;stroke-dasharray:4 3}

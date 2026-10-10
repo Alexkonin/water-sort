@@ -96,38 +96,83 @@
   .tube{
     --neck: calc(var(--u) * .30);
     --wall: 3px;
+    --lip-y: calc(var(--neck) * .62 + var(--wall) * .5);
+    --lip-h: clamp(6px, min(calc(var(--w) * .20), calc(var(--neck) * 1.2)), 18px);
     position:relative;flex:0 0 auto;
     width:var(--w);
     height:calc(var(--u) * var(--cap) + var(--neck) + var(--wall));
     border-radius:10px 10px calc(var(--w) * .5) calc(var(--w) * .5);
+    isolation:isolate;
+    transition:transform .16s cubic-bezier(.34,1.45,.5,1);
+    cursor:pointer;
+  }
+  /* Стекло начинается у центра устья: над овальным ободком нет плоской крышки.
+     Отдельный слой сохраняет прежние размеры колбы и геометрию жидкости. */
+  .tube-glass{
+    position:absolute;inset:var(--lip-y) 0 0;z-index:2;pointer-events:none;
+    border-radius:0 0 calc(var(--w) * .5) calc(var(--w) * .5);
     background:
       linear-gradient(100deg,
-        rgba(255,255,255,.10) 0 6%,
-        rgba(255,255,255,.02) 16% 80%,
-        rgba(255,255,255,.07) 92% 100%),
-      rgba(255,255,255,.045);
+        rgba(220,236,227,.07) 0 6%,
+        rgba(220,236,227,.01) 16% 80%,
+        rgba(220,236,227,.05) 92% 100%);
     /* стенка + внутренние рефлексы стекла; боковые тени сильнее — они «скругляют» цилиндр */
     box-shadow:
-      inset 0 0 0 var(--wall) rgba(255,255,255,.40),
-      inset 9px 0 12px -8px rgba(255,255,255,.34),
-      inset -9px 0 13px -8px rgba(255,255,255,.24),
+      inset 2px 0 1px rgba(220,236,227,.46),
+      inset -2px 0 1px rgba(220,236,227,.32),
+      inset 0 -4px 2px rgba(220,236,227,.50),
+      inset 9px 0 12px -8px rgba(220,236,227,.20),
+      inset -9px 0 13px -8px rgba(220,236,227,.14),
       inset 12px 0 16px -14px rgba(0,0,0,.45),
       inset -12px 0 16px -14px rgba(0,0,0,.40),
       inset 0 -12px 16px -10px rgba(255,255,255,.30),
       /* было filter:drop-shadow — он пересчитывался покадрово на всех колбах;
          box-shadow повторяет форму по border-radius и почти неотличим */
       0 8px 12px rgba(0,0,0,.27);
-    isolation:isolate;          /* filter создавал стекинг-контекст, возвращаем его */
-    transition:transform .16s cubic-bezier(.34,1.45,.5,1);
-    cursor:pointer;
   }
-  /* ободок горлышка */
-  .tube::before{
-    content:'';position:absolute;z-index:3;
+  /* Открытый ободок: толщина стекла, тёмное отверстие и короткий верхний блик.
+     Центр совпадает с точкой слива в cavityPolygon(), включая маленькие колбы. */
+  .mouth{
+    position:absolute;z-index:3;pointer-events:none;
     left:calc(var(--wall) * -1);right:calc(var(--wall) * -1);
-    top:calc(var(--neck) * .62);height:var(--wall);
-    border-radius:2px;background:rgba(255,255,255,.34);
+    top:calc(var(--lip-y) - var(--lip-h) * .5);height:var(--lip-h);
+    border-radius:50%;
+    background:linear-gradient(160deg,#bfd5c7,#6f9285 42%,#507164 70%,#a4c0b0);
+    box-shadow:0 2px 2px #0b282533,inset 0 1px 1px #f2fff4a8,inset 0 -1px 1px #d5eddd77;
   }
+  .mouth::before{
+    content:'';position:absolute;
+    inset:20% calc(var(--wall) * 2);border-radius:50%;
+    background:linear-gradient(#142d28,#2f4c40);
+    box-shadow:inset 0 1px 1px #061c1b88,0 1px 0 #def5e777;
+  }
+  .mouth::after{
+    content:'';position:absolute;left:13%;right:25%;top:1px;
+    height:1px;border-radius:50%;background:#eefff0;opacity:.55;
+  }
+  /* В полёте отверстие прозрачно: сквозь него видны жидкость и начало струи. */
+  .tube.flying .mouth{
+    background:transparent;
+    border:solid #9dbbac;
+    border-width:calc(var(--lip-h) * .20) calc(var(--wall) * 2);
+  }
+  .tube.flying .mouth::before{
+    display:none;
+  }
+  /* Небольшая матовая гравировка на стекле: движется вместе с колбой,
+     не перехватывает касания и не меняет геометрию перелива. */
+  .tube::after{
+    content:'';position:absolute;z-index:3;pointer-events:none;
+    left:50%;bottom:min(calc(var(--w) * .14), calc(var(--u) * .24));
+    width:calc(var(--w) * .30);height:min(calc(var(--w) * .34), calc(var(--u) * .60));
+    max-width:22px;max-height:25px;transform:translateX(-50%);
+    opacity:.38;
+    background:center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 28' fill='none' stroke='%23f4efdb' stroke-width='1.35' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 25C10 18 12 10 17 3M11 19C5 19 3 15 3 11C8 11 12 14 11 19ZM13 13C13 8 17 5 21 5C21 10 18 13 13 13Z'/%3E%3C/svg%3E");
+  }
+  /* Вопросительный знак и замок важнее декора; на миниатюрах он слишком мелок. */
+  .tube.locked::after,
+  .tube:has(.liquid > .seg.hid:first-child)::after,
+  #shelf .tube::after{display:none}
   .tube.sel{transform:translateY(-14px);outline:2px solid rgba(234,209,132,.95);outline-offset:5px}
   .tube:focus-visible,.btn:focus-visible,.icon-btn:focus-visible,.lvl:focus-visible{
     outline:2px solid #ead184;outline-offset:4px;
@@ -149,7 +194,6 @@
     70%{transform:translateY(0) scale(.97,1.04)}
     100%{transform:translateY(0) scale(1)}
   }
-  .mouth{position:absolute;top:0;left:50%;width:0;height:0}
   .liquid{
     position:absolute;overflow:hidden;
     left:var(--wall);right:var(--wall);bottom:var(--wall);
@@ -210,16 +254,15 @@
   /* блики на стекле поверх жидкости */
   .shine{
     position:absolute;z-index:2;pointer-events:none;border-radius:99px;
-    left:13%;width:8%;
+    left:13%;width:clamp(1px, calc(var(--w) * .045), 4px);
     top:calc(var(--neck) + var(--u) * .40);bottom:calc(var(--w) * .46);
     background:linear-gradient(180deg,
-      rgba(255,255,255,.30) 0%, rgba(255,255,255,.15) 55%, rgba(255,255,255,.06) 100%);
-    filter:blur(.7px);
+      rgba(239,252,240,.38) 0%, rgba(239,252,240,.12) 55%, rgba(239,252,240,.025) 100%);
   }
   .shine.sm{
-    left:auto;right:12%;width:4.5%;
+    left:auto;right:12%;width:clamp(1px, calc(var(--w) * .022), 2px);
     top:calc(var(--neck) + var(--u) * 1.15);bottom:calc(var(--w) * .62);
-    background:linear-gradient(180deg, rgba(255,255,255,.24), rgba(255,255,255,.05));
+    background:linear-gradient(180deg, rgba(220,238,231,.18), rgba(220,238,231,.02));
   }
 
   /* ---------- брызги/капли (струя рисуется в SVG-оверлее) ---------- */
@@ -297,7 +340,7 @@
   #shelf.on{height:var(--shelf-h,54px)}
   #shelf .tube{
     position:absolute;top:var(--shelf-pad,4px);
-    /* размер даёт scale, а не подмена --w/--u: --wall и blur в .shine заданы
+    /* размер даёт scale, а не подмена --w/--u: --wall и тени стекла заданы
        в абсолютных px, и при подмене переменных стенка осталась бы 3px
        на 12-пиксельной колбе. При scale конечный кадр полёта совпадает
        с покоем бит-в-бит — стыка нет вообще. */
@@ -305,8 +348,7 @@
     transform:scale(var(--shelf-scale,.2));
     transition:none;cursor:default;
   }
-  /* при масштабе ~0.2 блики превращаются в шум, а blur(.7px) в каждом из них —
-     в отдельный filter-контекст на каждую миниатюру. Градиент .seg оставляем:
+  /* при масштабе ~0.2 тонкие блики превращаются в шум. Градиент .seg оставляем:
      он один держит объём и стоит одно background-image без теней. */
   #shelf .shine{display:none}
   #shelf .seg.top::before{display:none}
@@ -972,7 +1014,8 @@ function makeTube(i){
   el.dataset.i = i;
   el.setAttribute('role', 'button');
   el.tabIndex = 0;
-  el.innerHTML = '<div class="mouth"></div><div class="liquid"></div>' +
+  el.innerHTML = '<div class="mouth" aria-hidden="true"></div><div class="liquid"></div>' +
+                 '<div class="tube-glass" aria-hidden="true"></div>' +
                  '<div class="shine"></div><div class="shine sm"></div>' +
                  '<div class="lock"><div class="ico"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=48#lock"/></svg></div><div class="num"></div></div>';
   tubeEls[i] = el;
@@ -1320,7 +1363,7 @@ function cavityPolygon(fRect){
   const Wi = fRect.width - 2 * TUBE_WALL, r = Wi / 2;
   const left = fRect.left + TUBE_WALL, right = fRect.right - TUBE_WALL;
   const bottom = fRect.bottom - TUBE_WALL;
-  // Центр видимого ободка .tube::before: --neck * .62 + половина стенки.
+  // Центр видимого ободка .mouth: --lip-y = --neck * .62 + половина стенки.
   // Верх прямоугольника расположен выше ободка и не является точкой слива.
   const top = fRect.top + UNIT * .30 * .62 + TUBE_WALL / 2;
   const cx = (left + right) / 2, arcCy = bottom - r;

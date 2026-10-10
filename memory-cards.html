@@ -38,6 +38,7 @@
   .cell{aspect-ratio:1;border:1px solid #adb99b;border-radius:13px;display:flex;align-items:center;justify-content:center;background:#fffcf0;color:#456d5c;position:relative;padding:0;box-shadow:0 2px 4px #4c604118}
   .memory-art{display:block;object-fit:contain;mix-blend-mode:darken;pointer-events:none;user-select:none}
   .cell .memory-art{width:84%;height:84%}
+  .cell.empty{background:#ecebdc;box-shadow:none}
   .cell.face{background:#faf7e9}
   .cell.back{background:repeating-linear-gradient(45deg,#dee7d1 0,#dee7d1 2px,#e9eedf 2px,#e9eedf 10px);color:#91a27b}
   .cell.back::before{content:"✦";font-size:26px;font-weight:400;opacity:.74}
@@ -68,10 +69,15 @@
   .help-grid span{height:34px;background:#dce7d3;border-radius:7px;display:grid;place-items:center;color:#54775d;font-size:17px}
   .help-grid span:nth-child(5){background:var(--honey)}
   .help-list{color:#50614b;opacity:1}
+  .difficulty-settings{padding:12px;border-radius:14px;background:#e4e9d5;margin:12px 0}
+  .difficulty-settings label{display:block;font-size:14px;font-weight:700;margin-bottom:8px}
+  .difficulty-settings select{width:100%;min-height:44px;border:1px solid #aaba9d;border-radius:10px;background:#fffdf2;color:var(--ink);padding:8px;font:inherit}
+  .difficulty-settings p{font-size:12px;margin:8px 0}
+  .difficulty-settings button{width:100%;min-height:44px;border:0;border-radius:10px;background:#d1ddb9;color:var(--ink)}
   .level-pages{display:flex;align-items:center;justify-content:space-between;gap:9px;margin:13px 0;font-size:13px}
   .level-pages button{border:0;border-radius:11px;background:#dce3c8;color:var(--ink);width:40px;height:40px;font-size:21px}
   .level-pages button:disabled{opacity:.35}
-  .level-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+  .level-grid{display:grid;grid-template-columns:repeat(var(--level-columns,5),minmax(0,1fr));gap:6px}
   .level-grid button{min-height:46px;border:0;border-radius:10px;background:#dce3c8;color:var(--ink);font-size:13px;font-weight:700}
   .level-grid button.done{background:#c5d8b8}
   .level-grid button.current{box-shadow:inset 0 0 0 2px #a87930;background:var(--honey)}
@@ -99,32 +105,32 @@
     <div class="panel-top"><span id="phaseLabel">Карточка готова</span><strong id="counter">0 / 4</strong></div>
     <div class="timer-track" role="progressbar" aria-label="Время на запоминание" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><div class="timer-fill" id="timerFill"></div></div>
     <div class="memory-card"><div class="grid" id="grid" role="group" aria-label="Девять мест на карточке"></div></div>
-    <div class="prompt" role="status" aria-live="polite"><div class="prompt-kicker" id="promptKicker">НОВАЯ КАРТОЧКА</div><div class="prompt-main" id="promptMain">Посмотри и запомни</div><div class="prompt-note" id="promptNote">Девять символов · четыре вопроса</div></div>
+    <div class="prompt" role="status" aria-live="polite"><div class="prompt-kicker" id="promptKicker">НОВАЯ КАРТОЧКА</div><div class="prompt-main" id="promptMain">Посмотри и запомни</div><div class="prompt-note" id="promptNote">Три картинки · три вопроса</div></div>
     <div class="actions"><button class="cta" id="primary">Показать карточку</button><button class="ghost" id="secondary" hidden>Повторить</button></div>
   </main>
   <div class="game-foot" id="progressText"></div>
 </div>
 <dialog id="helpDialog" aria-labelledby="helpTitle"><button class="close" data-close aria-label="Закрыть"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=68#close"/></svg></button><h2 id="helpTitle">Запомни, что где лежит</h2><div class="help-grid" aria-hidden="true"><span>✦</span><span>✧</span><span>✦</span><span>✧</span><span>?</span><span>✧</span><span>✦</span><span>✧</span><span>✦</span></div><ol class="help-list">
-<li>Нажми «Показать карточку» и запомни, где расположены девять лесных символов.</li>
+<li>Нажми «Показать карточку» и запомни, где расположены картинки. Пустые клетки запоминать не нужно.</li>
 <li>Когда время закончится, символы скроются. Можно скрыть их раньше кнопкой «Я запомнил».</li>
 <li>Для каждого символа, о котором спрашивает игра, нажми на клетку, где он был. При ошибке игра покажет верное место.</li>
 <li>Кнопка отмены вверху позволяет ответить ещё раз.</li>
-</ol><p>Пока открыта справка или игра скрыта, таймер стоит на паузе. Нажми на номер уровня, чтобы повторить его: символы и их расположение изменятся.</p><button class="cta" data-close>Понятно, играем</button></dialog>
-<dialog id="levelsDialog" aria-labelledby="levelsTitle"><button class="close" data-close aria-label="Закрыть"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=68#close"/></svg></button><h2 id="levelsTitle">Выбери уровень</h2><p id="levelsProgress"></p><div class="level-pages"><button id="prevPage" aria-label="Предыдущие уровни">‹</button><span id="pageLabel"></span><button id="nextPage" aria-label="Следующие уровни">›</button></div><div class="level-grid" id="levelGrid"></div><form class="level-jump" id="jumpForm"><input id="levelInput" type="number" inputmode="numeric" min="1" max="100" required placeholder="Номер от 1 до 100" aria-label="Номер уровня"><button type="submit">Перейти</button></form><p id="levelError" role="alert"></p><div class="game-menu-actions"><button type="button" class="ghost" id="restartButton">Начать уровень заново</button></div></dialog>
+</ol><p>На запоминание всегда 14 секунд. В режиме «Авто» начни с 3 картинок: каждые 5 уровней добавляется одна, до 9. Вопрос будет о каждой картинке. Уровни бесконечны, а находки и их места каждый раз новые. Нажми на номер уровня, чтобы выбрать сложность от 2 до 9 картинок. Пока открыто меню или игра скрыта, таймер стоит на паузе.</p><button class="cta" data-close>Понятно, играем</button></dialog>
+<dialog id="levelsDialog" aria-labelledby="levelsTitle"><button class="close" data-close aria-label="Закрыть"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=68#close"/></svg></button><h2 id="levelsTitle">Уровни и сложность</h2><p id="levelsProgress"></p><form class="difficulty-settings" id="difficultyForm"><label for="difficultyInput">Сколько картинок запомнить</label><select id="difficultyInput"><option value="auto">Авто · от 3 до 9</option><option value="2">2 картинки</option><option value="3">3 картинки</option><option value="4">4 картинки</option><option value="5">5 картинок</option><option value="6">6 картинок</option><option value="7">7 картинок</option><option value="8">8 картинок</option><option value="9">9 картинок</option></select><p>Авто: +1 картинка каждые 5 уровней, до 9. Время всегда 14 секунд. Применение начнёт текущий уровень с новой раскладкой.</p><button type="submit">Применить сложность</button></form><div class="level-pages"><button id="prevPage" aria-label="Предыдущие уровни">‹</button><span id="pageLabel"></span><button id="nextPage" aria-label="Следующие уровни">›</button></div><div class="level-grid" id="levelGrid"></div><form class="level-jump" id="jumpForm"><input id="levelInput" type="number" inputmode="numeric" min="1" step="1" required placeholder="Любой номер уровня" aria-label="Номер уровня"><button type="submit">Перейти</button></form><p id="levelError" role="alert"></p><div class="game-menu-actions"><button type="button" class="ghost" id="restartButton">Начать уровень заново</button></div></dialog>
 
-<script src="memory-cards.js?v=172"></script>
+<script src="memory-cards.js?v=216"></script>
 <script>
 (() => {
   'use strict';
   const $=selector=>document.querySelector(selector);
   const KEY='memorycards.v1', positions=['слева сверху','посередине сверху','справа сверху','слева по центру','в центре','справа по центру','слева снизу','посередине снизу','справа снизу'];
   let saved;try{saved=JSON.parse(localStorage.getItem(KEY)||'null');}catch{saved=null;}
-  let {level,deal,best,helpSeen}=MemoryCards.restore(saved);
-  let card=MemoryCards.fresh(level,deal).card,phase='ready',question=0,correct=0,answered=false,chosen=-1,page=0;
+  let {level,deal,best,helpSeen,difficulty}=MemoryCards.restore(saved);
+  let card=MemoryCards.fresh(level,deal,undefined,difficulty).card,phase='ready',question=0,correct=0,answered=false,chosen=-1,page=0;
   deal=card.deal;
-  let remaining=0,deadline=0,frame=0;
+  let remaining=0,deadline=0,frame=0,timerRunning=false;
   let answerHistory=[];
-  function save(){try{localStorage.setItem(KEY,JSON.stringify({level,deal,best,helpSeen}));}catch{}}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify({level,deal,best,helpSeen,difficulty}));}catch{}}
   const artLoads=new Map();
   function artPath(item){return 'memory-art/v1/'+item.id+'.png';}
   function icon(item){const img=new Image();img.className='memory-art';img.alt='';img.setAttribute('aria-hidden','true');img.draggable=false;img.src=artPath(item);return img;}
@@ -144,14 +150,14 @@
     if(remaining<=0){hideCard();return;}
     frame=requestAnimationFrame(timerTick);
   }
-  function pauseTimer(){if(phase!=='preview')return;remaining=Math.max(0,deadline-performance.now());cancelAnimationFrame(frame);}
-  function resumeTimer(){if(phase!=='preview'||document.hidden)return;deadline=performance.now()+remaining;frame=requestAnimationFrame(timerTick);}
+  function pauseTimer(){if(phase!=='preview'||!timerRunning)return;timerRunning=false;remaining=Math.max(0,deadline-performance.now());cancelAnimationFrame(frame);}
+  function resumeTimer(){if(timerRunning||phase!=='preview'||document.hidden||$('#helpDialog').open||$('#levelsDialog').open)return;timerRunning=true;cancelAnimationFrame(frame);deadline=performance.now()+remaining;frame=requestAnimationFrame(timerTick);}
   function renderBoard(){
     const grid=$('#grid');grid.replaceChildren();
     card.slots.forEach((item,index)=>{
       const button=document.createElement('button');button.type='button';button.className='cell '+(phase==='preview'||phase==='result'?'face':phase==='quiz'?'pick':'back');
       const revealed=phase==='preview'||phase==='result';
-      if(revealed){button.append(icon(item));button.setAttribute('aria-label',positions[index]+': '+item.name);}
+      if(revealed){if(item)button.append(icon(item));else button.classList.add('empty');button.setAttribute('aria-label',positions[index]+': '+(item?item.name:'пусто'));}
       else button.setAttribute('aria-label',positions[index]);
       if(phase==='quiz'&&answered){button.classList.remove('pick');button.classList.add(index===card.questions[question]?'correct':index===chosen?'wrong':'back');}
       button.disabled=phase!=='quiz'||answered;
@@ -159,17 +165,18 @@
       grid.append(button);
     });
   }
-  function questionWord(n){return n===4?'вопроса':'вопросов';}
+  function questionWord(n){return n>=2&&n<=4?'вопроса':'вопросов';}
+  function pictureWord(n){return n>=2&&n<=4?'картинки':'картинок';}
   function render(){
     $('#undoButton').disabled=phase!=='quiz'||!answerHistory.length;
     $('#levelLabel').textContent='Уровень '+level;
-    $('#progressText').textContent='Пройдено '+Object.keys(best).length+' из '+MemoryCards.COUNT;
+    $('#progressText').textContent='Пройдено: '+Object.keys(best).length+' · '+card.questions.length+' '+pictureWord(card.questions.length)+(difficulty==='auto'?' · авто':' · вручную');
     const primary=$('#primary'),secondary=$('#secondary'),kicker=$('#promptKicker'),main=$('#promptMain'),note=$('#promptNote');
     main.replaceChildren();main.classList.remove('with-icon');primary.hidden=false;primary.disabled=false;secondary.hidden=true;
     $('.timer-track').style.visibility=phase==='preview'?'visible':'hidden';
     if(phase==='ready'){
       $('#phaseLabel').textContent='Карточка готова';$('#counter').textContent=card.questions.length+' '+questionWord(card.questions.length);
-      kicker.textContent='НОВАЯ КАРТОЧКА';main.textContent='Посмотри и запомни';note.textContent='Девять символов · '+card.questions.length+' '+questionWord(card.questions.length);primary.textContent='Показать карточку';
+      kicker.textContent='НОВАЯ КАРТОЧКА';main.textContent='Посмотри и запомни';note.textContent=card.questions.length+' '+pictureWord(card.questions.length)+' · 14 секунд';primary.textContent='Показать карточку';
     }else if(phase==='preview'){
       $('#phaseLabel').textContent='Запоминай расположение';kicker.textContent='ЗАПОМНИ';main.textContent='Где лежит каждый символ?';note.textContent='Карточка закроется через '+card.seconds+' секунд';primary.textContent='Я запомнил';
     }else if(phase==='quiz'){
@@ -183,13 +190,13 @@
       $('#phaseLabel').textContent='Карточка открыта';$('#counter').textContent=correct+' / '+card.questions.length;
       kicker.textContent='РЕЗУЛЬТАТ';main.textContent=score?' '+('★'.repeat(score)):'Попробуй ещё раз';
       note.textContent='Верных ответов: '+correct+' из '+card.questions.length+'. '+(score?'Лучший результат: '+best[level]+' ★':'Для звезды нужно ответить хотя бы на половину вопросов.');
-      primary.textContent=score?(level===MemoryCards.COUNT?'Выбрать уровень':'Следующий уровень'):'Повторить карточку';
+      primary.textContent=score?'Следующий уровень':'Повторить карточку';
       secondary.hidden=!score;secondary.textContent='Повторить';
     }
     renderBoard();
   }
   function start(n){
-    cancelAnimationFrame(frame);answerHistory=[];level=n;({deal,card}=MemoryCards.fresh(n,deal,card));phase='ready';question=0;correct=0;answered=false;chosen=-1;remaining=0;
+    cancelAnimationFrame(frame);timerRunning=false;answerHistory=[];level=n;({deal,card}=MemoryCards.fresh(n,deal,card,difficulty));phase='ready';question=0;correct=0;answered=false;chosen=-1;remaining=0;
     if($('#levelsDialog').open)$('#levelsDialog').close();render();save();
   }
   async function reveal(){
@@ -206,7 +213,7 @@
     if(card!==pendingCard||phase!=='ready')return;
     phase='preview';remaining=card.seconds*1000;render();resumeTimer();
   }
-  function hideCard(){cancelAnimationFrame(frame);phase='quiz';question=0;answered=false;render();$('#grid button').focus({preventScroll:true});}
+  function hideCard(){cancelAnimationFrame(frame);timerRunning=false;phase='quiz';question=0;answered=false;render();$('#grid button').focus({preventScroll:true});}
   function answer(index){
     if(phase!=='quiz'||answered)return;
     answerHistory.push({question,correct});
@@ -223,14 +230,14 @@
     if(phase==='ready')reveal();
     else if(phase==='preview')hideCard();
     else if(phase==='quiz'&&answered){if(question===card.questions.length-1)finish();else{question++;answered=false;chosen=-1;render();$('#grid button').focus({preventScroll:true});}}
-    else if(phase==='result'){if(!MemoryCards.stars(correct,card.questions.length))start(level);else if(level===MemoryCards.COUNT)showLevels();else start(level+1);}
+    else if(phase==='result'){if(!MemoryCards.stars(correct,card.questions.length))start(level);else start(level<Number.MAX_SAFE_INTEGER?level+1:level);}
   }
   function renderLevels(){
-    const first=page*25+1,last=Math.min(MemoryCards.COUNT,first+24);
-    $('#pageLabel').textContent=first+'–'+last+' из '+MemoryCards.COUNT;
-    $('#prevPage').disabled=page===0;$('#nextPage').disabled=last===MemoryCards.COUNT;
-    $('#levelsProgress').textContent='Пройдено '+Object.keys(best).length+' из '+MemoryCards.COUNT+' · ★ показывает лучший результат';
-    const grid=$('#levelGrid');grid.replaceChildren();
+    const first=page*25+1,last=Math.min(Number.MAX_SAFE_INTEGER,first+24);
+    $('#pageLabel').textContent=first+'–'+last;
+    $('#prevPage').disabled=page===0;$('#nextPage').disabled=last===Number.MAX_SAFE_INTEGER;
+    $('#levelsProgress').textContent='Бесконечные уровни · пройдено: '+Object.keys(best).length+' · ★ лучший результат';
+    const grid=$('#levelGrid');grid.replaceChildren();grid.style.setProperty('--level-columns',Math.min(5,Math.max(1,Math.floor(24/String(last).length))));
     for(let n=first;n<=last;n++){
       const b=document.createElement('button');b.type='button';b.className=(best[n]?'done ':'')+(n===level?'current':'');
       b.textContent=n;if(best[n]){const small=document.createElement('small');small.textContent='★'.repeat(best[n]);b.append(small);}
@@ -238,7 +245,7 @@
       b.addEventListener('click',()=>start(n));grid.append(b);
     }
   }
-  function showLevels(){page=Math.floor((level-1)/25);$('#levelInput').value='';$('#levelError').textContent='';renderLevels();pauseTimer();$('#levelsDialog').showModal();}
+  function showLevels(){$('#difficultyInput').value=String(difficulty);page=Math.floor((level-1)/25);$('#levelInput').value='';$('#levelError').textContent='';renderLevels();pauseTimer();$('#levelsDialog').showModal();}
   $('#primary').addEventListener('click',next);
   $('#secondary').addEventListener('click',()=>start(level));
   $('#restartButton').addEventListener('click',()=>start(level));
@@ -252,8 +259,9 @@
   $('#helpDialog').addEventListener('close',()=>{helpSeen=true;save();resumeTimer();});
   $('#levelsDialog').addEventListener('close',resumeTimer);
   $('#prevPage').addEventListener('click',()=>{if(page>0){page--;renderLevels();}});
-  $('#nextPage').addEventListener('click',()=>{if(page<3){page++;renderLevels();}});
-  $('#jumpForm').addEventListener('submit',e=>{e.preventDefault();const n=Number($('#levelInput').value);if(!Number.isInteger(n)||n<1||n>MemoryCards.COUNT){$('#levelError').textContent='Введи номер от 1 до 100.';return;}start(n);});
+  $('#nextPage').addEventListener('click',()=>{if((page+1)*25<Number.MAX_SAFE_INTEGER){page++;renderLevels();}});
+  $('#difficultyForm').addEventListener('submit',e=>{e.preventDefault();const value=$('#difficultyInput').value;difficulty=value==='auto'?'auto':Number(value);start(level);});
+  $('#jumpForm').addEventListener('submit',e=>{e.preventDefault();const n=Number($('#levelInput').value);if(!MemoryCards.validLevel(n)){$('#levelError').textContent='Введи целый положительный номер уровня.';return;}start(n);});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){pauseTimer();save();}else resumeTimer();});
   window.addEventListener('pagehide',save);
   render();save();if(!helpSeen)$('#helpDialog').showModal();

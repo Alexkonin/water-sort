@@ -85,6 +85,15 @@
     });
     host.innerHTML=svg(art+'</g>');
   }
-  const scenes={castle:towers,flask:water,truck:trucks,lights,mahjong,memory};
+  function yard(host){
+    let art='<rect x="25" y="14" width="310" height="98" rx="7" fill="#ebbe62"/><path d="M25 84Q87 50 144 84T260 82T335 74V112H25Z" fill="#47b6b0"/><path d="M161 26H187L196 92H151Z" fill="#d87964"/><path d="M157 21H191V34H157Z" fill="#f3eacb"/><path d="M0 143H360" stroke="#9eb79866" stroke-dasharray="7 7"/>';
+    for(let x=10;x<360;x+=20)art+=`<path d="M${x} 175V207" stroke="#938d65" stroke-width="5"/>`;
+    art+='<path d="M0 181H360M0 201H360" stroke="#b2c0a5" stroke-width="3"/><path d="M58 191H295" stroke="#cfbd7d" stroke-width="3"/>';
+    ['#47b6b0','#d87964','#e6b14e'].forEach((c,i)=>{const x=54+i*69;art+=`<rect x="${x}" y="177" width="58" height="28" rx="4" fill="${c}" stroke="#f4e6b2"/><rect x="${x+5}" y="182" width="48" height="18" rx="2" fill="#244b4055"/>`;});
+    art+='<rect x="271" y="176" width="47" height="30" rx="5" fill="#e6c77d"/><rect x="298" y="181" width="13" height="20" rx="2" fill="#285249"/><rect x="37" y="120" width="47" height="39" rx="4" fill="#94a987"/><path d="M43 129H78M43 136H78M43 143H78" stroke="#536f52" stroke-width="3"/><text x="60" y="149" text-anchor="middle" fill="#f4edce" font-size="25">?</text>';
+    host.innerHTML=svg(art);
+    const truck=SandTruckArt.create({id:0,color:3,cells:[0,1,2]},28);SandTruckArt.update(truck,0,.6);truck.setAttribute('transform','translate(219 143) rotate(90) scale(1.2)');host.firstChild.append(truck);
+  }
+  const scenes={castle:towers,flask:water,truck:trucks,yard,lights,mahjong,memory};
   globalThis.MenuArt={render(host,key){if(scenes[key])scenes[key](host);}};
 })();

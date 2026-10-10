@@ -1,7 +1,14 @@
 /* Новая раскладка для каждого показа и проверка сохранённого прогресса. */
 (function(root){
   'use strict';
-  const COUNT = 100;
+  const MIN_ITEMS=2, MAX_ITEMS=9, PREVIEW_SECONDS=14, LEVELS_PER_STEP=5;
+  const validLevel=n=>Number.isSafeInteger(n)&&n>=1;
+  const validDifficulty=n=>n==='auto'||Number.isInteger(n)&&n>=MIN_ITEMS&&n<=MAX_ITEMS;
+  function itemCount(level,difficulty='auto'){
+    if(!validLevel(level))throw RangeError('Неверный номер уровня');
+    if(!validDifficulty(difficulty))throw RangeError('Неверная сложность');
+    return difficulty==='auto'?Math.min(MAX_ITEMS,3+Math.floor((level-1)/LEVELS_PER_STEP)):difficulty;
+  }
   const ITEMS = [
     {id:'leaf',name:'лист',group:'plant'}, {id:'acorn',name:'жёлудь',group:'plant'},
     {id:'mushroom',name:'гриб',group:'plant'}, {id:'feather',name:'перо',group:'animal'},
@@ -43,23 +50,27 @@
     }
     return copy;
   }
-  function make(level,deal=0){
-    if(!Number.isInteger(level)||level<1||level>COUNT)throw RangeError('Уровень вне каталога');
+  function make(level,deal=0,difficulty='auto',seed=deal){
+    const count=itemCount(level,difficulty);
     if(!Number.isSafeInteger(deal)||deal<0)throw RangeError('Неверный номер карточки');
-    const rng=random((Math.imul(level,0x9E3779B1)^Math.imul(deal,0x85EBCA6B)^0x4D454D4F)>>>0);
-    const slots=shuffle(ITEMS,rng).slice(0,9);
-    const count=level<=20?4:level<=50?5:6;
-    const questions=shuffle(Array.from({length:9},(_,i)=>i),rng).slice(0,count);
-    const seconds=level<=10?14:level<=30?12:level<=60?10:8;
-    return {level,deal,slots,questions,seconds};
+    const rng=random((Math.imul(level,0x9E3779B1)^Math.imul(seed,0x85EBCA6B)^0x4D454D4F)>>>0);
+    const items=shuffle(ITEMS,rng).slice(0,count);
+    const places=shuffle(Array.from({length:9},(_,i)=>i),rng).slice(0,count);
+    const slots=Array(9).fill(null);
+    places.forEach((position,i)=>{slots[position]=items[i];});
+    const questions=shuffle(places,rng);
+    return {level,deal,seed,difficulty,slots,questions,seconds:PREVIEW_SECONDS};
   }
-  function fresh(level,afterDeal,previous){
-    const seen=new Set(previous?.slots?.map(item=>item.id)||[]);
+  function fresh(level,afterDeal=0,previous,difficulty='auto'){
+    const seen=new Set(previous?.slots?.filter(Boolean).map(item=>item.id)||[]);
+    const entropy=globalThis.crypto?.getRandomValues
+      ?globalThis.crypto.getRandomValues(new Uint32Array(1))[0]
+      :Math.floor(Math.random()*4294967296);
     let deal=afterDeal,card;
     do{
       deal=deal>=0xFFFFFFFF?1:deal+1;
-      card=make(level,deal);
-    }while(seen.size&&card.slots.filter(item=>seen.has(item.id)).length>4);
+      card=make(level,deal,difficulty,(entropy+deal)>>>0);
+    }while(seen.size&&card.slots.filter(item=>item&&seen.has(item.id)).length>Math.min(4,Math.floor(card.questions.length/2)));
     return {deal,card};
   }
   function stars(correct,total){
@@ -69,18 +80,19 @@
   }
   function restore(value){
     const source=value&&typeof value==='object'?value:{};
-    const level=Number.isInteger(source.level)&&source.level>=1&&source.level<=COUNT?source.level:1;
+    const level=validLevel(source.level)?source.level:1;
     const best={};
     if(source.best&&typeof source.best==='object'&&!Array.isArray(source.best)){
       for(const [key,score] of Object.entries(source.best)){
         const n=Number(key);
-        if(Number.isInteger(n)&&n>=1&&n<=COUNT&&String(n)===key&&Number.isInteger(score)&&score>=1&&score<=3)best[n]=score;
+        if(validLevel(n)&&String(n)===key&&Number.isInteger(score)&&score>=1&&score<=3)best[n]=score;
       }
     }
     const deal=Number.isSafeInteger(source.deal)&&source.deal>=0&&source.deal<=0xFFFFFFFF?source.deal:0;
-    return {level,deal,best,sound:false,helpSeen:source.helpSeen===true};
+    const difficulty=validDifficulty(source.difficulty)?source.difficulty:'auto';
+    return {level,deal,best,difficulty,sound:false,helpSeen:source.helpSeen===true};
   }
-  const api={COUNT,ITEMS,make,fresh,stars,restore};
+  const api={MIN_ITEMS,MAX_ITEMS,PREVIEW_SECONDS,LEVELS_PER_STEP,ITEMS,itemCount,validLevel,make,fresh,stars,restore};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   else root.MemoryCards=api;
 })(globalThis);

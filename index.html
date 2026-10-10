@@ -27,6 +27,7 @@
   .scene.castle{background:linear-gradient(145deg,#bccb8d,#7c9c67)}
   .scene.flask{background:radial-gradient(ellipse at 50% 70%,#387065,#163e3e)}
   .scene.truck{background:linear-gradient(145deg,#315d58,#173c37)}
+  .scene.yard{background:linear-gradient(145deg,#315d58,#173c37)}
   .scene.lights{background:radial-gradient(ellipse,#315950,#142f33)}
   .scene.mahjong{background:linear-gradient(145deg,#b7cbbb,#749b8c)}
   .scene.memory{background:linear-gradient(145deg,#e7d6a9,#bdac7e)}
@@ -45,7 +46,7 @@
   @media(prefers-reduced-motion:reduce){.game{transition:none}.game:hover,.game:active{transform:none}}
 </style>
 <link rel="stylesheet" href="palette.css?v=50">
-<script src="launch-history.js?v=61"></script>
+<script src="launch-history.js?v=225"></script>
 <script src="focus-mode.js?v=65"></script>
 <link rel="stylesheet" href="ui-theme.css?v=199">
 </head>
@@ -101,13 +102,14 @@ const GAMES = [
     }
   },
   {
-    file: 'sand-trucks.html',
-    icon: 'truck',
-    name: 'Песочные самосвалы',
-    desc: 'Лови цветной песок в кузов',
+    file: 'sand-yard.html',
+    icon: 'yard',
+    name: 'Песочное депо',
+    desc: '100 картин · самосвалы, гаражи и поезда',
     progress(){
-      const d = read('sandtrucks.v1');
-      return d && d.version === 5 ? 'уровень ' + d.level + ' · собрано ' + (Array.isArray(d.completed) ? d.completed.length : 0) + ' из 100' : null;
+      const d = read('sanddepot.v1') || read('sandtrucks.v1');
+      const n = d && Array.isArray(d.completed) ? d.completed.filter(v => Number.isInteger(v) && v >= 1 && v <= 100).length : 0;
+      return d ? 'картина ' + (d.level || 1) + ' · собрано ' + n + ' из 100' : '100 картин · гаражи и переезд';
     }
   },
   {
@@ -144,7 +146,7 @@ const GAMES = [
       const d = read('memorycards.v1');
       if (!d) return null;
       const count = d.best && typeof d.best === 'object' ? Object.keys(d.best).length : 0;
-      return count ? 'пройдено ' + count + ' из 100' : 'уровень ' + (d.level || 1) + ' из 100';
+      return 'уровень ' + (d.level || 1) + ' · ' + (count ? 'пройдено ' + count : 'бесконечные уровни');
     }
   }
 ];

@@ -8,6 +8,7 @@
   function save(){const {version,level,actions,completed,helpSeen}=state;try{localStorage.setItem(KEY,JSON.stringify({version,level,actions,completed,helpSeen}));}catch{}}
   function tell(text,stuck=false){$('#status').textContent=text;$('#status').classList.toggle('stuck',stuck);}
   const face=MahjongArt.face;
+  document.querySelectorAll('[data-help-face]').forEach(el=>{el.innerHTML=face(Number(el.dataset.helpFace));});
   const view=$('#viewport'),boardSize=$('#boardSize');
   const pointers=new Map();
   let gesture=null,suppressClickUntil=0;

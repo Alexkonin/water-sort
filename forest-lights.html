@@ -38,12 +38,26 @@
 #lights.fl-trio-active .fl-flow,#lights .fl-game:has(.fl-turn:focus-visible) .fl-flow{opacity:.85}
 #lights.fl-trio-active .fl-seat.fl-working{border-color:#ead184;box-shadow:0 0 0 5px #ead18418,0 0 12px #ead18433}
 #lights.fl-trio-active .fl-bead{transition:none}
+#lights.fl-trio-demo .fl-seat.fl-working{width:47px;height:47px;border:2px solid #ead184;z-index:2;pointer-events:none}
+#lights.fl-trio-demo .fl-seat.fl-working::after{content:attr(data-order);position:absolute;top:-19px;left:50%;transform:translateX(-50%);font:700 12px system-ui;color:#ead184}
+#lights .fl-demo-tracer,#lights .fl-demo-empty{position:absolute;transform:translate(-50%,-50%);border-radius:50%;pointer-events:none}
+#lights .fl-demo-tracer{width:15px;height:15px;background:#fff7d5;border:2px solid #ead184;box-shadow:0 0 16px #ead184;z-index:3}
+#lights .fl-demo-empty{width:35px;height:35px;border:2px dashed #ead184;background:#102f2d66}
+#lights.fl-trio-demo .fl-guide{color:#f4efdb}
 @media(hover:hover){#lights .fl-game:has(.fl-turn:hover) .fl-flow{opacity:.85}}
 #lights .fl-guide small{display:block;margin-top:3px;font-size:12px;color:#ead184}
 #lights .fl-seat{position:absolute;width:13px;height:13px;border:1px solid #bfd0a35c;border-radius:50%;transform:translate(-50%,-50%)}
 #lights .fl-home{position:absolute;transform:translate(-50%,-50%);width:31px;height:31px;border:1px solid var(--fl-tone);border-radius:50%;color:var(--fl-tone);display:grid;place-items:center;font-size:16px;opacity:.85;transition:box-shadow .25s,background .25s}
 #lights .fl-home.fl-match{background:#f4efdb13;box-shadow:0 0 14px var(--fl-tone);opacity:1}
-#lights .fl-bead{position:absolute;transform:translate(-50%,-50%);width:35px;height:35px;border-radius:50%;background:radial-gradient(circle at 30% 22%,#fff9,var(--fl-tone) 44%,#102f2d 130%);color:#183b32;box-shadow:inset 0 0 0 1px #f4efdb66,0 3px 8px #061b1966,0 0 13px color-mix(in srgb,var(--fl-tone) 30%,transparent);display:grid;place-items:center;font-size:18px;transition:left .27s ease,top .27s ease}
+#lights .fl-bead{position:absolute;isolation:isolate;transform:translate(-50%,-50%);width:35px;height:35px;border-radius:50%;background:radial-gradient(circle at 50% 46%,color-mix(in srgb,var(--fl-tone) 58%,#fff7df),var(--fl-tone) 58%,color-mix(in srgb,var(--fl-tone) 76%,#315649));color:#183b32;box-shadow:inset 0 0 9px #fff7df40,0 2px 5px #061b1933;display:grid;place-items:center;font-size:18px;transition:left .27s ease,top .27s ease}
+#lights .fl-bead::before,#lights .fl-bead::after{content:'';position:absolute;inset:-13px;border-radius:50%;z-index:-1;pointer-events:none;background:radial-gradient(circle,var(--fl-tone) 18%,color-mix(in srgb,var(--fl-tone) 45%,transparent) 42%,transparent 72%)}
+#lights .fl-bead::before{opacity:.32;transition:opacity .4s ease}
+#lights .fl-bead.fl-match::before{opacity:.65}
+#lights .fl-bead::after{opacity:0}
+#lights .fl-bead.fl-arrived::after{animation:fl-arrival .9s ease-out}
+#lights.fl-moving .fl-bead::before,#lights .fl-dragging .fl-bead::before{opacity:.32}
+#lights .fl-dragging .fl-bead::after{animation:none}
+@keyframes fl-arrival{0%{opacity:0;transform:scale(.85)}35%{opacity:.55;transform:scale(1.08)}100%{opacity:0;transform:scale(1.22)}}
 #lights .fl-center{position:absolute;inset:32% 22% 38%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;pointer-events:none}
 #lights .fl-center>svg{color:#bfd0a3;opacity:.55;width:28px;height:28px}
 #lights .fl-status{font-size:14px;font-weight:600;text-align:center;color:#e9e4cd}
@@ -53,7 +67,7 @@
 #lights .fl-controls .fl-turn{background:linear-gradient(#ead184,#d5b561);color:#2e4437;font-weight:700}
 #lights .fl-controls span{font-size:22px;line-height:1}
 #lights .fl-footer{margin-top:17px;text-align:center;font-size:12px;color:#bdc9b2}
-@media(prefers-reduced-motion:reduce){#lights .fl-bead,#lights .fl-home{transition:none}}
+@media(prefers-reduced-motion:reduce){#lights .fl-bead,#lights .fl-home,#lights .fl-bead::before{transition:none}#lights .fl-bead.fl-arrived::after{animation:none}}
 
 .overlay[hidden]{display:none}
 #lights.fl-moving .fl-bead{transition:none}
@@ -82,7 +96,34 @@
 .level-jump input{min-width:0;width:100%;padding:10px;border:1px solid #697c4840;border-radius:12px;background:#fffbee;color:var(--ink);font:16px system-ui}
 .level-jump button{border:0;border-radius:12px;background:#dce3c8;padding:0 12px;color:var(--ink);font:inherit}
 #levelError{color:#a45348;font-size:13px;min-height:18px;margin:6px 0 0}
-.help-list strong{font-weight:700}
+#ovHelp .card{width:min(390px,92vw);padding:22px 18px}
+#ovHelp .fl-lessons{display:grid;gap:8px;margin:16px 0;padding:0;list-style:none;text-align:left}
+#ovHelp .fl-lesson{display:grid;grid-template-columns:100px 1fr;align-items:center;gap:12px;padding:8px;border-radius:16px;background:#bfd0a322}
+#ovHelp .fl-lesson svg{width:100px;height:84px;border-radius:12px;background:#183b35}
+#ovHelp .fl-lesson strong{display:block;color:var(--ink);font-size:14px;line-height:1.3}
+#ovHelp .fl-lesson p{margin:4px 0 0;font-size:12px;line-height:1.4}
+#ovHelp .fl-help-note{font-size:12px;margin:0 0 14px}
+.fl-example-ring{transform-origin:50px 42px;animation:fl-example-ring 3s ease-in-out infinite}
+.fl-example-goal{animation:fl-example-goal 3s ease-in-out infinite}
+.fl-example-match{animation:fl-example-match 3s ease-in-out infinite}
+.fl-example-right{animation:fl-example-right 3s ease-in-out infinite}
+.fl-example-bottom{animation:fl-example-bottom 3s ease-in-out infinite}
+.fl-example-left{animation:fl-example-left 3s ease-in-out infinite}
+@keyframes fl-example-ring{0%,15%{transform:rotate(0)}55%,85%{transform:rotate(45deg)}100%{transform:rotate(0)}}
+@keyframes fl-example-goal{0%,15%{transform:translate(-26px,26px)}55%,85%{transform:translate(0,0)}100%{transform:translate(-26px,26px)}}
+@keyframes fl-example-match{0%,25%,100%{opacity:.25}55%,85%{opacity:1}}
+@keyframes fl-example-right{0%,15%,100%{transform:translate(0,0)}55%,85%{transform:translate(-26px,24px)}}
+@keyframes fl-example-bottom{0%,15%,100%{transform:translate(0,0)}55%,85%{transform:translate(-26px,-24px)}}
+@keyframes fl-example-left{0%,15%,100%{transform:translate(0,0)}35%{transform:translate(26px,-14px)}55%,85%{transform:translate(52px,0)}}
+@media(prefers-reduced-motion:reduce){#ovHelp svg *{animation:none}}
+@media(max-width:360px){
+ #ovHelp .card{padding:16px 14px}
+ #ovHelp .fl-lessons{margin:12px 0;gap:6px}
+ #ovHelp .fl-lesson{grid-template-columns:80px 1fr;gap:8px;padding:6px}
+ #ovHelp .fl-lesson svg{width:80px;height:68px}
+ #ovHelp .fl-lesson strong{font-size:13px}
+ #ovHelp .fl-lesson p,#ovHelp .fl-help-note{font-size:11.5px}
+}
 #ovWin .win-detail{font-size:14px;line-height:1.5}
 @media(max-height:480px){html,body{height:auto;overflow:auto}#app{height:auto;min-height:100dvh;touch-action:pan-y}#lights .fl-board{width:min(100%,280px)}#lights main{min-height:340px}}
 @media(prefers-reduced-motion:reduce){#lights .fl-flow{transition:none}}
@@ -112,15 +153,23 @@
 </div></div>
 </div>
 <div class="overlay" id="ovHelp" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
- <div class="card"><div class="big"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#lights"/></svg></div><h2 id="helpTitle">Как играть</h2>
- <p>Расставь огоньки по отметкам на внешнем ободке: цвет и значок должны совпасть.</p>
- <ol class="help-list">
-  <li><strong>Вращай кольцо.</strong> Потяни за кольцо или огонёк. Можно нажать на левую или правую сторону кольца или на кнопку со стрелкой.</li>
-  <li><strong>Меняй нижнюю тройку.</strong> Нажми на золотистую дугу или кнопку «Тройка»: правый огонёк переместится вниз, нижний — влево, левый — вправо. Пустые места тоже перемещаются.</li>
-  <li><strong>Пробуй разные ходы.</strong> Кнопка отмены вверху возвращает предыдущий ход.</li>
+ <div class="card"><h2 id="helpTitle">Как играть</h2>
+ <ol class="fl-lessons">
+  <li class="fl-lesson">
+   <svg viewBox="0 0 100 84" aria-hidden="true"><path d="M24 68 A26 26 0 0 1 50 16" fill="none" stroke="#bfd0a355" stroke-width="2"/><circle class="fl-example-match" cx="50" cy="10" r="8" fill="none" stroke="#ead184"/><text x="50" y="14" text-anchor="middle" fill="#ead184" font-size="12">✦</text><g class="fl-example-goal"><circle cx="50" cy="30" r="10" fill="#ead184"/><text x="50" y="34" text-anchor="middle" fill="#183b35" font-size="13">✦</text></g><path d="M76 56v-18m-4 5 4-5 4 5" fill="none" stroke="#ead184" stroke-linecap="round"/></svg>
+   <div><strong>1. Собери по значкам</strong><p>Каждый огонёк — к такой же отметке снаружи.</p></div>
+  </li>
+  <li class="fl-lesson">
+   <svg viewBox="0 0 100 84" aria-hidden="true"><circle cx="50" cy="42" r="26" fill="none" stroke="#bfd0a355" stroke-width="2"/><g class="fl-example-ring"><circle cx="50" cy="16" r="8" fill="#ead184"/><text x="50" y="20" text-anchor="middle" fill="#183b35" font-size="12">✦</text><circle cx="50" cy="68" r="8" fill="#89c6b5"/><text x="50" y="72" text-anchor="middle" fill="#183b35" font-size="12">◆</text></g><path d="M42 42h16m-4-4 4 4-4 4m-8-8-4 4 4 4" fill="none" stroke="#ead184" stroke-linecap="round"/></svg>
+   <div><strong>2. Крути кольцо</strong><p>Потяни пальцем или нажми «Кольцо». Двигаются все огоньки.</p></div>
+  </li>
+  <li class="fl-lesson">
+   <svg viewBox="0 0 100 84" aria-hidden="true"><path d="M24 34Q50 7 76 34Q72 55 50 58Q28 55 24 34" fill="none" stroke="#ead18488" stroke-width="2"/><path d="m48 18 5 2-5 3m17 22-2 6 6-2m-30 3-6-2 1 6" fill="none" stroke="#ead184" stroke-linecap="round"/><g class="fl-example-right"><circle cx="76" cy="34" r="9" fill="#ead184"/><text x="76" y="38" text-anchor="middle" fill="#183b35" font-size="12">✦</text></g><g class="fl-example-bottom"><circle cx="50" cy="58" r="9" fill="#89c6b5"/><text x="50" y="62" text-anchor="middle" fill="#183b35" font-size="12">◆</text></g><g class="fl-example-left"><circle cx="24" cy="34" r="9" fill="#183b35" stroke="#ead184" stroke-dasharray="3 3"/></g></svg>
+   <div><strong>3. Меняй тройку</strong><p>Нажми на медовую дугу или «Тройку». Пустые места тоже идут по кругу.</p></div>
+  </li>
  </ol>
- <p>Таймера нет, прогресс сохраняется автоматически. Нажми на номер уровня, чтобы выбрать другой или начать заново.</p>
- <button class="cta" id="btnCloseHelp">Понятно, играем</button></div>
+ <p class="fl-help-note">Отмена — вверху · Выбор — в номере уровня<br>Без таймера · Прогресс сохраняется</p>
+ <button class="cta" id="btnCloseHelp">Играть</button></div>
 </div>
 <div class="overlay" id="ovLevel" role="dialog" aria-modal="true" aria-labelledby="levelsTitle" hidden>
  <div class="card"><div class="big"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons.svg?v=50#levels"/></svg></div><h2 id="levelsTitle">Выбор уровня</h2><p id="levelProgress"></p>
@@ -145,25 +194,32 @@
  let saved={};try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch{}
  let {level,state,moves,history,best,completed,legacyBest}=ForestLights.restoreProgress(saved,levels,FOREST_CATALOG_VERSION);
  let puzzle=levels[level-1];
- let helpSeen=saved.helpSeen===true;
+ let helpSeen=saved.helpSeen===true,trioDemoSeen=saved.trioDemoSeen===true;
  let busy=false,epoch=0,animations=[],activeDialog=null,previousFocus=null,page=0,gesture=null;
  const board=$('.fl-board');
- function save(){try{localStorage.setItem(KEY,JSON.stringify({catalogVersion:FOREST_CATALOG_VERSION,level,state,moves,history,best,completed,legacyBest,helpSeen}));}catch{}}
+ const guide=$('.fl-guide'),guideMarkup=guide.innerHTML;
+ function save(){try{localStorage.setItem(KEY,JSON.stringify({catalogVersion:FOREST_CATALOG_VERSION,level,state,moves,history,best,completed,legacyBest,helpSeen,trioDemoSeen}));}catch{}}
  function point(i,r=32,angle=0){const a=(i*45-90+angle)*Math.PI/180;return [50+r*Math.cos(a),50+r*Math.sin(a)];}
  function place(el,i,r=32,angle=0){const [x,y]=point(i,r,angle);el.style.left=x+'%';el.style.top=y+'%';}
  function build(){
   $('.fl-seats').replaceChildren();$('.fl-homes').replaceChildren();$('.fl-beads').replaceChildren();
   for(let i=0;i<8;i++){
-   const seat=document.createElement('div');seat.className='fl-seat'+(i>=3&&i<=5?' fl-working':'');place(seat,i);$('.fl-seats').append(seat);
+   const seat=document.createElement('div');seat.className='fl-seat'+(i>=3&&i<=5?' fl-working':'');seat.dataset.order=i-2;place(seat,i);$('.fl-seats').append(seat);
    const color=+puzzle.target[i];if(!color)continue;
    const home=document.createElement('div');home.className='fl-home';home.dataset.slot=i;home.style.setProperty('--fl-tone',tones[color]);home.textContent=symbols[color];place(home,i,44);$('.fl-homes').append(home);
    const bead=document.createElement('div');bead.className='fl-bead';bead.dataset.color=color;bead.style.setProperty('--fl-tone',tones[color]);bead.textContent=symbols[color];$('.fl-beads').append(bead);
   }
  }
- function render(){
+ function render(arrivalFrom=null){
   let matched=0;const total=puzzle.target.replaceAll('0','').length;
   document.querySelectorAll('.fl-home').forEach(h=>{const i=+h.dataset.slot,ok=state[i]===puzzle.target[i];h.classList.toggle('fl-match',ok);if(ok)matched++;});
-  document.querySelectorAll('.fl-bead').forEach(b=>place(b,state.indexOf(b.dataset.color)));
+  document.querySelectorAll('.fl-bead').forEach(b=>{
+   const slot=state.indexOf(b.dataset.color),ok=state[slot]===puzzle.target[slot];
+   place(b,slot);
+   b.classList.toggle('fl-match',!busy&&ok);
+   // Отзываемся только на новое совпадение после завершения перемещения.
+   b.classList.toggle('fl-arrived',!busy&&ok&&!reduced.matches&&arrivalFrom!==null&&arrivalFrom[slot]!==b.dataset.color);
+  });
   $('.fl-status').textContent=matched===total?'Все дома!':matched+' из '+total+' на местах';
   board.setAttribute('aria-label','Огоньки по часовой стрелке от верха: '+[...state].map(x=>names[+x]).join(', ')+'. Совпадений: '+matched+' из '+total+'.');
   $('.fl-moves').textContent=moves;$('#btnUndo').disabled=busy||!history.length;
@@ -171,7 +227,11 @@
   $('#levelLabel').textContent='Уровень '+level;
   buttons.forEach(b=>{b.disabled=busy||state===puzzle.target;});
  }
- function cancelAnimation(){epoch++;animations.forEach(a=>a.cancel());animations=[];busy=false;gesture=null;board.classList.remove('fl-dragging');root.classList.remove('fl-trio-active','fl-moving');}
+ function clearDemo(){
+  root.classList.remove('fl-trio-demo');board.querySelectorAll('.fl-demo-tracer,.fl-demo-empty').forEach(el=>el.remove());
+  guide.innerHTML=guideMarkup;guide.removeAttribute('role');
+ }
+ function cancelAnimation(){epoch++;animations.forEach(a=>a.cancel());animations=[];busy=false;gesture=null;board.classList.remove('fl-dragging');root.classList.remove('fl-trio-active','fl-moving');clearDemo();}
  function closeDialog(){
   if(!activeDialog)return;
   const d=activeDialog;d.classList.remove('show');d.hidden=true;activeDialog=null;
@@ -180,6 +240,7 @@
   if(d.id==='ovLevel'&&getComputedStyle(document.body).overflow==='hidden')requestAnimationFrame(()=>window.scrollTo(0,0));
  }
  function openDialog(id){
+  if(root.classList.contains('fl-trio-demo')){cancelAnimation();render();}
   const prior=previousFocus||document.activeElement;if(activeDialog)closeDialog();
   previousFocus=prior;activeDialog=$(id);activeDialog.hidden=false;activeDialog.classList.add('show');$('#app').inert=true;
   const card=activeDialog.querySelector('.card');card.tabIndex=-1;card.focus({preventScroll:true});card.scrollTop=0;
@@ -195,27 +256,61 @@
   closeDialog();cancelAnimation();level=n;puzzle=levels[level-1];state=puzzle.start;moves=0;history=[];
   build();render();save();
  }
+ function trioFrames(from){
+  return Array.from({length:17},(_,k)=>{
+   const t=k/16;let x,y;
+   if(from===5){const [ax,ay]=point(5),[bx,by]=point(3);x=ax+(bx-ax)*t;y=(1-t)*(1-t)*ay+2*(1-t)*t*54+t*t*by;}
+   else [x,y]=point(from,32,45*t);
+   return {left:x+'%',top:y+'%'};
+  });
+ }
+ async function demonstrateTrio(token){
+  root.classList.add('fl-trio-demo');guide.setAttribute('role','status');
+  guide.innerHTML='Тройка: 1 → 2 → 3 → 1<small>Пустые места тоже перемещаются</small>';
+  for(let i=3;i<=5;i++)if(state[i]==='0'){
+   const empty=document.createElement('div');empty.className='fl-demo-empty';empty.dataset.from=i;empty.setAttribute('aria-hidden','true');place(empty,i);board.append(empty);
+  }
+  if(!board.animate)return;
+  // При уменьшении движения оставляем схему на экране без перемещения маркера.
+  if(reduced.matches){
+   const hold=board.animate([{opacity:1},{opacity:1}],{duration:1600});animations.push(hold);
+   await hold.finished.catch(()=>{});return;
+  }
+  const tracer=document.createElement('div');tracer.className='fl-demo-tracer';tracer.setAttribute('aria-hidden','true');board.append(tracer);
+  for(const from of [3,4,5]){
+   place(tracer,from);
+   const frames=trioFrames(from);frames.unshift(frames[0]);frames.push(frames.at(-1));
+   const animation=tracer.animate(frames,{duration:560,easing:'ease-in-out',fill:'forwards'});animations.push(animation);
+   await animation.finished.catch(()=>{});if(token!==epoch)return;
+   animation.cancel();
+  }
+  tracer.remove();
+ }
  async function move(kind,count=1,fromAngle=null){
   if(busy||activeDialog||state===puzzle.target)return;
   const before=state,token=epoch;
   busy=true;root.classList.add('fl-moving');root.classList.toggle('fl-trio-active',kind==='T');
+  const demo=kind==='T'&&!trioDemoSeen;
+  if(demo){
+   render();await demonstrateTrio(token);if(token!==epoch)return;
+   trioDemoSeen=true;animations=[];
+  }
   for(let n=0;n<count;n++){history.push(state);if(history.length>256)history.shift();state=step(state,kind);moves++;}
   render();save();
   if(!reduced.matches){
-   document.querySelectorAll('.fl-bead').forEach(bead=>{
-    const from=before.indexOf(bead.dataset.color);if(kind==='T'&&(from<3||from>5))return;
-    const frames=Array.from({length:17},(_,k)=>{
+   board.querySelectorAll('.fl-bead,.fl-demo-empty').forEach(bead=>{
+    const from=bead.classList.contains('fl-demo-empty')?+bead.dataset.from:before.indexOf(bead.dataset.color);if(kind==='T'&&(from<3||from>5))return;
+    const frames=kind==='T'?trioFrames(from):Array.from({length:17},(_,k)=>{
      const t=k/16;let x,y;
-     if(kind==='T'&&from===5){const [ax,ay]=point(5),[bx,by]=point(3);x=ax+(bx-ax)*t;y=(1-t)*(1-t)*ay+2*(1-t)*t*54+t*t*by;}
-     else{const a=(from*45-90+(fromAngle??0)*(1-t)+(kind==='L'?-45:45)*count*t)*Math.PI/180;x=50+32*Math.cos(a);y=50+32*Math.sin(a);}
+     const a=(from*45-90+(fromAngle??0)*(1-t)+(kind==='L'?-45:45)*count*t)*Math.PI/180;x=50+32*Math.cos(a);y=50+32*Math.sin(a);
      return {left:x+'%',top:y+'%'};
     });
-    if(bead.animate)animations.push(bead.animate(frames,{duration:Math.min(500,220+Math.max(0,count-1)*45),easing:'ease-out'}));
+    if(bead.animate)animations.push(bead.animate(frames,{duration:demo?650:Math.min(500,220+Math.max(0,count-1)*45),easing:'ease-out',fill:'both'}));
    });
   }
   await Promise.all(animations.map(a=>a.finished.catch(()=>{})));
   if(token!==epoch)return;
-  animations=[];busy=false;root.classList.remove('fl-trio-active','fl-moving');render();
+  animations.forEach(a=>a.cancel());animations=[];busy=false;root.classList.remove('fl-trio-active','fl-moving');clearDemo();render(before);
  if(state===puzzle.target){win();}
  }
  function wheelPosition(e){
@@ -300,7 +395,7 @@
  document.addEventListener('visibilitychange',()=>{if(document.hidden){save();}});
  window.addEventListener('pagehide',save);
  build();render();save();
- if(!helpSeen)openDialog('#ovHelp');else if(state===puzzle.target)win();
+ if(state===puzzle.target)win();
  if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{}));
 })();
 </script>

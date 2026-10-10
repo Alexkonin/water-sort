@@ -1,9 +1,14 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const T=require('../sand-trucks.js'),G=require('../arrow-escape.js');
-function jam(){
- const s=T.create(1);for(const id of s.puzzle.solution.slice(0,s.puzzle.limit))assert.equal(T.dispatch(s,id),'ok');
- const busy=new Set(s.active.map(c=>s.puzzle.arrows[c.id].color)),color=s.grains.find(c=>!busy.has(c)),start=s.grains.length-s.puzzle.art.width;
- assert.notEqual(color,undefined);
+function jam(limit){
+ const s=T.create(1);if(limit)s.puzzle.limit=limit;
+ // Create the wrong-color choice deliberately; the opening certificate's
+ // colors can change when the picture is reauthored.
+ const color=1,start=s.grains.length-s.puzzle.art.width;
+ for(let i=0;i<s.puzzle.limit;i++){
+  const id=G.available(s.puzzle,s.remaining).find(id=>s.puzzle.arrows[id].color!==color);
+  assert.notEqual(id,undefined);assert.equal(T.dispatch(s,id),'ok');
+ }
  for(let i=start;i<s.grains.length;i++)if(s.grains[i]!==color){const from=s.grains.findIndex((c,j)=>j<start&&c===color);assert.ok(from>=0);[s.grains[i],s.grains[from]]=[s.grains[from],s.grains[i]];}
  for(const c of s.active)c.phase='waiting';s.queue=s.active.map(c=>c.id);s.jammed=T.isJammed(s);assert.equal(s.jammed,true);return s;
 }
@@ -24,11 +29,7 @@ test('old saves retain their normal limit and cannot restore excess active truck
  assert.equal(T.restore(excessive).active.length,0);assert.equal(T.restore({...old,extraSlot:3}).extraSlot,false);
 });
 test('a saved three-slot beginner jam resumes with its sand and a free base slot',()=>{
- const s=T.create(1);s.puzzle.limit=3;
- for(const id of s.puzzle.solution.slice(0,3))assert.equal(T.dispatch(s,id),'ok');
- const busy=new Set(s.active.map(c=>s.puzzle.arrows[c.id].color)),color=s.grains.find(c=>!busy.has(c)),start=s.grains.length-s.puzzle.art.width;
- for(let i=start;i<s.grains.length;i++)if(s.grains[i]!==color){const from=s.grains.findIndex((c,j)=>j<start&&c===color);[s.grains[i],s.grains[from]]=[s.grains[from],s.grains[i]];}
- for(const c of s.active)c.phase='waiting';s.queue=s.active.map(c=>c.id);assert.equal(T.isJammed(s),true);
+ const s=jam(3);
  const restored=T.restore(T.snapshot(s));assert.equal(restored.jammed,false);assert.equal(restored.extraSlot,false);assert.deepEqual(restored.grains,s.grains);assert.deepEqual(restored.active,s.active);
  assert.equal(T.dispatch(restored,G.available(restored.puzzle,restored.remaining)[0]),'ok');
 });

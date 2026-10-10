@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<base href="../../">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#102f2d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Лесные карточки — Лукоморье</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png?v=lukomorye2">
+<link rel="icon" href="favicon.ico?v=lukomorye2">
+<link rel="stylesheet" href="shell.css?v=58">
+<link rel="stylesheet" href="palette.css?v=51">
+
+
+<style>
+  #app{width:100%;max-width:520px;margin:auto;gap:11px;padding-inline:16px;touch-action:pan-y}
+  button{font:inherit;cursor:pointer;touch-action:manipulation}
+  button:disabled{cursor:default}
+  header{grid-template-columns:80px minmax(0,1fr) 80px;gap:4px}
+  .hdr-side{gap:4px}
+  .level-title{border:0;background:none;color:var(--cream);padding:2px 0;font-weight:700;font-size:16px;line-height:1.2;white-space:nowrap}
+  .level-title small{display:block;font-size:10px;font-weight:500;letter-spacing:.5px;opacity:.62;margin-top:2px}
+  .intro{text-align:center;flex:0 0 auto}
+  .intro h1{font-size:clamp(22px,5vw,27px);letter-spacing:.2px;margin:5px 0 2px}
+  .intro p{font-size:12px;line-height:1.4;color:var(--muted);margin:0}
+  .game-panel{min-height:0;flex:1;display:flex;flex-direction:column;padding:14px;border-radius:25px;color:var(--ink);background:linear-gradient(160deg,#faf6e7,var(--paper));box-shadow:0 14px 35px #061b1938;overflow:auto}
+  .panel-top{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#607357;font-size:12px;font-weight:650;flex:0 0 auto}
+  .panel-top strong{font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums}
+  .timer-track{height:4px;border-radius:4px;background:#d8dec9;margin:10px 0 4px;overflow:hidden;flex:0 0 auto}
+  .timer-fill{height:100%;width:100%;background:#8da56a;transition:width .12s linear}
+  .memory-card{width:min(100%,380px);margin:auto;position:relative;border:1px solid #8f9a7759;background:#f3efdd;border-radius:22px;padding:13px;box-shadow:0 9px 20px #53674724, inset 0 1px 0 #fffef4}
+  .memory-card::before{content:"✦";position:absolute;top:5px;left:50%;transform:translateX(-50%);font-size:11px;color:#aa9568}
+  .memory-card::after{content:"ЛЕСНАЯ КОЛЛЕКЦИЯ";display:block;text-align:center;font-size:8px;letter-spacing:2.4px;color:#829274;margin-top:8px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}
+  .cell{aspect-ratio:1;border:1px solid #adb99b;border-radius:13px;display:flex;align-items:center;justify-content:center;background:#fffcf0;color:#456d5c;position:relative;padding:0;box-shadow:0 2px 4px #4c604118}
+  .cell svg{width:48%;height:48%;stroke-width:1.65}
+  .cell.face{background:#faf7e9}
+  .cell.back{background:repeating-linear-gradient(45deg,#dee7d1 0,#dee7d1 2px,#e9eedf 2px,#e9eedf 10px);color:#91a27b}
+  .cell.back::before{content:"✦";font-size:26px;font-weight:400;opacity:.74}
+  .cell.pick{background:#f9f6e9;border-color:#899e77;box-shadow:inset 0 0 0 1px #aabd91}
+  .cell.pick:hover{background:#e8eedc}
+  .cell.pick:active{transform:scale(.96)}
+  .cell.correct{border:2px solid #638e65;background:#dcebd3;color:#2e684c}
+  .cell.wrong{border:2px solid #bb7767;background:#f2ddd3;color:#9d4c42}
+  .cell.correct::after,.cell.wrong::after{content:"✓";position:absolute;right:7px;bottom:4px;font-size:20px;font-weight:800}
+  .cell.wrong::after{content:"×"}
+  .prompt{min-height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;flex:0 0 auto;padding:6px 4px}
+  .prompt-kicker{text-transform:uppercase;font-size:10px;font-weight:800;letter-spacing:2px;color:#829071;margin-bottom:5px}
+  .prompt-main{font-size:18px;font-weight:750;line-height:1.25;color:var(--ink)}
+  .prompt-main.with-icon{display:flex;align-items:center;gap:9px}
+  .prompt-main svg{width:25px;height:25px;color:#658363;stroke-width:1.7}
+  .prompt-note{font-size:12px;color:#607357;line-height:1.35;margin-top:5px;min-height:16px}
+  .actions{display:flex;gap:8px;height:50px;flex:0 0 50px}
+  .actions .cta{height:100%;min-height:0;font-size:15px}
+  .actions .ghost{margin:0;width:auto;height:100%;min-height:0;padding:0 14px;color:#51654c;white-space:nowrap}
+  #primary[hidden],#secondary[hidden]{display:none}
+  .game-foot{text-align:center;font-size:11px;color:var(--muted);min-height:18px;flex:0 0 auto}
+  dialog{border:0;padding:23px 20px 20px;width:min(390px,calc(100vw - 30px));max-height:86dvh;overflow:auto;border-radius:25px;color:var(--ink);background:linear-gradient(160deg,#faf6e7,var(--paper));box-shadow:0 25px 90px #061b1970}
+  dialog::backdrop{background:#061b19c4;backdrop-filter:blur(5px)}
+  dialog h2{font-size:23px;margin:0 0 10px}dialog p{font-size:14px;line-height:1.5;color:#607357;margin:0 0 16px}
+  dialog .close{float:right;border:0;background:#697c4818;color:var(--ink);width:36px;height:36px;border-radius:11px;display:grid;place-items:center;margin:-7px -5px 0 8px}
+  dialog .close .ui-icon{width:20px;height:20px}
+  .help-grid{display:grid;grid-template-columns:repeat(3,34px);justify-content:center;gap:5px;margin:12px auto 17px}
+  .help-grid span{height:34px;background:#dce7d3;border-radius:7px;display:grid;place-items:center;color:#54775d;font-size:17px}
+  .help-grid span:nth-child(5){background:var(--honey)}
+  .help-list{color:#50614b;opacity:1}
+  .level-pages{display:flex;align-items:center;justify-content:space-between;gap:9px;margin:13px 0;font-size:13px}
+  .level-pages button{border:0;border-radius:11px;background:#dce3c8;color:var(--ink);width:40px;height:40px;font-size:21px}
+  .level-pages button:disabled{opacity:.35}
+  .level-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+  .level-grid button{min-height:46px;border:0;border-radius:10px;background:#dce3c8;color:var(--ink);font-size:13px;font-weight:700}
+  .level-grid button.done{background:#c5d8b8}
+  .level-grid button.current{box-shadow:inset 0 0 0 2px #a87930;background:var(--honey)}
+  .level-grid button small{display:block;font-size:9px;line-height:1;color:#826c35}
+  .level-jump{display:flex;gap:7px;margin-top:13px}
+  .level-jump input{width:100%;min-width:0;border:1px solid #aaba9d;border-radius:11px;padding:10px;background:#fffdf2;color:var(--ink);font:16px system-ui}
+  .level-jump button{border:0;border-radius:11px;background:#dce3c8;color:var(--ink);padding:0 12px}
+  #levelError{min-height:18px;margin:4px 0 0;color:#a45348;font-size:12px}
+  @media(max-height:720px){#app{gap:6px}.intro h1{font-size:21px}.intro p{display:none}.game-panel{padding:10px}.prompt{min-height:74px}.prompt-main{font-size:16px}.memory-card{width:min(100%,310px);padding:9px}.grid{gap:5px}.cell{border-radius:10px}.actions{height:44px;flex-basis:44px}.game-foot{display:none}}
+  @media(max-height:530px){html,body{overflow:auto}#app{height:auto;min-height:100dvh}.memory-card{width:min(100%,260px)}}
+  @media(prefers-reduced-motion:reduce){.timer-fill,.cell{transition:none}}
+</style>
+<link rel="stylesheet" href="game-header.css?v=200">
+<link rel="stylesheet" href="ui-theme.css?v=199">
+<style>.cell img{width:84%;height:84%;object-fit:contain;mix-blend-mode:darken}.cell:disabled{opacity:1}.timer-track{visibility:visible}#app{height: min(844px,100dvh);min-height:640px}.actions button{pointer-events:none}</style></head>
+<body>
+<div id="app">
+  <header class="game-header" aria-label="Меню игры">
+    <div class="hdr-side"><a class="icon-btn game-back"  href="index.html" aria-label="Назад к играм" title="Назад к играм"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg?v=195#back"/></svg></a></div>
+    <button type="button" class="game-level" id="levelButton" aria-label="Выбрать уровень"><span id="levelLabel">Уровень 1</span> ▾</button>
+    <div class="hdr-side right"><button type="button" class="icon-btn game-undo" id="undoButton" aria-label="Отменить ход" title="Отменить ход" disabled><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg?v=195#undo"/></svg></button><button type="button" class="icon-btn game-info" id="helpButton" aria-label="Информация об игре" title="Информация об игре" aria-haspopup="dialog"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="icons.svg?v=200#info"/></svg></button></div>
+  </header>
+  <div class="intro"><h1>Лесные карточки</h1><p>Запомни находки, прежде чем карточка закроется</p></div>
+  <main class="game-panel">
+    <div class="panel-top"><span id="phaseLabel">Запоминай расположение</span><strong id="counter">14 с</strong></div>
+    <div class="timer-track" role="progressbar" aria-label="Время на запоминание" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><div class="timer-fill" id="timerFill"></div></div>
+    <div class="memory-card"><div class="grid" id="grid" role="group" aria-label="Девять мест на карточке"><button type="button" class="cell face" aria-label="лист" disabled><svg class="ui-icon" style="color:#4d7654" aria-hidden="true"><use href="icons.svg#memory-leaf"/></svg></button><button type="button" class="cell face" aria-label="гриб" disabled><svg class="ui-icon" style="color:#4d7654" aria-hidden="true"><use href="icons.svg#memory-mushroom"/></svg></button><button type="button" class="cell face" aria-label="жёлудь" disabled><svg class="ui-icon" style="color:#4d7654" aria-hidden="true"><use href="icons.svg#memory-acorn"/></svg></button><button type="button" class="cell face" aria-label="сова" disabled><svg class="ui-icon" style="color:#a66a52" aria-hidden="true"><use href="icons.svg#memory-owl"/></svg></button><button type="button" class="cell face" aria-label="лиса" disabled><img src="output/memory-fox-preview/fox-v2.png" alt=""></button><button type="button" class="cell face" aria-label="папоротник" disabled><svg class="ui-icon" style="color:#4d7654" aria-hidden="true"><use href="icons.svg#memory-fern"/></svg></button><button type="button" class="cell face" aria-label="солнце" disabled><svg class="ui-icon" style="color:#5a8390" aria-hidden="true"><use href="icons.svg#memory-sun"/></svg></button><button type="button" class="cell face" aria-label="бабочка" disabled><svg class="ui-icon" style="color:#a66a52" aria-hidden="true"><use href="icons.svg#memory-butterfly"/></svg></button><button type="button" class="cell face" aria-label="шишка" disabled><svg class="ui-icon" style="color:#4d7654" aria-hidden="true"><use href="icons.svg#memory-pinecone"/></svg></button></div></div>
+    <div class="prompt" role="status" aria-live="polite"><div class="prompt-kicker" id="promptKicker">ЗАПОМНИ</div><div class="prompt-main" id="promptMain">Где лежит каждый символ?</div><div class="prompt-note" id="promptNote">Девять символов · четыре вопроса</div></div>
+    <div class="actions"><button class="cta" id="primary">Я запомнил</button><button class="ghost" id="secondary" hidden>Повторить</button></div>
+  </main>
+  <div class="game-foot" id="progressText">Предпросмотр · лиса в новом стиле</div>
+</div>
+<dialog id="helpDialog" aria-labelledby="helpTitle"><button class="close" data-close aria-label="Закрыть"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=68#close"/></svg></button><h2 id="helpTitle">Запомни, что где лежит</h2><div class="help-grid" aria-hidden="true"><span>✦</span><span>✧</span><span>✦</span><span>✧</span><span>?</span><span>✧</span><span>✦</span><span>✧</span><span>✦</span></div><ol class="help-list">
+<li>Нажми «Я запомнил» и запомни, где расположены девять лесных символов.</li>
+<li>Когда время закончится, символы скроются. Можно скрыть их раньше кнопкой «Я запомнил».</li>
+<li>Для каждого символа, о котором спрашивает игра, нажми на клетку, где он был. При ошибке игра покажет верное место.</li>
+<li>Кнопка отмены вверху позволяет ответить ещё раз.</li>
+</ol><p>Пока открыта справка или игра скрыта, таймер стоит на паузе. Нажми на номер уровня, чтобы повторить его: символы и их расположение изменятся.</p><button class="cta" data-close>Понятно, играем</button></dialog>
+<dialog id="levelsDialog" aria-labelledby="levelsTitle"><button class="close" data-close aria-label="Закрыть"><svg class="ui-icon" aria-hidden="true"><use href="icons.svg?v=68#close"/></svg></button><h2 id="levelsTitle">Выбери уровень</h2><p id="levelsProgress"></p><div class="level-pages"><button id="prevPage" aria-label="Предыдущие уровни">‹</button><span id="pageLabel"></span><button id="nextPage" aria-label="Следующие уровни">›</button></div><div class="level-grid" id="levelGrid"></div><form class="level-jump" id="jumpForm"><input id="levelInput" type="number" inputmode="numeric" min="1" max="100" required placeholder="Номер от 1 до 100" aria-label="Номер уровня"><button type="submit">Перейти</button></form><p id="levelError" role="alert"></p><div class="game-menu-actions"><button type="button" class="ghost" id="restartButton">Начать уровень заново</button></div></dialog>
+
+
+
+</body>
+</html>

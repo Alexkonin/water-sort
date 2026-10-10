@@ -30,3 +30,24 @@ dialog{border:0;border-radius:26px;padding:25px 22px 20px;width:min(390px,calc(1
 .level-jump{display:flex;gap:8px;margin-top:14px}.level-jump input{min-width:0;width:100%;padding:10px;border:1px solid #697c4840;border-radius:12px;background:#fffbee;color:var(--ink);font:16px system-ui;user-select:text;-webkit-user-select:text}.level-jump button{border:0;border-radius:12px;background:#dce3c8;padding:0 12px;color:var(--ink);font:inherit}.level-jump input:focus-visible{outline:2px solid var(--olive);outline-offset:2px}
 
 .board-tools{display:flex;align-items:center;justify-content:space-between;padding:6px 18px 0;gap:12px;font-size:12px;color:#6d795f;flex-shrink:0}.board-tools button{border:1px solid #697c4840;border-radius:10px;padding:6px 12px;color:var(--ink);background:#fffbee;min-height:34px}
+
+/* Only the explanation scrolls: the start action stays visible on short screens. */
+#helpDialog{padding:18px 18px 16px;overflow:hidden;max-height:86dvh}
+#helpDialog[open]{display:flex;flex-direction:column}
+#helpDialog .help-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;margin-bottom:10px}
+#helpDialog h2{margin:0}
+#helpDialog .close{float:none;margin:0}
+#helpDialog .help-content{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+#helpDialog p{margin:0 0 12px}
+#helpDialog .help-example{margin:0 0 14px;padding:12px 0 8px;border-radius:14px;background:var(--ui-secondary)}
+#helpDialog .help-tiles{display:flex;align-items:center;justify-content:center;gap:2px}
+#helpDialog .help-tile{position:relative;flex:0 0 50px;width:50px;height:67px;pointer-events:none}
+#helpDialog .help-edge{width:26px;text-align:center;color:var(--ui-selection);font-size:24px;font-weight:700}
+#helpDialog .help-tile-labels{display:grid;grid-template-columns:repeat(3,1fr);max-width:222px;margin:12px auto 0;text-align:center;font-size:12px;font-weight:600;color:var(--ui-selection)}
+#helpDialog .help-tile-labels span:nth-child(2){color:var(--ui-text-muted)}
+#helpDialog .help-more{border-top:1px solid var(--ui-border)}
+#helpDialog summary{padding:12px 0;min-height:44px;font-size:14px;font-weight:600;cursor:pointer;touch-action:manipulation}
+#helpDialog summary:focus-visible{outline:2px solid var(--olive);outline-offset:-2px;border-radius:4px}
+#helpDialog .help-more ul{padding-left:18px;margin:0 0 12px}
+#helpDialog .help-actions{flex-shrink:0;padding-top:12px;border-top:1px solid var(--ui-border)}
+#helpDialog .help-actions .cta{width:100%}

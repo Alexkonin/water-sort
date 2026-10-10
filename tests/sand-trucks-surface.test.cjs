@@ -24,11 +24,13 @@ test('fractional positions cannot create an enclosed black component',()=>{
  for(let i=0;i<f.material.length;i++)if(f.material[i]<0)assert.equal(seen[i],1,`isolated dark pixel ${i}`);
 });
 test('the recorded level-11 artifact reconstructs without changing its saved state',()=>{
- const sample=require('./fixtures/sand-render-level11.json'),T=require('../sand-trucks.js'),state=T.restore(sample.save),before=JSON.stringify(T.snapshot(state)),art=state.puzzle.art;
- const f=Surface.create(art.width,art.height,T.COLORS);f.render(sample.view.x.map(x=>x+.5),sample.view.y.map(y=>y+.5),state.grains);
+ // Use the captured grains, not restore(), which correctly restarts an older
+ // campaign picture after its artwork and truck loads have been replaced.
+ const sample=require('./fixtures/sand-render-level11.json'),T=require('../sand-trucks.js'),before=JSON.stringify(sample.save),art=sample.puzzle.art;
+ const f=Surface.create(art.width,art.height,T.COLORS);f.render(sample.view.x.map(x=>x+.5),sample.view.y.map(y=>y+.5),sample.save.grains);
  const air=new Set();for(let i=0;i<f.material.length;i++)if(f.material[i]<0)air.add(i);
  const stack=[...air].filter(i=>i<f.width||i>=f.material.length-f.width||i%f.width===0||i%f.width===f.width-1);
  for(let i=0;i<stack.length;i++){const p=stack[i];if(!air.delete(p))continue;for(const n of[p-f.width,p+f.width,...(p%f.width?[p-1]:[]),...(p%f.width<f.width-1?[p+1]:[])])if(air.has(n))stack.push(n);}
  assert.equal(air.size,0,'no isolated background remains within the picture');
- assert.equal(JSON.stringify(T.snapshot(state)),before);
+ assert.equal(JSON.stringify(sample.save),before);
 });

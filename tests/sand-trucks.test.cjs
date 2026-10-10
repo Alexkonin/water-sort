@@ -120,6 +120,8 @@ test('a full truck releases its slot before leaving the road, including after sa
 });
 test('unfilled trucks return beyond the screen and reenter from the left in FIFO order with a gap',()=>{
  const s=T.create(1);s.puzzle.limit=4;s.grains.fill(2);s.grains[0]=3;s.active=[0,1,2].map(id=>({id,phase:'waiting',distance:0,loaded:0,credit:0}));s.queue=[2,0,1];
+ // All three wait for the buried grain, independent of campaign truck colors.
+ for(const c of s.active)s.puzzle.arrows[c.id].color=3;
  T.step(s,.04);assert.equal(s.active.find(c=>c.phase==='road').id,2);assert.deepEqual(s.queue,[0,1]);advance(s,2);const road=s.active.filter(c=>c.phase==='road').sort((a,b)=>b.distance-a.distance);assert.deepEqual(road.map(c=>c.id),[2,0,1]);for(let i=1;i<road.length;i++)assert.ok(road[i-1].distance-road[i].distance>=T.ROAD_GAP);
  const c=road[0];c.distance=T.ROAD.length-1;T.step(s,.04);assert.equal(c.phase,'waiting');assert.equal(s.queue.at(-1),c.id);assert.equal(T.carPose(s.puzzle,c).x,-80);assert.equal(c.loaded,0);
 });
@@ -146,6 +148,28 @@ test('saves resume collapsed columns, moving loads and offscreen queue; impossib
  const wrongGrains=data.grains.slice();wrongGrains[wrongGrains.findIndex(c=>c>=0)]=5;
  for(const bad of[{...data,grains:[]},{...data,grains:wrongGrains},{...data,active:[...data.active,...data.active]},{...data,delivered:[{id:0,loaded:999}]},{...data,queue:[-1]}])assert.deepEqual(T.restore(bad).remaining,T.create(1).remaining);
  const old=T.restore({version:3,level:9,sound:false,completed:[1,2]});assert.equal(old.puzzle.level,1);assert.deepEqual(old.completed,[]);assert.equal(old.sound,false);
+});
+test('the former opening picture restarts with the new art while keeping completed levels',()=>{
+ const s=T.create(1,false,[1,2,3,4]),saved=T.snapshot(s),w=s.puzzle.art.width;
+ // Original 48 × 40 picture: a 16 × 16 yellow square over a flat sea.
+ saved.grains=saved.grains.map((_,i)=>{const x=Math.floor(i%w/2),y=Math.floor(i/w/2);return y>=28?3:x>=15&&x<31&&y>=4&&y<20?1:2;});
+ const restored=T.restore(saved);
+ assert.notDeepEqual(saved.grains,s.grains);
+ assert.deepEqual(restored.grains,s.grains);
+ assert.equal(restored.puzzle.level,1);
+ assert.deepEqual(restored.completed,[1,2,3,4]);
+ assert.deepEqual(restored.remaining,s.remaining);
+});
+test('an in-flight save from the former campaign restarts only its current picture',()=>{
+ const sample=require('./fixtures/sand-render-level11.json'),completed=Array.from({length:10},(_,i)=>i+1);
+ const restored=T.restore({...sample.save,completed}),fresh=T.create(11,false,completed);
+ assert.ok(sample.save.active.length>0);
+ assert.equal(restored.puzzle.level,11);
+ assert.deepEqual(restored.completed,completed);
+ assert.deepEqual(restored.grains,fresh.grains);
+ assert.deepEqual(restored.remaining,fresh.remaining);
+ assert.deepEqual(restored.active,[]);
+ assert.equal(restored.jammed,false);
 });
 test('departure starts in the cabin direction, clears the parking lot and joins the left road entrance',()=>{
  for(let n=1;n<=T.LEVELS;n++)for(const a of T.generate(n).arrows){const path=T.departure(a),start=T.parked(a),first=T.pose(path,0),next=T.pose(path,.1),end=T.pose(path,path.length),dir=G.direction(a);assert.equal(start.x,first.x);assert.equal(start.y,first.y);assert.ok(Math.abs(next.x-start.x-dir[0]*.1)<1e-8);assert.ok(Math.abs(next.y-start.y-dir[1]*.1)<1e-8);assert.equal(end.x,-80);assert.equal(end.y,354);}

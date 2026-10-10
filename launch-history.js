@@ -3,11 +3,11 @@
   'use strict';
   const KEY = 'games.launches.v1';
   const LIMIT = 30;
-  const FILES = ['tower-defense.html','water-sort.html','sand-trucks.html','forest-lights.html','mahjong.html','memory-cards.html'];
+  const FILES = ['tower-defense.html','water-sort.html','sand-yard.html','forest-lights.html','mahjong.html','memory-cards.html'];
   const known = new Set(FILES);
 
   function clean(value){
-    return Array.isArray(value) ? value.map(file => file === 'arrow-escape.html' ? 'sand-trucks.html' : file).filter(file => known.has(file)).slice(-LIMIT) : [];
+    return Array.isArray(value) ? value.map(file => ['arrow-escape.html','sand-trucks.html'].includes(file) ? 'sand-yard.html' : file).filter(file => known.has(file)).slice(-LIMIT) : [];
   }
   function read(storage){
     try { return clean(JSON.parse((storage || root.localStorage).getItem(KEY) || '[]')); }

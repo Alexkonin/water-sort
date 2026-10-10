@@ -32,12 +32,12 @@ test('frequent games lead based on the latest 30 openings; ties keep the default
   for(let i=0;i<10;i++) launches.record('water-sort.html',saved);
   assert.equal(launches.read(saved).length,30);
   assert.deepEqual(launches.rank(games,launches.read(saved)).map(g=>g.file),
-    ['forest-lights.html','water-sort.html','tower-defense.html','sand-trucks.html','mahjong.html','memory-cards.html']);
+    ['forest-lights.html','water-sort.html','tower-defense.html','sand-yard.html','mahjong.html','memory-cards.html']);
   for(let i=0;i<30;i++) launches.record('tower-defense.html',saved);
   assert.deepEqual(launches.read(saved),Array(30).fill('tower-defense.html'));
   assert.deepEqual(launches.rank(games,launches.read(saved)).map(g=>g.file),launches.FILES);
   assert.deepEqual(launches.rank(games,['forest-lights.html','sand-trucks.html']).map(g=>g.file),
-    ['sand-trucks.html','forest-lights.html','tower-defense.html','water-sort.html','mahjong.html','memory-cards.html']);
+    ['sand-yard.html','forest-lights.html','tower-defense.html','water-sort.html','mahjong.html','memory-cards.html']);
 });
 
 test('damaged or unavailable local storage falls back to the default order',()=>{
@@ -50,6 +50,6 @@ test('damaged or unavailable local storage falls back to the default order',()=>
   assert.deepEqual(launches.read(saved),['water-sort.html']);
 });
 
-test('old arrow-game history migrates to the truck game',()=>{
- assert.deepEqual(launches.read(storage(JSON.stringify(['arrow-escape.html','water-sort.html']))),['sand-trucks.html','water-sort.html']);
+test('both former sand games and the arrow game share unified launch history',()=>{
+ assert.deepEqual(launches.read(storage(JSON.stringify(['arrow-escape.html','sand-trucks.html','sand-yard.html','water-sort.html']))),['sand-yard.html','sand-yard.html','sand-yard.html','water-sort.html']);
 });
